@@ -580,7 +580,7 @@ function HomePage() {
         </div>
 
         <div className="border-t border-white/10 py-4 text-center text-sm text-emerald-200">
-          © 2026 Amar Kolkata
+          © 2026-27 Amar Kolkata
         </div>
       </footer>
     </div>
