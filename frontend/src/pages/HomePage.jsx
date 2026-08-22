@@ -325,7 +325,7 @@ function HomePage() {
               </div>
 
               <div className="absolute bottom-5 left-5 rounded-xl bg-white px-4 py-3 font-bold text-emerald-900 shadow">
-                📍 Facilities within 10 km
+                📍 Nearby facilities
               </div>
             </div>
           </div>
