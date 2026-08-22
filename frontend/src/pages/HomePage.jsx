@@ -312,15 +312,15 @@ function HomePage() {
             {/* Temporary map design */}
             <div className="relative hidden h-80 overflow-hidden rounded-3xl bg-emerald-100 lg:block">
               <div className="absolute left-[20%] top-[25%] rounded-full bg-white p-4 text-3xl shadow-lg">
-                🚻
+                🚻 Toilets
               </div>
 
               <div className="absolute right-[20%] top-[20%] rounded-full bg-white p-4 text-3xl shadow-lg">
-                💧
+                💧 Water Dispensers
               </div>
 
               <div className="absolute bottom-[20%] left-[45%] rounded-full bg-white p-4 text-3xl shadow-lg">
-                🗑️
+                🗑️ Dsutbins
               </div>
 
               <div className="absolute bottom-5 left-5 rounded-xl bg-white px-4 py-3 font-bold text-emerald-900 shadow">
