@@ -254,8 +254,7 @@ function HomePage() {
               <p className="mt-5 max-w-xl text-lg leading-8 text-emerald-100">
                 Locate nearby dustbins,
                 public toilets, drinking-water
-                points and parking areas within
-                approximately 10 km.
+                points and parking areas nearby
               </p>
 
               <form
