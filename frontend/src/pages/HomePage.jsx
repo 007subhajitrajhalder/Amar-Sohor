@@ -498,7 +498,7 @@ function HomePage() {
         <section className="mx-auto max-w-7xl px-5 py-16">
           <div className="text-center">
             <h2 className="text-3xl font-bold">
-              How Amar Kolkata Works
+              How Amar Sohor Works
             </h2>
           </div>
 
@@ -532,7 +532,7 @@ function HomePage() {
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 md:grid-cols-3">
           <div>
             <h2 className="text-xl font-bold">
-              Amar Kolkata
+              Amar Sohor
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-emerald-100">
@@ -574,13 +574,13 @@ function HomePage() {
             <p className="mt-3 text-sm leading-6 text-emerald-100">
               Kolkata, West Bengal
               <br />
-              support@amarkolkata.com
+              support@amarsohor.com
             </p>
           </div>
         </div>
 
         <div className="border-t border-white/10 py-4 text-center text-sm text-emerald-200">
-          © 2026-27 Amar Kolkata
+          © 2026-27 Amar Sohor
         </div>
       </footer>
     </div>
