@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 function AgencyManagementPage() {
   const agencies = [
     "KMC SWM Department",
@@ -20,9 +21,12 @@ function AgencyManagementPage() {
             </p>
           </div>
 
-          <button className="rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white">
+          <Link
+            to="/admin/agency-members/add"
+            className="rounded-xl bg-emerald-700 px-5 py-3 text-center font-bold text-white"
+          >
             Add Agency Member
-          </button>
+          </Link>
         </div>
 
         <div className="mt-7 grid gap-5 md:grid-cols-2">

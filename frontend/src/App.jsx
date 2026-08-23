@@ -26,6 +26,9 @@ import UploadResolutionPage from "./pages/agency/UploadResolutionPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import AgencyManagementPage from "./pages/admin/AgencyManagementPage";
+import AddAgencyMemberPage from "./pages/admin/AddAgencyMemberPage";
+import AllComplaintsPage from "./pages/admin/AllComplaintsPage";
+import AdminComplaintDetailsPage from "./pages/admin/AdminComplaintDetailsPage";
 
 
 function App() {
@@ -120,6 +123,20 @@ function App() {
       <Route
         path="/admin/agencies"
         element={<AgencyManagementPage />}
+      />
+      <Route
+        path="/admin/agency-members/add"
+        element={<AddAgencyMemberPage />}
+      />
+
+      <Route
+        path="/admin/complaints"
+        element={<AllComplaintsPage />}
+      />
+
+      <Route
+        path="/admin/complaints/:reportId"
+        element={<AdminComplaintDetailsPage />}
       />
 
       

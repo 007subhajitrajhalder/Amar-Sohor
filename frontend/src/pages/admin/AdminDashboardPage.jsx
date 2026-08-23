@@ -39,6 +39,23 @@ function AdminDashboardPage() {
           >
             Manage Agencies →
           </Link>
+          <Link
+            to="/admin/complaints"
+            className="rounded-2xl bg-white p-6 shadow transition hover:-translate-y-1 hover:shadow-lg"
+          >
+            <p className="text-4xl">
+              📋
+            </p>
+
+            <h2 className="mt-4 text-xl font-bold">
+              View All Complaints
+            </h2>
+
+            <p className="mt-2 text-slate-600">
+              Monitor complaints and their current
+              statuses.
+            </p>
+          </Link>
         </div>
       </section>
     </main>
