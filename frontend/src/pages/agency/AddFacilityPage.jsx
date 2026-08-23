@@ -12,15 +12,6 @@ function AddFacilityPage() {
             placeholder="Facility name"
             className="rounded-xl border p-3"
           />
-
-          <select className="rounded-xl border p-3">
-            <option>Select category</option>
-            <option>Dustbin</option>
-            <option>Public Toilet</option>
-            <option>Drinking Water</option>
-            <option>Parking</option>
-          </select>
-
           <textarea
             placeholder="Facility address"
             className="rounded-xl border p-3"
