@@ -21,11 +21,16 @@ import PreviouslyResolvedPage from "./pages/agency/PreviouslyResolvedPage";
 import AddFacilityPage from "./pages/agency/AddFacilityPage";
 import FacilityManagementPage from "./pages/agency/FacilityManagementPage";
 import UploadResolutionPage from "./pages/agency/UploadResolutionPage";
+import EditFacilityPage from "./pages/agency/EditFacilityPage";
 
 // Admin pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import AgencyManagementPage from "./pages/admin/AgencyManagementPage";
+import AddAgencyMemberPage from "./pages/admin/AddAgencyMemberPage";
+import AllComplaintsPage from "./pages/admin/AllComplaintsPage";
+import AdminComplaintDetailsPage from "./pages/admin/AdminComplaintDetailsPage";
+import AgencyMembersPage from "./pages/admin/AgencyMembersPage";
 
 
 function App() {
@@ -88,7 +93,10 @@ function App() {
         path="/agency/resolved"
         element={<PreviouslyResolvedPage />}
       />
-
+      <Route
+        path="/agency/facilities/:facilityId/edit"
+        element={<EditFacilityPage />}
+      />
       
 
       <Route
@@ -120,6 +128,24 @@ function App() {
       <Route
         path="/admin/agencies"
         element={<AgencyManagementPage />}
+      />
+      <Route
+        path="/admin/agency-members/add"
+        element={<AddAgencyMemberPage />}
+      />
+
+      <Route
+        path="/admin/complaints"
+        element={<AllComplaintsPage />}
+      />
+
+      <Route
+        path="/admin/complaints/:reportId"
+        element={<AdminComplaintDetailsPage />}
+      />
+      <Route
+        path="/admin/agencies/:agencyId/members"
+        element={<AgencyMembersPage />}
       />
 
       
