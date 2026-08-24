@@ -38,7 +38,7 @@ function AgencyDashboardPage() {
       buttonText: "View Assigned Reports"
     },
     {
-      title: "Previously Resolved",
+      title: "Previously Resolved Cases",
       description:
         "View complaints that have already been resolved by your agency.",
       icon: "✅",
