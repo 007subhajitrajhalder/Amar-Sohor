@@ -148,29 +148,6 @@ function AgencyDashboardPage() {
             ))}
           </div>
         </section>
-
-        {/* Quick action */}
-        <section className="mt-10 rounded-2xl bg-emerald-900 p-7 text-white">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-            <div>
-              <h2 className="text-2xl font-bold">
-                Add a New Facility
-              </h2>
-
-              <p className="mt-2 text-emerald-100">
-                Register a new public facility
-                under your agency.
-              </p>
-            </div>
-
-            <Link
-              to="/agency/facilities/add"
-              className="rounded-xl bg-white px-5 py-3 text-center font-bold text-emerald-800"
-            >
-              Add Facility
-            </Link>
-          </div>
-        </section>
       </section>
     </main>
   );

@@ -30,6 +30,7 @@ import AgencyManagementPage from "./pages/admin/AgencyManagementPage";
 import AddAgencyMemberPage from "./pages/admin/AddAgencyMemberPage";
 import AllComplaintsPage from "./pages/admin/AllComplaintsPage";
 import AdminComplaintDetailsPage from "./pages/admin/AdminComplaintDetailsPage";
+import AgencyMembersPage from "./pages/admin/AgencyMembersPage";
 
 
 function App() {
@@ -141,6 +142,10 @@ function App() {
       <Route
         path="/admin/complaints/:reportId"
         element={<AdminComplaintDetailsPage />}
+      />
+      <Route
+        path="/admin/agencies/:agencyId/members"
+        element={<AgencyMembersPage />}
       />
 
       
