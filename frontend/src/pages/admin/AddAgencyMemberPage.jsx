@@ -94,7 +94,7 @@ function AddAgencyMemberPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
+    <main className="admin-page-shell min-h-screen bg-slate-100 p-6">
       <section className="mx-auto max-w-3xl">
         <button
           type="button"
