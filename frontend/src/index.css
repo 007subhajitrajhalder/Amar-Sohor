@@ -185,6 +185,22 @@ select {
   box-shadow: inset 0 0 0 1px rgba(207, 250, 254, 0.9), 0 0 10px rgba(34, 211, 238, 0.5), 0 0 24px rgba(34, 211, 238, 0.22);
 }
 
+/* Cards sit in a dense grid (16px gap). The glow radius is capped so it
+   stays inside the gap and never enters a neighbour's bounding box, where
+   the neighbour's backdrop-filter would pick it up and show it as a bright
+   bleeding line. The hovered card is also raised so its glow paints in
+   front, never behind a neighbour. */
+.admin-stat-card,
+.admin-complaint-card {
+  position: relative;
+}
+
+.admin-stat-card:hover,
+.admin-complaint-card:hover {
+  box-shadow: inset 0 0 0 1px rgba(207, 250, 254, 0.9), 0 0 10px rgba(34, 211, 238, 0.5), 0 0 24px rgba(34, 211, 238, 0.22);
+  z-index: 2;
+}
+
 @keyframes admin-card-arrival {
   from {
     opacity: 0;
@@ -221,10 +237,9 @@ select {
   transform: translateY(-4px) scale(1.01);
 }
 
-.admin-navigable-card:hover {
-  transform: translateY(-6px) scale(1.015);
-  box-shadow: inset 0 0 0 1px rgba(207, 250, 254, 0.9), 0 0 10px rgba(34, 211, 238, 0.5), 0 0 24px rgba(34, 211, 238, 0.22), 0 18px 34px rgba(8, 47, 73, 0.3);
-}
+.admin-status-card {
+    transition: background-color 220ms ease, box-shadow 220ms ease;
+  }
 
 .admin-navigable-card:focus-visible {
   outline: 2px solid rgba(165, 243, 252, 0.95);
