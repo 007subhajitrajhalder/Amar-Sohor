@@ -480,17 +480,18 @@ function HomePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-black/30 p-7 backdrop-blur-xl">
               <span className="text-sm font-bold text-lime-300">01</span>
-              <h3 className="mt-4 text-xl font-bold">Enter Location</h3>
+              <h3 className="mt-4 text-xl font-bold">Select Facility</h3>
               <p className="mt-2 text-sm leading-6 text-white/45">
-                Enter your current location manually or use your device location.
+              Choose your suitable facilities like dustbin, toilet, parking area or drinking water point.
+      
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-black/30 p-7 backdrop-blur-xl">
               <span className="text-sm font-bold text-lime-300">02</span>
-              <h3 className="mt-4 text-xl font-bold">Select Facility</h3>
+              <h3 className="mt-4 text-xl font-bold">Enter Location</h3>
               <p className="mt-2 text-sm leading-6 text-white/45">
-                Choose a nearby dustbin, toilet, parking area or drinking water point.
+                Enter your current location manually or use your device location.
               </p>
             </div>
 

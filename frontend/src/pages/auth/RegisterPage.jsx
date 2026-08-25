@@ -1,49 +1,45 @@
+import { LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import AuthPageShell from "./AuthPageShell";
+
+const fields = [
+  ["name", "Full name", "text", "Your full name", "name", UserRound],
+  ["email", "Email address", "email", "you@example.com", "email", Mail],
+  ["phone", "Phone number", "tel", "Your phone number", "tel", Phone],
+  ["password", "Password", "password", "Create a password", "new-password", LockKeyhole],
+  ["confirm-password", "Confirm password", "password", "Repeat your password", "new-password", LockKeyhole],
+];
 
 function RegisterPage() {
   return (
-    <main className="relative flex min-h-screen items-center overflow-hidden bg-[#f4f7f2] px-5 py-12 sm:px-8">
-      <div className="pointer-events-none absolute -left-32 top-12 h-72 w-72 rounded-full bg-lime-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-emerald-200/40 blur-3xl" />
-      <section className="relative mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_24px_80px_rgba(20,55,37,0.14)] lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="hidden flex-col justify-between bg-emerald-950 p-10 text-white lg:flex">
-          <Link to="/" className="text-lg font-bold tracking-tight">Amar Sohor</Link>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-lime-300">A better city, together</p>
-            <h2 className="mt-5 max-w-sm text-4xl font-bold leading-tight">Make everyday civic life simpler.</h2>
-            <p className="mt-5 max-w-sm text-base leading-7 text-emerald-100/75">Find public facilities, report issues, and help your neighbourhood stay cared for.</p>
+    <AuthPageShell activePage="register">
+      <section className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/15 bg-black/35 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="relative hidden min-h-[720px] flex-col justify-end overflow-hidden border-r border-white/10 p-10 lg:flex">
+          <div className="absolute inset-0 bg-gradient-to-br from-lime-300/20 via-transparent to-black/50" />
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-[4px] text-lime-300">Join the community</p>
+            <h2 className="mt-5 font-serif text-5xl font-bold leading-tight">A better city<br /><span className="text-lime-300">starts with you.</span></h2>
+            <p className="mt-5 max-w-md leading-7 text-white/55">Create your citizen account and help make public services more responsive and transparent.</p>
           </div>
-          <p className="text-sm text-emerald-200/60">Trusted tools for a more responsive city.</p>
         </div>
-        <div className="p-7 sm:p-10">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Join the community</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Create your account</h1>
-          <p className="mt-3 max-w-md leading-6 text-slate-500">Join residents making Amar Sohor more connected, responsive, and cared for.</p>
-        <form className="mt-8 grid gap-5">
-          {[
-            ["name", "Full name", "text", "Your full name", "name"],
-            ["email", "Email address", "email", "you@example.com", "email"],
-            ["phone", "Phone number", "tel", "Your phone number", "tel"],
-            ["password", "Password", "password", "Create a password", "new-password"],
-            ["confirm-password", "Confirm password", "password", "Repeat your password", "new-password"],
-          ].map(([id, label, type, placeholder, autoComplete]) => (
-            <label key={id} htmlFor={id} className="grid gap-2 text-sm font-semibold text-slate-700">
-              {label}
-              <input id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-base font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-600/10" />
-            </label>
-          ))}
-          <button type="submit" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Register</button>
-        </form>
-
-        <p className="mt-5 text-center text-sm text-slate-600">
-          Already have an account?{" "}
-          <Link to="/login" className="font-bold text-emerald-700 hover:text-emerald-900">
-            Sign in
-          </Link>
-        </p>
+        <div className="p-7 sm:p-10 lg:p-12">
+          <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[3px] text-lime-300">Create an account</span>
+          <h1 className="mt-5 font-serif text-4xl font-bold sm:text-5xl">Join Amar Sohor</h1>
+          <p className="mt-3 leading-7 text-white/50">One account for facilities, reports, and civic updates.</p>
+          <form className="mt-7 grid gap-4 sm:grid-cols-2">
+            {fields.map(([id, label, type, placeholder, autoComplete, Icon], index) => (
+              <label key={id} htmlFor={id} className={`grid gap-2 text-sm font-medium text-white/75 ${index < 2 ? "sm:col-span-1" : "sm:col-span-2"}`}>{label}
+                <span className="flex min-h-14 items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.07] px-4 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
+                  <Icon size={18} className="shrink-0 text-lime-300" /><input id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} className="w-full bg-transparent text-white outline-none placeholder:text-white/30" />
+                </span>
+              </label>
+            ))}
+            <button type="submit" className="min-h-14 rounded-2xl bg-lime-300 px-5 font-bold text-black shadow-lg shadow-lime-300/10 transition hover:-translate-y-0.5 hover:bg-lime-200 sm:col-span-2">Register</button>
+          </form>
+          <p className="mt-6 text-center text-sm text-white/45">Already have an account? <Link to="/login" className="font-bold text-lime-300 hover:text-lime-200">Sign in</Link></p>
         </div>
       </section>
-    </main>
+    </AuthPageShell>
   );
 }
 
