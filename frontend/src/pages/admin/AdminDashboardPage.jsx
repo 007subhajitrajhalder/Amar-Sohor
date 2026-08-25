@@ -13,7 +13,72 @@ import {
   Users
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAdminTheme } from "./useAdminTheme";
+import { useEffect, useRef, useState } from "react";
+import "./BorderGlow.css";
+
+const gradientPositions = [
+  "80% 55%", "69% 34%", "8% 6%", "41% 38%", "86% 85%", "82% 18%", "51% 4%"
+];
+const gradientKeys = [
+  "--gradient-one", "--gradient-two", "--gradient-three", "--gradient-four",
+  "--gradient-five", "--gradient-six", "--gradient-seven"
+];
+
+function buildGradientVars(colors) {
+  const variables = {};
+  gradientKeys.forEach((key, index) => {
+    const color = colors[index % colors.length];
+    variables[key] = `radial-gradient(at ${gradientPositions[index]}, ${color} 0px, transparent 50%)`;
+  });
+  variables["--gradient-base"] = `linear-gradient(${colors[0]} 0 100%)`;
+  return variables;
+}
+
+function BorderGlow({ children, className = "", animated = false }) {
+  const cardRef = useRef(null);
+  const colors = ["#67e8f9", "#6ee7b7", "#fde68a"];
+
+  const handlePointerMove = (event) => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const bounds = card.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    const centerX = bounds.width / 2;
+    const centerY = bounds.height / 2;
+    const distanceFromEdge = Math.min(x, bounds.width - x, y, bounds.height - y);
+    const edge = 1 - Math.min(
+      Math.max(distanceFromEdge / Math.min(centerX, centerY), 0),
+      1
+    );
+    const angle = Math.atan2(y - centerY, x - centerX) * (180 / Math.PI) + 90;
+
+    card.style.setProperty("--edge-proximity", `${edge * 100}`);
+    card.style.setProperty("--cursor-angle", `${angle < 0 ? angle + 360 : angle}deg`);
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onPointerMove={handlePointerMove}
+      className={`border-glow-card ${animated ? "sweep-active" : ""} ${className}`}
+      style={{
+        "--card-bg": "rgb(255 255 255 / 10%)",
+        "--border-radius": "1rem",
+        "--glow-padding": "32px",
+        "--fill-opacity": "0.35",
+        "--glow-color": "hsl(190deg 90% 80% / 100%)",
+        "--glow-color-40": "hsl(190deg 90% 80% / 65%)",
+        "--glow-color-20": "hsl(190deg 90% 80% / 40%)",
+        ...buildGradientVars(colors)
+      }}
+    >
+      <span className="edge-light" />
+      <div className="border-glow-inner">{children}</div>
+    </div>
+  );
+}
 
 const auraLayers = [
   {
@@ -46,10 +111,20 @@ const lightAuraLayers = [
 ];
 
 function AdminDashboardPage() {
-  const [isLightMode, setIsLightMode] = useAdminTheme();
+  const [isLightMode, setIsLightMode] = useState(false);
+
+  useEffect(() => {
+    document.body.style.backgroundColor = isLightMode ? "#faf8f2" : "#100e0b";
+    document.body.style.transition = "background-color 700ms ease";
+
+    return () => {
+      document.body.style.backgroundColor = "#100e0b";
+      document.body.style.transition = "";
+    };
+  }, [isLightMode]);
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+    <main className={`relative min-h-screen overflow-hidden p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode" : ""}`}>
       {auraLayers.map((layer, index) => (
         <div
           key={`dark-${index}`}
@@ -115,7 +190,8 @@ function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="admin-glass-card mt-8 flex flex-col justify-between gap-5 rounded-2xl border border-white/30 p-5 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl sm:flex-row sm:items-center">
+        <BorderGlow className="mt-8" animated>
+        <div className="flex flex-col justify-between gap-5 rounded-2xl border border-white/30 bg-white/15 p-5 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-emerald-300/15 text-emerald-200">
               <span className="absolute h-3 w-3 animate-ping rounded-full bg-emerald-300/70" />
@@ -137,11 +213,13 @@ function AdminDashboardPage() {
             </span>
           </div>
         </div>
+        </BorderGlow>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
-          <article className="admin-glass-card relative h-full overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
+          <BorderGlow className="h-full" animated>
+          <article className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/15 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-cyan-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-cyan-100">
                 <Users size={22} aria-hidden="true" />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-white/50">
@@ -156,10 +234,12 @@ function AdminDashboardPage() {
               Growing community
             </div>
           </article>
+          </BorderGlow>
 
-          <article className="admin-glass-card relative h-full overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
+          <BorderGlow className="h-full" animated>
+          <article className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/15 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-emerald-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-emerald-100">
                 <UserRound size={22} aria-hidden="true" />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-white/50">
@@ -174,10 +254,12 @@ function AdminDashboardPage() {
               Active network
             </div>
           </article>
+          </BorderGlow>
 
-          <article className="admin-glass-card relative h-full overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
+          <BorderGlow className="h-full" animated>
+          <article className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/15 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-amber-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-amber-100">
                 <Building2 size={22} aria-hidden="true" />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-white/50">
@@ -192,15 +274,17 @@ function AdminDashboardPage() {
               Service coverage
             </div>
           </article>
+          </BorderGlow>
         </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <BorderGlow className="h-full" animated>
           <Link
             to="/admin/users"
-            className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
+            className="group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 bg-white/15 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/25"
           >
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-cyan-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-cyan-100">
                 <Users size={22} aria-hidden="true" />
               </div>
               <ArrowUpRight size={21} className="text-white/50 transition group-hover:text-white" aria-hidden="true" />
@@ -209,13 +293,15 @@ function AdminDashboardPage() {
             <h2 className="mt-2 text-xl font-bold tracking-tight">Manage Users</h2>
             <p className="mt-3 text-sm leading-6 text-white/60">Review registered citizens and manage account access.</p>
           </Link>
+          </BorderGlow>
 
+          <BorderGlow className="h-full" animated>
           <Link
             to="/admin/agencies"
-            className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
+            className="group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 bg-white/15 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/25"
           >
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-emerald-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-emerald-100">
                 <Building2 size={22} aria-hidden="true" />
               </div>
               <ArrowUpRight size={21} className="text-white/50 transition group-hover:text-white" aria-hidden="true" />
@@ -224,12 +310,14 @@ function AdminDashboardPage() {
             <h2 className="mt-2 text-xl font-bold tracking-tight">Manage Agencies</h2>
             <p className="mt-3 text-sm leading-6 text-white/60">Organize agencies and manage their assigned members.</p>
           </Link>
+          </BorderGlow>
+          <BorderGlow className="h-full" animated>
           <Link
             to="/admin/complaints"
-            className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
+            className="group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 bg-white/15 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/25"
           >
             <div className="flex items-start justify-between">
-              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-amber-100">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/15 p-3 text-amber-100">
                 <ClipboardList size={22} aria-hidden="true" />
               </div>
               <ArrowUpRight size={21} className="text-white/50 transition group-hover:text-white" aria-hidden="true" />
@@ -240,10 +328,12 @@ function AdminDashboardPage() {
 
             <p className="mt-3 text-sm leading-6 text-white/60">Monitor complaints and their current statuses.</p>
           </Link>
+          </BorderGlow>
         </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-          <section className="admin-glass-card flex min-h-72 h-full flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl">
+          <BorderGlow className="h-full" animated>
+          <section className="flex min-h-72 h-full flex-col rounded-2xl border border-white/30 bg-white/15 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-cyan-100/60">
@@ -254,8 +344,8 @@ function AdminDashboardPage() {
               <Activity size={21} className="text-cyan-200/70" aria-hidden="true" />
             </div>
 
-            <div className="mt-6 space-y-3">
-              <div className="admin-glass-card live-feed-row new-citizen-card flex items-start gap-4 rounded-xl border border-white/10 px-3 py-4 first:pt-4">
+            <div className="mt-6 divide-y divide-white/10">
+              <div className="live-feed-row flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 px-3 py-4 first:pt-4">
                 <div className="mt-1 rounded-full bg-cyan-300/15 p-2 text-cyan-200">
                   <Users size={16} aria-hidden="true" />
                 </div>
@@ -266,7 +356,7 @@ function AdminDashboardPage() {
                 <span className="whitespace-nowrap text-xs text-white/40">12 min ago</span>
               </div>
 
-              <div className="admin-glass-card live-feed-row flex items-start gap-4 rounded-xl border border-white/10 px-3 py-4">
+              <div className="live-feed-row flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 px-3 py-4">
                 <div className="mt-1 rounded-full bg-amber-300/15 p-2 text-amber-200">
                   <ClipboardList size={16} aria-hidden="true" />
                 </div>
@@ -277,7 +367,7 @@ function AdminDashboardPage() {
                 <span className="whitespace-nowrap text-xs text-white/40">28 min ago</span>
               </div>
 
-              <div className="admin-glass-card live-feed-row flex items-start gap-4 rounded-xl border border-white/10 px-3 py-4 last:pb-4">
+              <div className="live-feed-row flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 px-3 py-4 last:pb-4">
                 <div className="mt-1 rounded-full bg-emerald-300/15 p-2 text-emerald-200">
                   <Check size={16} aria-hidden="true" />
                 </div>
@@ -289,8 +379,10 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </BorderGlow>
 
-          <section className="admin-glass-card admin-status-card flex h-full min-h-72 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
+          <BorderGlow className="h-full" animated>
+          <section className="flex h-full min-h-72 flex-col rounded-2xl border border-white/30 bg-white/15 p-6 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-100/60">
@@ -307,7 +399,7 @@ function AdminDashboardPage() {
             </div>
 
             <div className="mt-7 space-y-3">
-              <div className="admin-glass-card queue-status-row pending-request-card rounded-xl border border-white/10 px-4 py-3">
+              <div className="queue-status-row rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Pending</span>
                   <span className="rounded-full bg-amber-300/15 px-3 py-1 text-sm font-bold text-amber-200">18</span>
@@ -317,7 +409,7 @@ function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="admin-glass-card queue-status-row rounded-xl border border-white/10 px-4 py-3">
+              <div className="queue-status-row rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Under investigation</span>
                   <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-sm font-bold text-cyan-200">9</span>
@@ -327,7 +419,7 @@ function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="admin-glass-card queue-status-row rounded-xl border border-white/10 px-4 py-3">
+              <div className="queue-status-row rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Resolved</span>
                   <span className="rounded-full bg-emerald-300/15 px-3 py-1 text-sm font-bold text-emerald-200">10</span>
@@ -338,6 +430,7 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </BorderGlow>
         </div>
       </section>
     </main>

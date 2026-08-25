@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
 // Authentication pages
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -35,7 +36,8 @@ import AgencyMembersPage from "./pages/admin/AgencyMembersPage";
 
 function App() {
   return (
-    <Routes>
+    <Layout>
+      <Routes>
       <Route path="/" element={<HomePage />} />
       {/* Authentication */}
       <Route path="/register" element={<RegisterPage />} />
@@ -149,7 +151,8 @@ function App() {
       />
 
       
-    </Routes>
+      </Routes>
+    </Layout>
   );
 }
 
