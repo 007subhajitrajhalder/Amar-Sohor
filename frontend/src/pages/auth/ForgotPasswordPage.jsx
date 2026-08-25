@@ -1,40 +1,30 @@
 import { Link } from "react-router-dom";
+import AuthButton from "../../components/AuthButton";
+import AuthInput from "../../components/AuthInput";
+import AuthLayout from "../../components/AuthLayout";
 
 function ForgotPasswordPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-5">
-      <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Forgot Password
-        </h1>
+    <AuthLayout
+      eyebrow="Account recovery"
+      title="Reset your password"
+      description="Enter the email connected to your account and we will send you a secure reset link."
+    >
+        <form className="mt-8 grid gap-5">
+          <AuthInput id="email" label="Email address" type="email" placeholder="you@example.com" autoComplete="email" />
 
-        <p className="mt-2 text-slate-500">
-          Enter your registered email address.
-        </p>
-
-        <form className="mt-6 grid gap-4">
-          <input
-            type="email"
-            placeholder="Email address"
-            className="rounded-xl border p-3"
-          />
-
-          <button
-            type="submit"
-            className="rounded-xl bg-emerald-700 p-3 font-bold text-white"
-          >
+          <AuthButton>
             Send Reset Link
-          </button>
+          </AuthButton>
         </form>
 
         <Link
           to="/login"
-          className="mt-5 block text-center font-bold text-emerald-700"
+          className="mt-6 block text-center text-sm font-bold text-emerald-700 hover:text-emerald-900"
         >
-          Return to Login
+          Back to sign in
         </Link>
-      </section>
-    </main>
+    </AuthLayout>
   );
 }
 

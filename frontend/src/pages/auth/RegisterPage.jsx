@@ -1,64 +1,34 @@
 import { Link } from "react-router-dom";
+import AuthButton from "../../components/AuthButton";
+import AuthInput from "../../components/AuthInput";
+import AuthLayout from "../../components/AuthLayout";
 
 function RegisterPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-5">
-      <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Create Account
-        </h1>
+    <AuthLayout
+      eyebrow="Join the community"
+      title="Create your account"
+      description="Join residents making Amar Sohor more connected, responsive, and cared for."
+    >
+        <form className="mt-8 grid gap-5">
+          <AuthInput id="name" label="Full name" type="text" placeholder="Your full name" autoComplete="name" />
+          <AuthInput id="email" label="Email address" type="email" placeholder="you@example.com" autoComplete="email" />
+          <AuthInput id="phone" label="Phone number" type="tel" placeholder="Your phone number" autoComplete="tel" />
+          <AuthInput id="password" label="Password" type="password" placeholder="Create a password" autoComplete="new-password" />
+          <AuthInput id="confirm-password" label="Confirm password" type="password" placeholder="Repeat your password" autoComplete="new-password" />
 
-        <p className="mt-2 text-slate-500">
-          Register as a citizen.
-        </p>
-
-        <form className="mt-6 grid gap-4">
-          <input
-            type="text"
-            placeholder="Full name"
-            className="rounded-xl border p-3"
-          />
-
-          <input
-            type="email"
-            placeholder="Email address"
-            className="rounded-xl border p-3"
-          />
-
-          <input
-            type="tel"
-            placeholder="Phone number"
-            className="rounded-xl border p-3"
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            className="rounded-xl border p-3"
-          />
-
-          <input
-            type="password"
-            placeholder="Confirm password"
-            className="rounded-xl border p-3"
-          />
-
-          <button
-            type="submit"
-            className="rounded-xl bg-emerald-700 p-3 font-bold text-white"
-          >
+          <AuthButton>
             Register
-          </button>
+          </AuthButton>
         </form>
 
         <p className="mt-5 text-center text-sm text-slate-600">
-          Already registered?{" "}
-          <Link to="/login" className="font-bold text-emerald-700">
-            Login
+          Already have an account?{" "}
+          <Link to="/login" className="font-bold text-emerald-700 hover:text-emerald-900">
+            Sign in
           </Link>
         </p>
-      </section>
-    </main>
+    </AuthLayout>
   );
 }
 
