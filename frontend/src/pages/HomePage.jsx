@@ -8,7 +8,7 @@ import {
   Menu,
   X,
   Trash2,
-  Toilet,
+ DoorOpen,
   Car,
   Droplets,
   ArrowRight,
@@ -16,10 +16,8 @@ import {
   Mail,
 } from "lucide-react";
 
-const logo =
-  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=300&q=80";
-const kolkataBg =
-  "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=80";
+const logo = new URL("../assets/logo.png", import.meta.url).href;
+const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function HomePage() {
   const navigate = useNavigate();
@@ -62,7 +60,7 @@ function HomePage() {
     },
     {
       name: "Nearest Toilet",
-      icon: Toilet,
+      icon: DoorOpen,
     },
     {
       name: "Nearest Parking",
@@ -148,7 +146,7 @@ function HomePage() {
         }`}
       >
         <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between rounded-2xl border border-white/15 bg-black/35 px-5 py-3 shadow-2xl backdrop-blur-xl">
+         <div className="flex items-center justify-between px-2 py-3">
             <Link to="/" className="group flex shrink-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-lime-300/20 transition duration-300 group-hover:scale-105">
                 <img
@@ -185,12 +183,7 @@ function HomePage() {
             </nav>
 
             <div className="hidden items-center gap-3 md:flex">
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition duration-300 hover:bg-white/20"
-              >
-                <Search size={18} />
-              </button>
+              
 
               <Link
                 to="/login"
@@ -380,57 +373,96 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-3 md:grid-cols-4">
-              {facilities.map((facility) => {
-                const Icon = facility.icon;
-                const category = getCategoryQuery(facility.name);
+            <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 md:grid-cols-4">
+  {facilities.map((facility) => {
+    const Icon = facility.icon;
+    const category = getCategoryQuery(facility.name);
 
-                return (
-                  <Link
-                    key={facility.name}
-                    to={category ? `/map?category=${category}` : "/map"}
-                    className="group rounded-2xl border border-white/10 bg-black/25 p-4 text-left backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/30 hover:bg-white/10"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black">
-                        <Icon size={19} />
-                      </div>
+    return (
+      <Link
+        key={facility.name}
+        to={category ? `/map?category=${category}` : "/map"}
+        className="group flex aspect-square flex-col items-center justify-center rounded-3xl border border-white/10 bg-black/25 p-6 text-center backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:border-lime-300/30 hover:bg-white/10"
+      >
+        {/* Large Icon */}
+        <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black md:h-32 md:w-32">
+          <Icon
+            size={65}
+            strokeWidth={1.5}
+          />
+        </div>
 
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium md:text-sm">
-                          {facility.name.replace("Nearest ", "")}
-                        </p>
+        {/* Label */}
+        <p className="mt-6 text-base font-semibold text-white md:text-lg">
+          {facility.name.replace("Nearest ", "")}
+        </p>
 
-                        <p className="mt-1 text-[10px] text-white/35">Find nearby</p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+        <p className="mt-1 text-xs text-white/40">
+          Find nearby
+        </p>
+      </Link>
+    );
+  })}
+</div>
           </div>
         </section>
 
-        <section id="about" className="mx-auto max-w-7xl px-5 py-20 md:px-10">
-          <div className="rounded-3xl border border-white/10 bg-black/35 p-8 backdrop-blur-xl md:p-12">
-            <p className="text-xs font-bold tracking-[4px] text-lime-300">
-              <h3>About Amar Sohor</h3>
-              <p><strong>ABOUT OUR CITY</strong></p>
-            </p>
+        <section id="about" className="mx-auto max-w-7xl px-5 pt-8 pb-16 md:px-10 md:pt-10 md:pb-16">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
+            <div className="p-8 md:p-12">
+              <p className="text-xs font-bold tracking-[4px] text-lime-300">
+                ABOUT AMAR SOHOR
+              </p>
 
-            <h2 className="mt-3 font-serif text-3xl font-bold md:text-5xl">
-              A smarter way to connect citizens with their city.
-            </h2>
+              <h2 className="mt-4 max-w-xl font-serif text-3xl font-bold leading-tight md:text-5xl">
+                A smarter way to connect citizens with their city.
+              </h2>
 
-            <p className="mt-5 max-w-3xl text-sm leading-7 text-white/55 md:text-base">
-              Amar Sohor is a citizen-centric smart city platform designed to make essential public facilities easier to find, access, and maintain. From locating a nearby dustbin, public toilet, drinking water point, or parking area to reporting problems with those facilities, Amar Sohor brings everyday civic services together in one simple platform.
+              <div className="mt-6 space-y-5 text-left text-sm leading-7 text-white/60 md:text-base">
+                <p>
+                  Amar Sohor is a citizen-centric smart city platform designed to make essential public facilities easier to find, access, and maintain.
+                </p>
 
-              The platform connects citizens, government agencies, and civic services through a centralized system. Citizens can discover nearby facilities, view their details and location, share reviews, and report genuine issues with supporting evidence. Reported issues are routed to the responsible government agency, allowing them to investigate, take corrective action, and submit resolution details.
+                <p>
+                  From locating a nearby dustbin, public toilet, drinking water point, or parking area to reporting problems with those facilities, Amar Sohor brings everyday civic services together in one simple platform.
+                </p>
 
-              With location-based facility discovery, structured complaint management, evidence validation, and transparent report tracking, Amar Sohor aims to create a more responsive, accountable, and connected urban environment.
+                <p>
+                  The platform connects citizens, government agencies, and civic services through a centralized system. Citizens can discover nearby facilities, view their details and location, share reviews, and report genuine issues with supporting evidence.
+                </p>
 
-              Find it. Report it. Improve your city.
-            </p>
+                <p>
+                  Reported issues are routed to the responsible government agency, allowing them to investigate, take corrective action, and submit resolution details. With location-based facility discovery, structured complaint management, evidence validation, and transparent report tracking, Amar Sohor aims to create a more responsive, accountable, and connected urban environment.
+                </p>
+
+                <p className="pt-2 text-lime-200">
+                  Find it. Report it. Improve your city.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative min-h-[260px] border-t border-white/10 bg-black/20 md:border-l md:border-t-0">
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=900&q=80')",
+                }}
+              />
+
+              <div className="absolute inset-0 bg-gradient-to-br from-lime-300/10 via-transparent to-black/60" />
+
+              <div className="relative flex h-full items-end p-6 md:p-8">
+                <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-md">
+                  <p className="text-[10px] font-bold uppercase tracking-[3px] text-lime-300">
+                    Smart City
+                  </p>
+                  <p className="mt-2 max-w-xs text-lg font-semibold leading-snug text-white">
+                    Cleaner streets, smarter civic service, stronger communities.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -471,137 +503,334 @@ function HomePage() {
             </div>
           </div>
         </section>
-
-        <section id="report" className="mx-auto max-w-7xl px-5 py-20 md:px-10">
-          <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-lime-300/15 bg-lime-300/5 p-8 backdrop-blur-xl md:flex-row md:items-center md:p-10">
-            <div>
-              <p className="text-xs font-bold tracking-[4px] text-lime-300">
-                BE A PART OF THE CHANGE
-              </p>
-
-              <h2 className="mt-3 font-serif text-3xl font-bold">
-                See a civic problem?
-              </h2>
-
-              <p className="mt-2 text-sm text-white/50">
-                Report it and help make Amar Sohor better.
-              </p>
-            </div>
-
-            <button className="flex items-center gap-2 rounded-xl bg-lime-300 px-6 py-3 font-bold text-black transition hover:bg-lime-200">
-              Report an Issue
-              <ArrowRight size={18} />
-            </button>
-          </div>
-        </section>
       </main>
 
-      <footer className="border-t border-white/10 bg-black/40 px-5 py-12 backdrop-blur-xl md:px-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-10 md:grid-cols-3">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-lime-300/20">
-                  <img
-                    src={logo}
-                    alt="Amar Sohor Logo"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+   <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-14 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
+  <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
-                <div>
-                  <h3 className="text-xl font-bold">
-                    Amar <span className="text-lime-300">Sohor</span>
-                  </h3>
+    <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
 
-                  <p className="mt-1 text-xs text-white/40">
-                    My City. My Responsibility.
-                  </p>
-                </div>
-              </div>
+    <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
 
-              <p className="mt-5 max-w-sm text-sm leading-6 text-white/45">
-                A smarter way to discover public facilities, report civic problems and connect citizens with the responsible government agencies.
-              </p>
-            </div>
+    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
 
-            <div>
-              <h4 className="text-sm font-bold uppercase tracking-[2px] text-lime-300">
-                Quick Links
-              </h4>
+  </div>
 
-              <div className="mt-5 flex flex-col gap-3">
-                <a href="#about" className="w-fit text-sm text-white/55 transition hover:text-lime-300">
-                  About Us
-                </a>
 
-                <a href="#how-it-works" className="w-fit text-sm text-white/55 transition hover:text-lime-300">
-                  How It Works
-                </a>
+  <div className="relative mx-auto max-w-7xl">
 
-                <a href="#report" className="w-fit text-sm text-white/55 transition hover:text-lime-300">
-                  Report an Issue
-                </a>
 
-                <Link to="/" className="w-fit text-sm text-white/55 transition hover:text-lime-300">
-                  Home
-                </Link>
-              </div>
-            </div>
+    {/* ================= MAIN FOOTER ================= */}
 
-            <div>
-              <h4 className="text-sm font-bold uppercase tracking-[2px] text-lime-300">
-                Contact Us
-              </h4>
+    <div className="grid gap-12 md:grid-cols-4">
 
-              <div className="mt-5 flex flex-col gap-4">
-                <a href="tel:+919876543210" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300 transition group-hover:bg-lime-300 group-hover:text-black">
-                    <Phone size={18} />
-                  </div>
 
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/35">Phone</p>
-                    <p className="mt-0.5 text-sm text-white/70 transition group-hover:text-lime-300">
-                      +91 98765 43210
-                    </p>
-                  </div>
-                </a>
+      {/* ================= BRAND ================= */}
 
-                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300 transition group-hover:bg-lime-300 group-hover:text-black">
-                    <Mail size={18} />
-                  </div>
+      <div className="md:col-span-1">
 
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/35">Email</p>
-                    <p className="mt-0.5 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amersohor@gmail.com
-                    </p>
-                  </div>
-                </a>
+        <Link
+          to="/"
+          className="group inline-flex items-center gap-3"
+        >
 
-                <div className="flex items-center gap-3 pt-1">
-                  <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition duration-300 hover:-translate-y-1 hover:border-lime-300/30 hover:bg-lime-300 hover:text-black">
-                    <span className="text-lg font-bold">f</span>
-                  </a>
-
-                  <a href="mailto:amersohor@gmail.com" aria-label="Email" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition duration-300 hover:-translate-y-1 hover:border-lime-300/30 hover:bg-lime-300 hover:text-black">
-                    <Mail size={18} />
-                  </a>
-                </div>
-              </div>
-            </div>
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
+            <img
+              src={logo}
+              alt="Amar Sohor Logo"
+              className="h-full w-full object-cover"
+            />
           </div>
 
-          <div className="my-10 h-px bg-white/10" />
 
-          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/35">© 2026 Amar Sohor. All rights reserved.</p>
-            <p className="text-xs text-white/30">Built for a smarter, cleaner and more connected city.</p>
+          <div>
+
+            <h3 className="text-xl font-bold tracking-wide text-white">
+              Amar <span className="text-lime-300">Sohor</span>
+            </h3>
+
+            <p className="mt-1 text-[11px] tracking-wide text-white/40">
+              My City. My Responsibility.
+            </p>
+
           </div>
+
+        </Link>
+
+
+        <p className="mt-6 max-w-sm text-sm leading-7 text-white/50">
+          A citizen-centric smart city platform designed to help
+          people discover public facilities and stay connected
+          with their city.
+        </p>
+
+
+        <div className="mt-6 flex items-center gap-2">
+
+          <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+
+          <span className="h-px w-12 bg-lime-300/40" />
+
+          <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
+            Smart City Platform
+          </span>
+
         </div>
-      </footer>
+
+      </div>
+
+
+
+      {/* ================= QUICK LINKS ================= */}
+
+      <div>
+
+        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+          Quick Links
+        </h4>
+
+
+        <div className="mt-6 flex flex-col gap-4">
+
+
+          <a
+  href="/"
+  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+>
+  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+  Home
+</a>
+
+
+          <a
+            href="/#about"
+            className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+          >
+
+            <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+
+            About Us
+
+          </a>
+
+
+          <a
+            href="/#how-it-works"
+            className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+          >
+
+            <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+
+            How It Works
+
+          </a>
+
+
+        </div>
+
+      </div>
+
+
+
+      {/* ================= CONTACT ================= */}
+
+      <div>
+
+        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+          Contact Us
+        </h4>
+
+
+        <div className="mt-6 flex flex-col gap-5">
+
+
+          {/* EMAIL */}
+
+          <a
+            href="mailto:amersohor@gmail.com"
+            className="group flex items-center gap-3"
+          >
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+
+              <Mail size={17} />
+
+            </div>
+
+
+            <div>
+
+              <p className="text-[10px] uppercase tracking-wider text-white/30">
+                Email
+              </p>
+
+              <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                amersohor@gmail.com
+              </p>
+
+            </div>
+
+          </a>
+
+
+
+          {/* PHONE */}
+
+          <a
+            href="tel:+919876543210"
+            className="group flex items-center gap-3"
+          >
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+
+              <Phone size={17} />
+
+            </div>
+
+
+            <div>
+
+              <p className="text-[10px] uppercase tracking-wider text-white/30">
+                Phone
+              </p>
+
+              <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                +91 98765 43210
+              </p>
+
+            </div>
+
+          </a>
+
+
+        </div>
+
+      </div>
+
+
+
+      {/* ================= SOCIAL ================= */}
+
+      <div>
+
+        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+          Follow Us
+        </h4>
+
+
+        <p className="mt-6 max-w-xs text-sm leading-6 text-white/45">
+          Stay connected with Amar Sohor and follow our latest
+          updates across social platforms.
+        </p>
+
+
+        <div className="mt-5 flex flex-wrap gap-3">
+
+
+          {/* FACEBOOK */}
+
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Facebook"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+          >
+
+            <span className="text-lg font-bold">
+              f
+            </span>
+
+          </a>
+
+
+
+          {/* INSTAGRAM */}
+
+          <a
+            href="https://instagram.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Instagram"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+          >
+
+            <span className="text-lg font-bold">
+              ◎
+            </span>
+
+          </a>
+
+
+
+          {/* YOUTUBE */}
+
+          <a
+            href="https://youtube.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="YouTube"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+          >
+
+            <span className="text-xs font-bold">
+              ▶
+            </span>
+
+          </a>
+
+
+
+          {/* X / TWITTER */}
+
+          <a
+            href="https://x.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="X / Twitter"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+          >
+
+            <span className="text-sm font-bold">
+              𝕏
+            </span>
+
+          </a>
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    {/* ================= DIVIDER ================= */}
+
+    <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+
+
+    {/* ================= BOTTOM FOOTER ================= */}
+
+    <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
+
+      <p className="text-xs text-white/35">
+        © 2026 Amar Sohor. All rights reserved.
+      </p>
+
+
+      <p className="text-xs text-white/35">
+        Making cities smarter, cleaner and more connected.
+      </p>
+
+    </div>
+
+
+  </div>
+
+</footer>
     </div>
   );
 }
