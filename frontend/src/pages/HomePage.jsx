@@ -8,16 +8,34 @@ import {
   Menu,
   X,
   Trash2,
- DoorOpen,
+  DoorOpen,
   Car,
   Droplets,
-  ArrowRight,
-  Phone,
   Mail,
+  Phone,
 } from "lucide-react";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
+
+const ABOUT_SLIDES = [
+  {
+    url: "https://5.imimg.com/data5/SELLER/Default/2025/2/486095262/LF/DS/JX/5315025/public-litter-bins.jpeg",
+    label: "Dustbins",
+  },
+  {
+    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfsuwzx9U20OJuaKZltIF1F_ozwHOKTnwb_w2rth42a50PjH53siPP70Y&s=10",
+    label: "Water Dispensers",
+  },
+  {
+    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0jNlEfRWHdLN7SKkh0mVNP1f1ALiCHGg2fC-YMwKtPVO9gYq62JKVi8nZ&s=10",
+    label: "Public Restrooms",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80",
+    label: "Parking Spaces",
+  },
+];
 
 function HomePage() {
   const navigate = useNavigate();
@@ -26,12 +44,17 @@ function HomePage() {
   const [location, setLocation] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+
+      // Update state for opacity when scrolled past 20px
+      setIsScrolled(currentScrollY > 20);
 
       if (currentScrollY <= 20) {
         setShowHeader(true);
@@ -51,6 +74,13 @@ function HomePage() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % ABOUT_SLIDES.length);
+    }, 4000);
+    return () => clearInterval(timer);
   }, []);
 
   const facilities = [
@@ -141,12 +171,16 @@ function HomePage() {
       <div className="fixed inset-0 z-20 bg-gradient-to-b from-black/40 via-black/20 to-black/75" />
 
       <header
-        className={`fixed left-0 right-0 top-0 z-[100] px-4 py-4 transition-transform duration-300 ease-in-out md:px-8 ${
+        className={`fixed left-0 right-0 top-0 z-[100] px-4 py-4 transition-all duration-300 ease-in-out md:px-8 ${
           showHeader ? "translate-y-0" : "-translate-y-full"
+        } ${
+          isScrolled
+            ? "bg-slate-950/90 shadow-2xl backdrop-blur-md border-b border-white/10"
+            : "bg-transparent"
         }`}
       >
         <div className="mx-auto max-w-7xl">
-         <div className="flex items-center justify-between px-2 py-3">
+          <div className="flex items-center justify-between px-2 py-3">
             <Link to="/" className="group flex shrink-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-lime-300/20 transition duration-300 group-hover:scale-105">
                 <img
@@ -176,15 +210,9 @@ function HomePage() {
               <a href="#how-it-works" className="text-sm text-white/70 transition duration-300 hover:text-white">
                 How It Works
               </a>
-
-              <a href="#report" className="text-sm text-white/70 transition duration-300 hover:text-white">
-                Report an Issue
-              </a>
             </nav>
 
             <div className="hidden items-center gap-3 md:flex">
-              
-
               <Link
                 to="/login"
                 className="rounded-xl border border-white/25 px-5 py-2.5 text-sm font-medium transition duration-300 hover:bg-white/10"
@@ -222,10 +250,6 @@ function HomePage() {
 
                 <a href="#how-it-works" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-white/70 hover:bg-white/10">
                   How It Works
-                </a>
-
-                <a href="#report" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-white/70 hover:bg-white/10">
-                  Report an Issue
                 </a>
               </div>
 
@@ -374,91 +398,97 @@ function HomePage() {
             </div>
 
             <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 md:grid-cols-4">
-  {facilities.map((facility) => {
-    const Icon = facility.icon;
-    const category = getCategoryQuery(facility.name);
+              {facilities.map((facility) => {
+                const Icon = facility.icon;
+                const category = getCategoryQuery(facility.name);
 
-    return (
-      <Link
-        key={facility.name}
-        to={category ? `/map?category=${category}` : "/map"}
-        className="group flex aspect-square flex-col items-center justify-center rounded-3xl border border-white/10 bg-black/25 p-6 text-center backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:border-lime-300/30 hover:bg-white/10"
-      >
-        {/* Large Icon */}
-        <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black md:h-32 md:w-32">
-          <Icon
-            size={65}
-            strokeWidth={1.5}
-          />
-        </div>
+                return (
+                  <Link
+                    key={facility.name}
+                    to={category ? `/map?category=${category}` : "/map"}
+                    className="group flex aspect-square flex-col items-center justify-center rounded-3xl border border-white/10 bg-black/25 p-6 text-center backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:border-lime-300/30 hover:bg-white/10"
+                  >
+                    <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black md:h-32 md:w-32">
+                      <Icon size={65} strokeWidth={1.5} />
+                    </div>
 
-        {/* Label */}
-        <p className="mt-6 text-base font-semibold text-white md:text-lg">
-          {facility.name.replace("Nearest ", "")}
-        </p>
+                    <p className="mt-6 text-base font-semibold text-white md:text-lg">
+                      {facility.name.replace("Nearest ", "")}
+                    </p>
 
-        <p className="mt-1 text-xs text-white/40">
-          Find nearby
-        </p>
-      </Link>
-    );
-  })}
-</div>
+                    <p className="mt-1 text-xs text-white/40">
+                      Find nearby
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </section>
 
-        <section id="about" className="mx-auto max-w-7xl px-5 pt-8 pb-16 md:px-10 md:pt-10 md:pb-16">
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-8 md:p-12">
-              <p className="text-xs font-bold tracking-[4px] text-lime-300">
+        {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
+        <section id="about" className="mx-auto max-w-6xl px-4 py-8 md:px-8">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
+            {/* Left Column: Compact Content */}
+            <div className="p-6 md:p-8">
+              <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
                 ABOUT AMAR SOHOR
               </p>
 
-              <h2 className="mt-4 max-w-xl font-serif text-3xl font-bold leading-tight md:text-5xl">
+              <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-white md:text-3xl">
                 A smarter way to connect citizens with their city.
               </h2>
 
-              <div className="mt-6 space-y-5 text-left text-sm leading-7 text-white/60 md:text-base">
+              <div className="mt-4 space-y-3 text-xs leading-6 text-white/70 md:text-sm">
                 <p>
-                  Amar Sohor is a citizen-centric smart city platform designed to make essential public facilities easier to find, access, and maintain.
+                  Amar Sohor is a citizen-centric platform making essential public facilities easier to find, access, and maintain.
                 </p>
-
                 <p>
-                  From locating a nearby dustbin, public toilet, drinking water point, or parking area to reporting problems with those facilities, Amar Sohor brings everyday civic services together in one simple platform.
+                  Easily locate dustbins, public toilets, drinking water points, or parking spaces. Citizens can report facility issues directly to government agencies with supporting evidence for rapid resolution.
                 </p>
-
-                <p>
-                  The platform connects citizens, government agencies, and civic services through a centralized system. Citizens can discover nearby facilities, view their details and location, share reviews, and report genuine issues with supporting evidence.
-                </p>
-
-                <p>
-                  Reported issues are routed to the responsible government agency, allowing them to investigate, take corrective action, and submit resolution details. With location-based facility discovery, structured complaint management, evidence validation, and transparent report tracking, Amar Sohor aims to create a more responsive, accountable, and connected urban environment.
-                </p>
-
-                <p className="pt-2 text-lime-200">
+                <p className="font-medium text-lime-200">
                   Find it. Report it. Improve your city.
                 </p>
               </div>
             </div>
 
-            <div className="relative min-h-[260px] border-t border-white/10 bg-black/20 md:border-l md:border-t-0">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=900&q=80')",
-                }}
-              />
+            {/* Right Column: Dynamic Slideshow */}
+            <div className="relative min-h-[220px] border-t border-white/10 bg-black/20 md:border-l md:border-t-0">
+              {ABOUT_SLIDES.map((slide, index) => (
+                <div
+                  key={slide.url}
+                  className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                    index === currentSlide ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{
+                      backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.6)), url('${slide.url}')`,
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-lime-300/10 via-transparent to-black/60" />
+                </div>
+              ))}
 
-              <div className="absolute inset-0 bg-gradient-to-br from-lime-300/10 via-transparent to-black/60" />
+              <div className="relative flex h-full flex-col justify-between p-5 md:p-6">
+                <div className="flex gap-1.5 self-end">
+                  {ABOUT_SLIDES.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setCurrentSlide(index)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        index === currentSlide ? "w-6 bg-lime-300" : "w-1.5 bg-white/40"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
 
-              <div className="relative flex h-full items-end p-6 md:p-8">
-                <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-md">
-                  <p className="text-[10px] font-bold uppercase tracking-[3px] text-lime-300">
-                    Smart City
-                  </p>
-                  <p className="mt-2 max-w-xs text-lg font-semibold leading-snug text-white">
-                    Cleaner streets, smarter civic service, stronger communities.
+                <div className="rounded-xl border border-white/15 bg-black/40 p-3.5 backdrop-blur-md">
+                  <p className="text-[10px] font-bold uppercase tracking-[2px] text-lime-300">
+                    {ABOUT_SLIDES[currentSlide].label}
                   </p>
                 </div>
               </div>
@@ -482,8 +512,7 @@ function HomePage() {
               <span className="text-sm font-bold text-lime-300">01</span>
               <h3 className="mt-4 text-xl font-bold">Select Facility</h3>
               <p className="mt-2 text-sm leading-6 text-white/45">
-              Choose your suitable facilities like dustbin, toilet, parking area or drinking water point.
-      
+                Choose your suitable facilities like dustbin, toilet, parking area or drinking water point.
               </p>
             </div>
 
@@ -506,332 +535,178 @@ function HomePage() {
         </section>
       </main>
 
-   <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-14 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
-  <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-14 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
+          <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+        </div>
 
-    <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid gap-12 md:grid-cols-4">
+            <div className="md:col-span-1">
+              <Link to="/" className="group inline-flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
+                  <img
+                    src={logo}
+                    alt="Amar Sohor Logo"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
 
-    <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
+                <div>
+                  <h3 className="text-xl font-bold tracking-wide text-white">
+                    Amar <span className="text-lime-300">Sohor</span>
+                  </h3>
+                  <p className="mt-1 text-[11px] tracking-wide text-white/40">
+                    My City. My Responsibility.
+                  </p>
+                </div>
+              </Link>
 
-    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+              <p className="mt-6 max-w-sm text-sm leading-7 text-white/50">
+                A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
+              </p>
 
-  </div>
+              <div className="mt-6 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                <span className="h-px w-12 bg-lime-300/40" />
+                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
+                  Smart City Platform
+                </span>
+              </div>
+            </div>
 
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+                Quick Links
+              </h4>
 
-  <div className="relative mx-auto max-w-7xl">
+              <div className="mt-6 flex flex-col gap-4">
+                <a
+                  href="/"
+                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+                >
+                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+                  Home
+                </a>
 
+                <a
+                  href="/#about"
+                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+                >
+                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+                  About Us
+                </a>
 
-    {/* ================= MAIN FOOTER ================= */}
+                <a
+                  href="/#how-it-works"
+                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+                >
+                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+                  How It Works
+                </a>
+              </div>
+            </div>
 
-    <div className="grid gap-12 md:grid-cols-4">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+                Contact Us
+              </h4>
 
+              <div className="mt-6 flex flex-col gap-5">
+                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Mail size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      amersohor@gmail.com
+                    </p>
+                  </div>
+                </a>
 
-      {/* ================= BRAND ================= */}
+                <a href="tel:+919876543210" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Phone size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      +91 98765 43210
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
 
-      <div className="md:col-span-1">
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+                Follow Us
+              </h4>
 
-        <Link
-          to="/"
-          className="group inline-flex items-center gap-3"
-        >
+              <p className="mt-6 max-w-xs text-sm leading-6 text-white/45">
+                Stay connected with Amar Sohor and follow our latest updates across social platforms.
+              </p>
 
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
-            <img
-              src={logo}
-              alt="Amar Sohor Logo"
-              className="h-full w-full object-cover"
-            />
+              <div className="mt-5 flex flex-wrap gap-3">
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">f</span>
+                </a>
+
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">◎</span>
+                </a>
+
+                <a
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="YouTube"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-xs font-bold">▶</span>
+                </a>
+
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="X / Twitter"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-sm font-bold">𝕏</span>
+                </a>
+              </div>
+            </div>
           </div>
 
+          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          <div>
-
-            <h3 className="text-xl font-bold tracking-wide text-white">
-              Amar <span className="text-lime-300">Sohor</span>
-            </h3>
-
-            <p className="mt-1 text-[11px] tracking-wide text-white/40">
-              My City. My Responsibility.
+          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
+            <p className="text-xs text-white/35">
+              © 2026 Amar Sohor. All rights reserved.
             </p>
 
+            <p className="text-xs text-white/35">
+              Making cities smarter, cleaner and more connected.
+            </p>
           </div>
-
-        </Link>
-
-
-        <p className="mt-6 max-w-sm text-sm leading-7 text-white/50">
-          A citizen-centric smart city platform designed to help
-          people discover public facilities and stay connected
-          with their city.
-        </p>
-
-
-        <div className="mt-6 flex items-center gap-2">
-
-          <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-
-          <span className="h-px w-12 bg-lime-300/40" />
-
-          <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
-            Smart City Platform
-          </span>
-
         </div>
-
-      </div>
-
-
-
-      {/* ================= QUICK LINKS ================= */}
-
-      <div>
-
-        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-          Quick Links
-        </h4>
-
-
-        <div className="mt-6 flex flex-col gap-4">
-
-
-          <a
-  href="/"
-  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
->
-  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-  Home
-</a>
-
-
-          <a
-            href="/#about"
-            className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-          >
-
-            <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-
-            About Us
-
-          </a>
-
-
-          <a
-            href="/#how-it-works"
-            className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-          >
-
-            <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-
-            How It Works
-
-          </a>
-
-
-        </div>
-
-      </div>
-
-
-
-      {/* ================= CONTACT ================= */}
-
-      <div>
-
-        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-          Contact Us
-        </h4>
-
-
-        <div className="mt-6 flex flex-col gap-5">
-
-
-          {/* EMAIL */}
-
-          <a
-            href="mailto:amersohor@gmail.com"
-            className="group flex items-center gap-3"
-          >
-
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-
-              <Mail size={17} />
-
-            </div>
-
-
-            <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-white/30">
-                Email
-              </p>
-
-              <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                amersohor@gmail.com
-              </p>
-
-            </div>
-
-          </a>
-
-
-
-          {/* PHONE */}
-
-          <a
-            href="tel:+919876543210"
-            className="group flex items-center gap-3"
-          >
-
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-
-              <Phone size={17} />
-
-            </div>
-
-
-            <div>
-
-              <p className="text-[10px] uppercase tracking-wider text-white/30">
-                Phone
-              </p>
-
-              <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                +91 98765 43210
-              </p>
-
-            </div>
-
-          </a>
-
-
-        </div>
-
-      </div>
-
-
-
-      {/* ================= SOCIAL ================= */}
-
-      <div>
-
-        <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-          Follow Us
-        </h4>
-
-
-        <p className="mt-6 max-w-xs text-sm leading-6 text-white/45">
-          Stay connected with Amar Sohor and follow our latest
-          updates across social platforms.
-        </p>
-
-
-        <div className="mt-5 flex flex-wrap gap-3">
-
-
-          {/* FACEBOOK */}
-
-          <a
-            href="https://facebook.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Facebook"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-          >
-
-            <span className="text-lg font-bold">
-              f
-            </span>
-
-          </a>
-
-
-
-          {/* INSTAGRAM */}
-
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Instagram"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-          >
-
-            <span className="text-lg font-bold">
-              ◎
-            </span>
-
-          </a>
-
-
-
-          {/* YOUTUBE */}
-
-          <a
-            href="https://youtube.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="YouTube"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-          >
-
-            <span className="text-xs font-bold">
-              ▶
-            </span>
-
-          </a>
-
-
-
-          {/* X / TWITTER */}
-
-          <a
-            href="https://x.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="X / Twitter"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-          >
-
-            <span className="text-sm font-bold">
-              𝕏
-            </span>
-
-          </a>
-
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-
-    {/* ================= DIVIDER ================= */}
-
-    <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-
-
-    {/* ================= BOTTOM FOOTER ================= */}
-
-    <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-
-      <p className="text-xs text-white/35">
-        © 2026 Amar Sohor. All rights reserved.
-      </p>
-
-
-      <p className="text-xs text-white/35">
-        Making cities smarter, cleaner and more connected.
-      </p>
-
-    </div>
-
-
-  </div>
-
-</footer>
+      </footer>
     </div>
   );
 }
