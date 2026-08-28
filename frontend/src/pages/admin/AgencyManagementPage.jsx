@@ -1,6 +1,7 @@
 import { Activity, ArrowLeft, ArrowUpDown, ArrowUpRight, Building2, CarFront, Droplets, Moon, Search, Sun, Toilet, Trash2, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import AdminBrandLockup from "./AdminBrandLockup";
 import { useAdminTheme } from "./useAdminTheme";
 
 function AgencyManagementPage() {
@@ -55,7 +56,6 @@ function AgencyManagementPage() {
   return (
     <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
       <div
-        className="pointer-events-none absolute inset-0 blur-[125px] md:blur-[180px]"
         style={{
           background: "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
           mixBlendMode: "screen",
@@ -102,7 +102,7 @@ function AgencyManagementPage() {
 
           <div className="mt-8 flex flex-col justify-between gap-6 border-b border-white/15 pb-8 md:flex-row md:items-end">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200/70">Admin Portal</p>
+              <AdminBrandLockup />
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Agency Management</h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/60">Coordinate city service agencies and manage their registered members.</p>
             </div>
