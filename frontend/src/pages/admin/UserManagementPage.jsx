@@ -259,7 +259,7 @@ function UserManagementPage() {
                   type="button"
                   aria-label={`Remove ${user.name}`}
                   onClick={() => removeUser(user)}
-                  className="admin-danger-action inline-flex items-center justify-center gap-2 rounded-xl border border-red-300/30 bg-red-500/15 px-4 py-2.5 text-sm font-bold text-red-100 transition hover:border-red-200/60 hover:bg-red-500/30"
+                  className="admin-danger-action inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-500 px-4 py-2.5 text-sm font-bold text-red-100 transition hover:border-red-200/60 hover:bg-red-500/30"
                 >
                   <UserMinus size={16} aria-hidden="true" />
                   Remove
