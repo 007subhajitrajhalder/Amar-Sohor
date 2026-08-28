@@ -12,13 +12,12 @@ import {
   ExternalLink,
   Mail,
   MapPin,
-  Moon,
   Phone,
   Save,
-  Sun
 } from "lucide-react";
 
 import { useAdminTheme } from "./useAdminTheme";
+import AdminHeader from "./AdminHeader";
 
 const complaintOverrides = {
   "101": {
@@ -261,33 +260,17 @@ function AdminComplaintDetailsPage() {
         isLightMode ? "admin-light-mode" : ""
       }`}
     >
+      <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
       <section className="relative z-[1] mx-auto max-w-6xl text-white">
         <div className="flex items-center justify-between gap-4">
           <Link
               to="/admin/complaints"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+              className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
             >
               <ArrowLeft size={16} aria-hidden="true" />
               Back to all complaints
           </Link>
 
-        
-          <button
-            type="button"
-            onClick={() => setIsLightMode((mode) => !mode)}
-            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-            className="admin-theme-toggle relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border border-white/30 bg-white/10 px-1.5 text-white shadow-lg backdrop-blur-xl transition focus:outline-none focus:ring-2 focus:ring-cyan-300"
-          >
-            <Sun size={13} aria-hidden="true" />
-            <Moon size={13} aria-hidden="true" />
-            <span
-              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-500 ${
-                isLightMode
-                  ? "translate-x-6 bg-amber-300"
-                  : "bg-cyan-200"
-              }`}
-            />
-          </button>
         </div>
 
         <div

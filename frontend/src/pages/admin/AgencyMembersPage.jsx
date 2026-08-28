@@ -1,6 +1,7 @@
-import { ArrowLeft, ArrowUpDown, Mail, Moon, Phone, Search, ShieldAlert, ShieldCheck, Sun, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Mail, Phone, Search, ShieldAlert, ShieldCheck, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useState } from "react";
 
+import AdminHeader from "./AdminHeader";
 import { useAdminTheme } from "./useAdminTheme";
 
 import {
@@ -297,7 +298,7 @@ function AgencyMembersPage() {
   }
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+    <main className={`admin-agency-members-page relative min-h-screen bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
       {auraLayers.map((layer, index) => (
         <div
           key={`dark-${index}`}
@@ -327,7 +328,8 @@ function AgencyMembersPage() {
           }}
         />
       ))}
-      <section className="admin-dashboard-welcome relative z-[1] mx-auto w-full max-w-6xl">
+      <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <section className="admin-agency-members-content admin-dashboard-welcome relative z-[1] mx-auto w-full max-w-6xl">
         {/* Back button */}
         <div className="admin-dashboard-reveal flex items-center justify-between gap-4" style={{ "--dashboard-delay": "80ms" }}>
         <button
@@ -335,21 +337,9 @@ function AgencyMembersPage() {
           onClick={() =>
             navigate("/admin/agencies")
           }
-          className="inline-flex items-center gap-2 font-bold text-cyan-200 transition hover:text-white"
+          className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Back to Agency Management
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsLightMode((currentMode) => !currentMode)}
-          aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-          className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
-        >
-          <Sun size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-0 scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
-          <Moon size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-90 scale-75 opacity-50" : "rotate-0 scale-110 opacity-100"}`} aria-hidden="true" />
-          <span className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ease-in-out ${isLightMode ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60" : "translate-x-0 bg-cyan-200 shadow-lg shadow-cyan-200/50"}`}>
-            <span className="absolute inset-0 rounded-full bg-white/30 transition-opacity duration-700 group-hover:opacity-80" />
-          </span>
         </button>
         </div>
 
@@ -517,7 +507,7 @@ function AgencyMembersPage() {
                 onClick={() =>
                   handleDeleteClick(member)
                 }
-                className="admin-danger-action inline-flex items-center justify-center gap-2 rounded-xl border border-red-300/30 bg-red-500/15 px-5 py-3 font-bold text-red-100 transition hover:border-red-200/60 hover:bg-red-500/30"
+                className="admin-danger-action inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white transition"
               >
                 <UserMinus size={16} aria-hidden="true" />
                 Delete Member
@@ -544,9 +534,9 @@ function AgencyMembersPage() {
 
       {/* Delete confirmation popup */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-5 backdrop-blur-sm">
-          <section className="admin-glass-card w-full max-w-md rounded-2xl border border-white/25 p-7 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="delete-member-title">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-red-200">
+        <div className="admin-removal-overlay fixed inset-0 z-[100] flex min-h-screen items-center justify-center px-5" role="presentation">
+          <section className="admin-removal-dialog admin-glass-card w-full max-w-md rounded-2xl border border-white/25 p-7 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="delete-member-title">
+            <div className="admin-removal-icon flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-red-200">
               <ShieldAlert size={24} aria-hidden="true" />
             </div>
 
@@ -575,7 +565,7 @@ function AgencyMembersPage() {
               <button
                 type="button"
                 onClick={handleCancelDelete}
-                className="rounded-xl border border-white/20 px-5 py-3 font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+                className="admin-removal-cancel rounded-xl border border-white/20 px-5 py-3 font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
               >
                 Cancel
               </button>

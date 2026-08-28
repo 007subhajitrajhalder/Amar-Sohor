@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, Moon, Sun, UserPlus } from "lucide-react";
+import { ArrowLeft, Building2, ChevronDown, UserPlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import AdminHeader from "./AdminHeader";
 import { useAdminTheme } from "./useAdminTheme";
 
 const agencies = [
@@ -18,25 +19,6 @@ const emptyForm = {
   agencyId: "",
   role: "AGENT"
 };
-
-function ThemeToggle({ isLightMode, setIsLightMode }) {
-  return (
-    <button
-      type="button"
-      onClick={() => setIsLightMode((mode) => !mode)}
-      aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-      className="admin-theme-toggle relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border border-white/30 bg-white/10 px-1.5 text-white shadow-lg backdrop-blur-xl transition focus:outline-none focus:ring-2 focus:ring-cyan-300"
-    >
-      <Sun size={13} aria-hidden="true" />
-      <Moon size={13} aria-hidden="true" />
-      <span
-        className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-500 ${
-          isLightMode ? "translate-x-6 bg-amber-300" : "bg-cyan-200"
-        }`}
-      />
-    </button>
-  );
-}
 
 function AddAgencyMemberPage() {
   const navigate = useNavigate();
@@ -84,19 +66,16 @@ function AddAgencyMemberPage() {
         isLightMode ? "admin-light-mode" : ""
       }`}
     >
+      <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
       <section className="relative z-[1] mx-auto max-w-3xl">
         <div className="flex items-center justify-between gap-4">
           <Link
             to="/admin/agencies"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+            className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Back to Agency Management
           </Link>
-          <ThemeToggle
-            isLightMode={isLightMode}
-            setIsLightMode={setIsLightMode}
-          />
         </div>
         <div className="admin-glass-card mt-7 rounded-2xl border border-white/20 p-8 text-white shadow-xl backdrop-blur-xl">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-200/30 bg-cyan-300/15 text-cyan-100">
@@ -182,24 +161,36 @@ function AddAgencyMemberPage() {
               <span className="admin-field-label font-bold text-white">
                 Government Agency
               </span>
-              <select
-                name="agencyId"
-                value={formData.agencyId}
-                onChange={handleChange}
-                className={fieldClass}
-              >
-                <option value="">Select an agency</option>
-                {agencies.map((agency) => (
-                  <option key={agency.id} value={agency.id}>
-                    {agency.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative mt-2">
+                <Building2
+                  size={17}
+                  className={`pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 ${isLightMode ? "text-teal-700" : "text-cyan-200/70"}`}
+                  aria-hidden="true"
+                />
+                <select
+                  name="agencyId"
+                  value={formData.agencyId}
+                  onChange={handleChange}
+                  className="admin-agency-select w-full appearance-none rounded-xl border border-white/20 bg-white/10 p-3 pl-10 pr-10 text-white outline-none placeholder:text-white/45 focus:border-cyan-200/70 focus:ring-2 focus:ring-cyan-300/20"
+                >
+                  <option value="">Select an agency</option>
+                  {agencies.map((agency) => (
+                    <option key={agency.id} value={agency.id}>
+                      {agency.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={17}
+                  className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${isLightMode ? "text-slate-500" : "text-white/50"}`}
+                  aria-hidden="true"
+                />
+              </div>
             </label>
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               <button
                 type="submit"
-                className="rounded-xl bg-cyan-700 px-5 py-3 font-bold text-white shadow-lg transition hover:bg-cyan-600"
+                className={`admin-primary-action inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-white shadow-lg transition focus:outline-none focus:ring-2 focus:ring-cyan-300/60 ${isLightMode ? "bg-teal-700 hover:bg-teal-600" : "bg-cyan-700 hover:bg-cyan-600"}`}
               >
                 <UserPlus size={17} aria-hidden="true" />
                 Add Agency Member

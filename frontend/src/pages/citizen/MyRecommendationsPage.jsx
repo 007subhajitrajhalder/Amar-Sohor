@@ -292,14 +292,14 @@ function MyRecommendationsPage() {
                 return (
                   <article
                     key={item.id}
-                    className="group flex flex-col justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.045] p-6 shadow-xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/30 hover:bg-white/[0.06] md:flex-row md:items-center"
+                    className="group grid gap-5 rounded-2xl border border-white/10 bg-white/[0.045] p-6 shadow-xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/30 hover:bg-white/[0.06] md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex min-w-0 items-start gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-lime-300">
                         <Icon size={22} />
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-bold tracking-wider text-lime-300">
                             {item.id}
@@ -315,14 +315,14 @@ function MyRecommendationsPage() {
                           {item.title}
                         </h2>
 
-                        <p className="mt-1 flex items-center gap-1.5 text-sm text-white/50">
+                        <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-white/50">
                           <MapPin size={14} className="text-lime-300 shrink-0" />
-                          <span>{item.location}</span>
+                          <span className="truncate">{item.location}</span>
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
+                    <div className="flex flex-wrap items-center justify-end gap-3">
                       <span
                         className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
                           statusStyle[item.status] ||
