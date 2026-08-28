@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
-import AdminDropdown from "./AdminDropdown";
-import { getComplaintWorkflow } from "./adminComplaintStore";
+
+
+
 import { useAdminTheme } from "./useAdminTheme";
 
 const auraLayers = [
@@ -123,10 +123,7 @@ function AllComplaintsPage() {
       status: "PENDING",
       submittedDate: "17 August 2026"
     }
-  ].map((complaint) => ({
-    ...complaint,
-    status: getComplaintWorkflow(complaint.id).status || complaint.status
-  }));
+  ];
 
   const filteredComplaints = complaints.filter((complaint) => {
     const searchValue = searchText.toLowerCase();
@@ -248,9 +245,27 @@ function AllComplaintsPage() {
       ))}
 
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+            <Link to="/admin/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white">
+              <ArrowLeft size={16} aria-hidden="true" />
+              Back to dashboard
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsLightMode((currentMode) => !currentMode)}
+              aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
+              className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
+            >
+              <Sun size={13} className={`transition-all duration-700 ${isLightMode ? "scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
+              <Moon size={13} className={`transition-all duration-700 ${isLightMode ? "rotate-90 scale-75 opacity-50" : "scale-110 opacity-100"}`} aria-hidden="true" />
+              <span className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ${isLightMode ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60" : "bg-cyan-200 shadow-lg shadow-cyan-200/50"}`} />
+            </button>
+            
+          </div>
+          
+        <div className="mt-6 flex items-center justify-between">
           <div>
-            <AdminBrandLockup />
+ 
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               All Complaints
             </h1>
@@ -259,27 +274,12 @@ function AllComplaintsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsLightMode((currentMode) => !currentMode)}
-              aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-              className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
-            >
-              <Sun size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-0 scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
-              <Moon size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-90 scale-75 opacity-50" : "rotate-0 scale-110 opacity-100"}`} aria-hidden="true" />
-              <span className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ease-in-out ${isLightMode ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60" : "translate-x-0 bg-cyan-200 shadow-lg shadow-cyan-200/50"}`}>
-                <span className="absolute inset-0 rounded-full bg-white/30 transition-opacity duration-700 group-hover:opacity-80" />
-              </span>
-            </button>
-
-            <Link
-              to="/admin/dashboard"
-              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-lg backdrop-blur-xl transition ${isLightMode ? "border-slate-300 bg-white/70 text-slate-700 shadow-slate-300/30 hover:bg-white" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 hover:bg-white/20"}`}
-            >
-              <ArrowLeft size={16} aria-hidden="true" />
-              Dashboard
-            </Link>
+          <div className="admin-glass-card admin-user-glass-card flex items-center gap-3 rounded-2xl border border-white/20 px-4 py-3 text-white">
+            <ClipboardList size={19} className="text-cyan-200" aria-hidden="true" />
+            <div>
+              <p className="text-xs text-white/50">Total complaints</p>
+              <p className="mt-0.5 text-lg font-bold">{complaints.length}</p>
+            </div>
           </div>
         </div>
 
@@ -448,14 +448,7 @@ function AllComplaintsPage() {
             </div>
 
             <div className="relative flex flex-wrap items-center gap-2" aria-label="Sort complaints">
-              <AdminDropdown
-                id="complaint-sort"
-                value={sortKey}
-                onChange={setSortKey}
-                options={SORT_OPTIONS}
-                className="w-56"
-                menuClassName="right-0 left-auto"
-              />
+              
 
               <button
                 type="button"

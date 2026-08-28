@@ -1,7 +1,7 @@
 import { Activity, ArrowLeft, ArrowUpDown, ArrowUpRight, Building2, CarFront, Droplets, Moon, Search, Sun, Toilet, Trash2, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
+
 import { useAdminTheme } from "./useAdminTheme";
 
 function AgencyManagementPage() {
@@ -102,7 +102,7 @@ function AgencyManagementPage() {
 
           <div className="mt-8 flex flex-col justify-between gap-6 border-b border-white/15 pb-8 md:flex-row md:items-end">
             <div>
-              <AdminBrandLockup />
+
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Agency Management</h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/60">Coordinate city service agencies and manage their registered members.</p>
             </div>
@@ -116,7 +116,7 @@ function AgencyManagementPage() {
             <div className="admin-glass-card admin-agency-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between"><p className="text-sm text-white/60">Active agencies</p><Building2 size={18} className="text-cyan-200" aria-hidden="true" /></div>
               <p className="mt-3 text-3xl font-bold">{agencies.length}</p>
-              <p className="mt-1 text-xs text-cyan-300">All services connected</p>
+              <p className="mt-1 text-xs text-cyan-100">All services connected</p>
             </div>
             <div className="admin-glass-card admin-agency-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between"><p className="text-sm text-white/60">Registered members</p><Users size={18} className="text-cyan-300" aria-hidden="true" /></div>
