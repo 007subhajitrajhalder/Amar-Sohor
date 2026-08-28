@@ -1,7 +1,6 @@
 import { Activity, ArrowLeft, Moon, Search, ShieldCheck, Sun, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
 import { useAdminTheme } from "./useAdminTheme";
 
 function UserManagementPage() {
@@ -120,7 +119,7 @@ function UserManagementPage() {
 
           <div className="mt-8 flex flex-col justify-between gap-6 border-b border-white/15 pb-8 sm:flex-row sm:items-end">
             <div>
-              <AdminBrandLockup />
+
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
                 User Management
               </h1>

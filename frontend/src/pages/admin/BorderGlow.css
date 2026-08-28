@@ -132,19 +132,26 @@
   color: #0f172a !important;
 }
 
-.admin-light-mode .text-white\/80,
-.admin-light-mode .text-white\/75,
-.admin-light-mode .text-white\/70 {
-  color: #1e293b !important;
+.admin-light-mode [class*="text-white/"] {
+  color: #334155 !important;
 }
 
+.admin-light-mode .text-white\/95,
+.admin-light-mode .text-white\/90,
+.admin-light-mode .text-white\/85,
+.admin-light-mode .text-white\/80,
+.admin-light-mode .text-white\/75,
+.admin-light-mode .text-white\/70,
 .admin-light-mode .text-white\/65,
 .admin-light-mode .text-white\/60,
 .admin-light-mode .text-white\/55,
 .admin-light-mode .text-white\/50,
 .admin-light-mode .text-white\/45,
 .admin-light-mode .text-white\/40,
-.admin-light-mode .text-white\/30 {
+.admin-light-mode .text-white\/35,
+.admin-light-mode .text-white\/30,
+.admin-light-mode .text-white\/25,
+.admin-light-mode .text-white\/20 {
   color: #334155 !important;
 }
 

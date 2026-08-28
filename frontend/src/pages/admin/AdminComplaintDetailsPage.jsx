@@ -1,10 +1,115 @@
+import { useEffect, useState } from "react";
 import {
   Link,
   useNavigate,
   useParams
 } from "react-router-dom";
-import { Moon, Sun } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Building2,
+  Check,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Moon,
+  Phone,
+  Save,
+  Sun
+} from "lucide-react";
+
+import { getComplaintWorkflow, saveComplaintWorkflow } from "./adminComplaintStore";
 import { useAdminTheme } from "./useAdminTheme";
+
+const complaintOverrides = {
+  "101": {
+    title: "Dustbin Overflowing",
+    status: "PENDING",
+    submittedDate: "21 August 2026",
+    citizen: {
+      name: "Ananya Sen",
+      email: "ananya@example.com",
+      phone: "9876543210"
+    },
+    facility: {
+      id: 1,
+      name: "Gariahat Community Dustbin",
+      category: "Waste Management",
+      address: "Gariahat, Kolkata"
+    },
+    agency: {
+      id: 1,
+      name: "KMC SWM Department",
+      assignedMember: "Amit Kumar"
+    }
+  },
+  "102": {
+    title: "Water Not Available",
+    description: "The drinking-water dispenser is not supplying water.",
+    status: "UNDER_INVESTIGATION",
+    submittedDate: "20 August 2026",
+    citizen: {
+      name: "Rahul Das",
+      email: "rahul@example.com",
+      phone: "9876543210"
+    },
+    facility: {
+      id: 3,
+      name: "Salt Lake Water Point",
+      category: "Drinking Water",
+      address: "Sector V, Salt Lake, Kolkata"
+    },
+    agency: {
+      id: 3,
+      name: "KMC Water Department",
+      assignedMember: "Amit Kumar"
+    }
+  },
+  "103": {
+    title: "Parking Area Closed",
+    status: "RESOLVED",
+    submittedDate: "18 August 2026",
+    citizen: {
+      name: "Priya Ghosh",
+      email: "priya@example.com",
+      phone: "9123456780"
+    },
+    facility: {
+      id: 5,
+      name: "New Market Parking",
+      category: "Traffic Management",
+      address: "New Market, Kolkata"
+    },
+    agency: {
+      id: 8,
+      name: "Kolkata Police",
+      assignedMember: "Neha Sharma"
+    },
+    resolutionDescription: "The parking gate was reopened and operations resumed.",
+    completionDate: "25 August 2026"
+  },
+  "104": {
+    title: "Public Toilet Is Dirty",
+    status: "PENDING",
+    submittedDate: "17 August 2026",
+    citizen: {
+      name: "Arjun Roy",
+      email: "arjun@example.com",
+      phone: "9988776655"
+    },
+    facility: {
+      id: 7,
+      name: "College Street Public Toilet",
+      category: "Sanitation",
+      address: "College Street, Kolkata"
+    },
+    agency: {
+      id: 12,
+      name: "KMC Sanitation Department",
+      assignedMember: "Sourav Das"
+    }
+  }
+};
 
 function AdminComplaintDetailsPage() {
   const { reportId } = useParams();
@@ -46,11 +151,47 @@ function AdminComplaintDetailsPage() {
     completionDate: null
   };
 
+  const workflow = getComplaintWorkflow(reportId);
   const complaint = {
     ...complaintData,
-    ...complaintOverrides[reportId],
-    id: reportId
+    ...(complaintOverrides[String(reportId)] || {}),
+    id: reportId,
+    status: workflow.status || complaintOverrides[String(reportId)]?.status || complaintData.status,
+    agency: {
+      ...complaintData.agency,
+      ...((complaintOverrides[String(reportId)] || {}).agency || {}),
+      assignedMember: workflow.member || ((complaintOverrides[String(reportId)] || {}).agency || {}).assignedMember || complaintData.agency.assignedMember
+    },
+    facility: {
+      ...complaintData.facility,
+      ...((complaintOverrides[String(reportId)] || {}).facility || {})
+    },
+    citizen: {
+      ...complaintData.citizen,
+      ...((complaintOverrides[String(reportId)] || {}).citizen || {})
+    }
   };
+
+  const [currentStatus, setCurrentStatus] = useState(complaint.status);
+  const [selectedMember, setSelectedMember] = useState(complaint.agency.assignedMember);
+  const [draftStatus, setDraftStatus] = useState(complaint.status);
+  const [draftMember, setDraftMember] = useState(complaint.agency.assignedMember);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionMessage, setActionMessage] = useState("");
+  const [isReportIdCopied, setIsReportIdCopied] = useState(false);
+
+  useEffect(() => {
+    const nextWorkflow = getComplaintWorkflow(reportId);
+    const nextStatus = nextWorkflow.status || complaint.status;
+    const nextMember = nextWorkflow.member || complaint.agency.assignedMember;
+
+    setCurrentStatus(nextStatus);
+    setSelectedMember(nextMember);
+    setDraftStatus(nextStatus);
+    setDraftMember(nextMember);
+  }, [reportId, complaint.status, complaint.agency.assignedMember]);
+
+  const hasWorkflowChanges = draftStatus !== currentStatus || draftMember !== selectedMember;
 
   const isKnownComplaint = ["101", "102", "103", "104"].includes(String(reportId));
 
@@ -97,16 +238,6 @@ function AdminComplaintDetailsPage() {
     }
 
     return "border-white/20 bg-white/10 text-white/70";
-  };
-
-  const copyReportId = async () => {
-    try {
-      await navigator.clipboard.writeText(String(complaint.id));
-      setIsReportIdCopied(true);
-      window.setTimeout(() => setIsReportIdCopied(false), 1800);
-    } catch {
-      setIsReportIdCopied(false);
-    }
   };
 
   const confirmAction = () => {
@@ -219,48 +350,7 @@ function AdminComplaintDetailsPage() {
           </div>
         )}
 
-        <section className="admin-dashboard-reveal admin-glass-card relative z-20 mt-6 overflow-visible rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl" style={{ "--dashboard-delay": "360ms" }}>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-cyan-100/60">Admin controls</p>
-              <h2 className="mt-2 text-xl font-bold tracking-tight">Update complaint workflow</h2>
-              <p className="mt-2 text-sm text-white/55">Changes are staged first and applied after confirmation.</p>
-            </div>
-              <button
-                type="button"
-                onClick={() => setPendingAction({ type: "workflow", status: draftStatus, member: draftMember })}
-                disabled={!hasWorkflowChanges}
-                className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/70 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Save size={16} aria-hidden="true" />
-                Save changes
-              </button>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <WorkflowSelect
-              label="Complaint status"
-              value={draftStatus}
-              onChange={setDraftStatus}
-              options={[
-                ["PENDING", "Pending"],
-                ["UNDER_INVESTIGATION", "Under investigation"],
-                ["RESOLVED", "Resolved"]
-              ]}
-            />
-            <WorkflowSelect
-              label="Assigned member"
-              value={draftMember}
-              onChange={setDraftMember}
-              options={[
-                ["Amit Kumar", "Amit Kumar"],
-                ["Neha Sharma", "Neha Sharma"],
-                ["Sourav Das", "Sourav Das"]
-              ]}
-            />
-          </div>
-        </section>
-
+        
         <div className="admin-dashboard-reveal mt-6 grid gap-6 lg:grid-cols-2" style={{ "--dashboard-delay": "440ms" }}>
           {/* Complaint information */}
           <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
@@ -507,20 +597,7 @@ function SummaryItem({ icon: Icon, label, value, href }) {
   );
 }
 
-function WorkflowSelect({ label, value, onChange, options }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-widest text-white/50">{label}</span>
-      <AdminDropdown
-        id={label.toLowerCase().replaceAll(" ", "-")}
-        value={value}
-        onChange={onChange}
-        options={options.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}
-        className="mt-2"
-      />
-    </label>
-  );
-}
+
 
 function StatusHistoryItem({
   title,

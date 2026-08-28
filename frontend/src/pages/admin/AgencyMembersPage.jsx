@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowUpDown, Mail, Moon, Phone, Search, ShieldAlert, ShieldCheck, Sun, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
+
 import { useAdminTheme } from "./useAdminTheme";
 
 import {
@@ -356,7 +356,7 @@ function AgencyMembersPage() {
         {/* Page heading */}
         <div className="admin-dashboard-reveal mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end" style={{ "--dashboard-delay": "180ms" }}>
           <div>
-            <AdminBrandLockup />
+            
 
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
               Agency Members

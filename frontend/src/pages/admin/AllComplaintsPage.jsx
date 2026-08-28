@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
-import AdminDropdown from "./AdminDropdown";
+
+
 import { getComplaintWorkflow } from "./adminComplaintStore";
 import { useAdminTheme } from "./useAdminTheme";
 
@@ -250,7 +250,7 @@ function AllComplaintsPage() {
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <AdminBrandLockup />
+ 
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               All Complaints
             </h1>
@@ -448,14 +448,7 @@ function AllComplaintsPage() {
             </div>
 
             <div className="relative flex flex-wrap items-center gap-2" aria-label="Sort complaints">
-              <AdminDropdown
-                id="complaint-sort"
-                value={sortKey}
-                onChange={setSortKey}
-                options={SORT_OPTIONS}
-                className="w-56"
-                menuClassName="right-0 left-auto"
-              />
+              
 
               <button
                 type="button"

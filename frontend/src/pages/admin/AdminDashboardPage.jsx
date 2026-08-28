@@ -13,7 +13,7 @@ import {
   Users
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import AdminBrandLockup from "./AdminBrandLockup";
+
 import { useAdminTheme } from "./useAdminTheme";
 
 const auraLayers = [
@@ -84,7 +84,6 @@ function AdminDashboardPage() {
       <section className={`admin-dashboard-welcome relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
         <div className="admin-dashboard-reveal flex items-center justify-between" style={{ "--dashboard-delay": "80ms" }}>
           <div>
-            <AdminBrandLockup />
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               Admin Dashboard
             </h1>
