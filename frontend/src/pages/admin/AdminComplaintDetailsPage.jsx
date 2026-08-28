@@ -18,7 +18,6 @@ import {
   Sun
 } from "lucide-react";
 
-import { getComplaintWorkflow, saveComplaintWorkflow } from "./adminComplaintStore";
 import { useAdminTheme } from "./useAdminTheme";
 
 const complaintOverrides = {
@@ -151,16 +150,15 @@ function AdminComplaintDetailsPage() {
     completionDate: null
   };
 
-  const workflow = getComplaintWorkflow(reportId);
   const complaint = {
     ...complaintData,
     ...(complaintOverrides[String(reportId)] || {}),
     id: reportId,
-    status: workflow.status || complaintOverrides[String(reportId)]?.status || complaintData.status,
+    status: complaintOverrides[String(reportId)]?.status || complaintData.status,
     agency: {
       ...complaintData.agency,
       ...((complaintOverrides[String(reportId)] || {}).agency || {}),
-      assignedMember: workflow.member || ((complaintOverrides[String(reportId)] || {}).agency || {}).assignedMember || complaintData.agency.assignedMember
+      assignedMember: ((complaintOverrides[String(reportId)] || {}).agency || {}).assignedMember || complaintData.agency.assignedMember
     },
     facility: {
       ...complaintData.facility,
@@ -181,14 +179,10 @@ function AdminComplaintDetailsPage() {
   const [isReportIdCopied, setIsReportIdCopied] = useState(false);
 
   useEffect(() => {
-    const nextWorkflow = getComplaintWorkflow(reportId);
-    const nextStatus = nextWorkflow.status || complaint.status;
-    const nextMember = nextWorkflow.member || complaint.agency.assignedMember;
-
-    setCurrentStatus(nextStatus);
-    setSelectedMember(nextMember);
-    setDraftStatus(nextStatus);
-    setDraftMember(nextMember);
+    setCurrentStatus(complaint.status);
+    setSelectedMember(complaint.agency.assignedMember);
+    setDraftStatus(complaint.status);
+    setDraftMember(complaint.agency.assignedMember);
   }, [reportId, complaint.status, complaint.agency.assignedMember]);
 
   const hasWorkflowChanges = draftStatus !== currentStatus || draftMember !== selectedMember;
@@ -248,10 +242,6 @@ function AdminComplaintDetailsPage() {
       setSelectedMember(pendingAction.member);
       setDraftStatus(pendingAction.status);
       setDraftMember(pendingAction.member);
-      saveComplaintWorkflow(reportId, {
-        status: pendingAction.status,
-        member: pendingAction.member
-      });
       setActionMessage("Complaint workflow updated successfully.");
     } else if (pendingAction.type === "status") {
       setCurrentStatus(pendingAction.value);
@@ -272,18 +262,16 @@ function AdminComplaintDetailsPage() {
       }`}
     >
       <section className="relative z-[1] mx-auto max-w-6xl text-white">
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/admin/complaints")
-          }
-          className="font-bold text-cyan-200 transition hover:text-white"
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Back to All Complaints
-        </button>
+        <div className="flex items-center justify-between gap-4">
+          <Link
+              to="/admin/complaints"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              Back to all complaints
+          </Link>
 
-        <div className="mt-5 flex justify-end">
+        
           <button
             type="button"
             onClick={() => setIsLightMode((mode) => !mode)}

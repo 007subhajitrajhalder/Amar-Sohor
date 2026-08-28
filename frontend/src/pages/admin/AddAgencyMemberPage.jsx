@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Moon, Sun, UserPlus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAdminTheme } from "./useAdminTheme";
 
 const agencies = [
@@ -86,14 +86,13 @@ function AddAgencyMemberPage() {
     >
       <section className="relative z-[1] mx-auto max-w-3xl">
         <div className="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/admin/agencies")}
+          <Link
+            to="/admin/agencies"
             className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} aria-hidden="true" />
             Back to Agency Management
-          </button>
+          </Link>
           <ThemeToggle
             isLightMode={isLightMode}
             setIsLightMode={setIsLightMode}
