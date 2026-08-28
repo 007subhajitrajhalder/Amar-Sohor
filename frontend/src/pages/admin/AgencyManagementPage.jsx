@@ -75,7 +75,7 @@ function AgencyManagementPage() {
       <div
         className="pointer-events-none absolute inset-0 blur-[90px] transition-opacity duration-700"
         style={{
-          background: "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.18) 34%, rgb(255,255,255) 66%, rgb(77,182,200) 82%, rgb(45,100,130) 100%)",
+          background: "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.09) 34%, rgb(214,215,209) 66%, rgb(103,159,168) 82%, rgb(65,101,119) 100%)",
           mixBlendMode: "multiply",
           opacity: isLightMode ? 1 : 0
         }}

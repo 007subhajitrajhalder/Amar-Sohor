@@ -69,7 +69,8 @@ function UserManagementPage() {
         style={{
           background:
             "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
-          mixBlendMode: "screen"
+          mixBlendMode: "screen",
+          opacity: isLightMode ? 0 : 1
         }}
         aria-hidden="true"
       />
@@ -78,7 +79,8 @@ function UserManagementPage() {
         style={{
           background:
             "linear-gradient(to top, rgba(0, 130, 150, 0.25) 0%, rgba(0, 0, 0, 0) 35%)",
-          mixBlendMode: "screen"
+          mixBlendMode: "screen",
+          opacity: isLightMode ? 0 : 1
         }}
         aria-hidden="true"
       />
@@ -86,7 +88,7 @@ function UserManagementPage() {
         className="pointer-events-none absolute inset-0 transition-opacity duration-700"
         style={{
           background:
-            "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.18) 34%, rgb(255,255,255) 66%, rgb(77,182,200) 82%, rgb(45,100,130) 100%)",
+            "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.09) 34%, rgb(214,215,209) 66%, rgb(103,159,168) 82%, rgb(65,101,119) 100%)",
           mixBlendMode: "multiply",
           filter: "blur(90px)",
           opacity: isLightMode ? 1 : 0
@@ -250,7 +252,7 @@ function UserManagementPage() {
                     <p className="mt-1 text-sm text-white/60">
                       {user.email}
                     </p>
-                    <p className="mt-2 text-xs text-white/45">{user.role} · {user.lastActive}</p>
+                    <p className="mt-2 text-xs text-white">{user.role} · {user.lastActive}</p>
                   </div>
                 </div>
 

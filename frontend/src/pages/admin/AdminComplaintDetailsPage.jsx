@@ -1,98 +1,15 @@
 import {
-  ArrowLeft,
-  AlertCircle,
-  Building2,
-  Check,
-  Clipboard,
-  ExternalLink,
-  Mail,
-  Home,
-  MapPin,
-  Moon,
-  Phone,
-  Save,
-  Sun
-} from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { useState } from "react";
-import AdminBrandLockup from "./AdminBrandLockup";
-import AdminDropdown from "./AdminDropdown";
-import { getComplaintWorkflow, saveComplaintWorkflow } from "./adminComplaintStore";
+  Link,
+  useNavigate,
+  useParams
+} from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
 import { useAdminTheme } from "./useAdminTheme";
-
-const auraLayers = [
-  {
-    background:
-      "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
-    mixBlendMode: "screen",
-    filter: "blur(125px)"
-  },
-  {
-    background:
-      "linear-gradient(to top, rgba(0, 130, 150, 0.25) 0%, rgba(0, 0, 0, 0) 35%)",
-    mixBlendMode: "screen",
-    filter: "blur(50px)"
-  }
-];
-
-const lightAuraLayers = [
-  {
-    background:
-      "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.12) 28%, rgb(255,255,255) 18%, rgb(77,182,200) 68%, rgb(45,100,130) 100%)",
-    mixBlendMode: "multiply",
-    filter: "blur(90px)"
-  },
-  {
-    background:
-      "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.22) 34%, rgb(255,255,255) 66%, rgb(77,182,200) 82%, rgb(45,100,130) 100%)",
-    mixBlendMode: "multiply",
-    filter: "blur(90px)"
-  }
-];
-
-const complaintOverrides = {
-  101: {
-    title: "Dustbin Overflowing",
-    description: "The community dustbin is overflowing and needs collection.",
-    status: "PENDING",
-    submittedDate: "21 August 2026",
-    citizen: { name: "Ananya Sen", email: "ananya@example.com", phone: "9876543211" },
-    facility: { id: 1, name: "Gariahat Community Dustbin", category: "Waste Management", address: "Gariahat, Kolkata" },
-    agency: { id: 1, name: "KMC SWM Department", assignedMember: "Amit Kumar" }
-  },
-  103: {
-    title: "Parking Area Closed",
-    description: "The public parking area is unexpectedly closed to visitors.",
-    status: "RESOLVED",
-    submittedDate: "18 August 2026",
-    citizen: { name: "Priya Ghosh", email: "priya@example.com", phone: "9876543212" },
-    facility: { id: 5, name: "New Market Parking", category: "Parking", address: "New Market, Kolkata" },
-    agency: { id: 4, name: "Kolkata Police", assignedMember: "Neha Sharma" }
-  },
-  104: {
-    title: "Public Toilet Is Dirty",
-    description: "The public toilet requires cleaning and routine maintenance.",
-    status: "PENDING",
-    submittedDate: "17 August 2026",
-    citizen: { name: "Arjun Roy", email: "arjun@example.com", phone: "9876543213" },
-    facility: { id: 6, name: "College Street Public Toilet", category: "Sanitation", address: "College Street, Kolkata" },
-    agency: { id: 2, name: "KMC Sanitation Department", assignedMember: "Sourav Das" }
-  }
-};
 
 function AdminComplaintDetailsPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
-  const [isReportIdCopied, setIsReportIdCopied] = useState(false);
-  const savedWorkflow = getComplaintWorkflow(reportId);
-  const [currentStatus, setCurrentStatus] = useState(savedWorkflow.status || "UNDER_INVESTIGATION");
-  const [selectedMember, setSelectedMember] = useState(savedWorkflow.member || "Amit Kumar");
-  const [draftStatus, setDraftStatus] = useState(savedWorkflow.status || "UNDER_INVESTIGATION");
-  const [draftMember, setDraftMember] = useState(savedWorkflow.member || "Amit Kumar");
-  const [pendingAction, setPendingAction] = useState(null);
-  const [actionMessage, setActionMessage] = useState("");
-  const hasWorkflowChanges = draftStatus !== currentStatus || draftMember !== selectedMember;
 
   /*
     Temporary complaint data.
@@ -218,88 +135,55 @@ function AdminComplaintDetailsPage() {
   };
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
-      {[...auraLayers, ...lightAuraLayers].map((layer, index) => {
-        const isLightLayer = index >= auraLayers.length;
-
-        return (
-          <div
-            style={{
-              background: layer.background,
-              mixBlendMode: layer.mixBlendMode,
-              filter: layer.filter,
-              transform: "translateZ(0)",
-              opacity: isLightMode === isLightLayer ? 1 : 0
-            }}
-          />
-        );
-      })}
-
-      <section className={`admin-dashboard-welcome relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
-        <div className="admin-dashboard-reveal flex items-center justify-between gap-4" style={{ "--dashboard-delay": "80ms" }}>
-          <div>
-            <AdminBrandLockup />
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-              Complaint details
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsLightMode((currentMode) => !currentMode)}
-              aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-              className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
-            >
-              <Sun size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-0 scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
-              <Moon size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-90 scale-75 opacity-50" : "rotate-0 scale-110 opacity-100"}`} aria-hidden="true" />
-              <span className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ease-in-out ${isLightMode ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60" : "translate-x-0 bg-cyan-200 shadow-lg shadow-cyan-200/50"}`} />
-            </button>
-
-            <Link
-              to="/admin/dashboard"
-              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shadow-lg backdrop-blur-xl transition ${isLightMode ? "border-slate-300 bg-white/70 text-slate-700 shadow-slate-300/30 hover:bg-white" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 hover:bg-white/20"}`}
-            >
-              <Home size={16} aria-hidden="true" />
-              Dashboard
-            </Link>
-          </div>
-        </div>
-
+    <main
+      className={`admin-themed-page relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${
+        isLightMode ? "admin-light-mode" : ""
+      }`}
+    >
+      <section className="relative z-[1] mx-auto max-w-6xl text-white">
         <button
           type="button"
           onClick={() =>
             navigate("/admin/complaints")
           }
-          className="admin-dashboard-reveal mt-7 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
-          style={{ "--dashboard-delay": "140ms" }}
+          className="font-bold text-cyan-200 transition hover:text-white"
         >
           <ArrowLeft size={16} aria-hidden="true" />
           Back to All Complaints
         </button>
 
-        <div className="admin-dashboard-reveal admin-glass-card mt-5 flex flex-col justify-between gap-5 rounded-2xl border border-white/30 p-7 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl md:flex-row md:items-center" style={{ "--dashboard-delay": "200ms" }}>
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsLightMode((mode) => !mode)}
+            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
+            className="admin-theme-toggle relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border border-white/30 bg-white/10 px-1.5 text-white shadow-lg backdrop-blur-xl transition focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            <Sun size={13} aria-hidden="true" />
+            <Moon size={13} aria-hidden="true" />
+            <span
+              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-500 ${
+                isLightMode
+                  ? "translate-x-6 bg-amber-300"
+                  : "bg-cyan-200"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div
+          className="admin-glass-card mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl md:flex-row md:items-center"
+        >
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-bold text-cyan-200">
-                Complaint #{complaint.id}
-              </p>
-              <button
-                type="button"
-                onClick={copyReportId}
-                className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-white/60 transition hover:border-cyan-200/40 hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-300"
-                aria-label={`Copy report number ${complaint.id}`}
-              >
-                {isReportIdCopied ? <Check size={13} aria-hidden="true" /> : <Clipboard size={13} aria-hidden="true" />}
-                {isReportIdCopied ? "Copied" : "Copy ID"}
-              </button>
-            </div>
+            <p className="font-bold text-cyan-200/70">
+              Complaint #{complaint.id}
+            </p>
 
             <h1 className="mt-2 text-3xl font-bold">
               {complaint.title}
             </h1>
 
-            <p className="mt-2 text-sm text-white/55">
+            <p className="mt-2 text-white/60">
               Submitted on{" "}
               {complaint.submittedDate}
             </p>
@@ -379,8 +263,8 @@ function AdminComplaintDetailsPage() {
 
         <div className="admin-dashboard-reveal mt-6 grid gap-6 lg:grid-cols-2" style={{ "--dashboard-delay": "440ms" }}>
           {/* Complaint information */}
-          <section className="admin-glass-card rounded-2xl border border-white/30 p-7 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl">
-            <h2 className="text-xl font-bold tracking-tight">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
+            <h2 className="text-xl font-bold">
               Complaint Information
             </h2>
 
@@ -423,11 +307,13 @@ function AdminComplaintDetailsPage() {
               </div>
 
               <div>
-                <p className="text-sm text-white/55">
+                <p className="text-sm text-white/50">
                   Complaint Photograph
                 </p>
 
-                <div className="mt-2 flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sm text-white/50">
+                <div
+                  className="admin-secondary-panel mt-2 flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+                >
                   Complaint image will appear here
                 </div>
               </div>
@@ -435,8 +321,8 @@ function AdminComplaintDetailsPage() {
           </section>
 
           {/* Assignment information */}
-          <section className="admin-glass-card rounded-2xl border border-white/30 p-7 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl">
-            <h2 className="text-xl font-bold tracking-tight">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
+            <h2 className="text-xl font-bold">
               Facility and Assignment
             </h2>
 
@@ -475,7 +361,7 @@ function AdminComplaintDetailsPage() {
 
               <Link
                 to={`/facilities/${complaint.facility.id}`}
-                className="admin-navigable-card inline-flex items-center justify-center rounded-xl border border-cyan-200/40 bg-white/5 px-5 py-3 text-center font-bold text-cyan-200 transition"
+                className="admin-outline-button inline-block rounded-xl border border-cyan-200/40 px-5 py-3 text-center font-bold text-cyan-200 transition hover:bg-white/10"
               >
                 View Facility
               </Link>
@@ -484,12 +370,12 @@ function AdminComplaintDetailsPage() {
         </div>
 
         {/* Status history */}
-        <section className="admin-dashboard-reveal admin-glass-card mt-6 rounded-2xl border border-white/30 p-7 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl" style={{ "--dashboard-delay": "520ms" }}>
-          <h2 className="text-xl font-bold tracking-tight">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
+          <h2 className="text-xl font-bold">
             Complaint Status
           </h2>
 
-          <div className="mt-6 border-l-2 border-cyan-200/30 pl-6">
+          <div className="mt-6 border-l-2 border-cyan-200/40 pl-6">
             <StatusHistoryItem
               title="Complaint Submitted"
               date="20 August 2026, 10:30 AM"
@@ -511,8 +397,8 @@ function AdminComplaintDetailsPage() {
         </section>
 
         {/* Resolution information */}
-        <section className="admin-dashboard-reveal admin-glass-card mt-6 rounded-2xl border border-white/30 p-7 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl" style={{ "--dashboard-delay": "600ms" }}>
-          <h2 className="text-xl font-bold tracking-tight">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
+          <h2 className="text-xl font-bold">
             Resolution Information
           </h2>
 
@@ -537,12 +423,14 @@ function AdminComplaintDetailsPage() {
                 </div>
               </div>
 
-              <div className="flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sm text-white/50">
+              <div
+                className="admin-secondary-panel flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+              >
                 Resolution photograph
               </div>
             </div>
           ) : (
-            <div className="mt-5 rounded-xl border border-amber-200/20 bg-amber-300/10 p-5 text-amber-100">
+            <div className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 p-5 text-amber-200">
               Resolution information will be
               available after the agency
               resolves the complaint.
@@ -588,7 +476,7 @@ function Information({
 }) {
   return (
     <div>
-      <p className="text-sm text-white/55">
+      <p className="text-sm text-white/50">
         {label}
       </p>
 
@@ -641,7 +529,7 @@ function StatusHistoryItem({
 }) {
   return (
     <div className="relative mb-7">
-      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-cyan-200 shadow-lg shadow-cyan-200/60" />
+      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-cyan-300" />
 
       <h3 className="font-bold">
         {title}
@@ -651,7 +539,7 @@ function StatusHistoryItem({
         {date}
       </p>
 
-      <p className="mt-2 text-sm leading-6 text-white/65">
+      <p className="mt-2 text-sm text-white/60">
         {description}
       </p>
     </div>
