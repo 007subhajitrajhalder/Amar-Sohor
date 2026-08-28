@@ -91,29 +91,113 @@
 }
 
 .admin-light-mode .border-glow-card {
-  border-color: rgb(255 255 255 / 25%);
+  border-color: rgb(71 85 105 / 24%);
   background: transparent;
-  box-shadow: 0 18px 45px rgb(0 0 0 / 25%);
+  box-shadow: 0 12px 30px rgb(30 41 59 / 15%);
+}
+
+.admin-light-mode {
+  background-color: #d9d8d2 !important;
+  color-scheme: light;
+}
+
+.admin-light-mode .border-glow-card > .edge-light {
+  opacity: calc((var(--edge-proximity) - 35) / 160);
+  mix-blend-mode: normal;
 }
 
 .admin-light-mode .border-glow-inner > article,
 .admin-light-mode .border-glow-inner > section {
-  border-color: rgb(255 255 255 / 30%) !important;
-  background: rgb(255 255 255 / 15%) !important;
+  border-color: rgb(71 85 105 / 24%) !important;
+  background: rgb(226 225 218 / 82%) !important;
   color: #1e293b !important;
-  box-shadow: 0 18px 45px rgb(0 0 0 / 25%) !important;
+  box-shadow: 0 12px 30px rgb(30 41 59 / 14%) !important;
+}
+
+.admin-light-mode .admin-glass-card {
+  border-color: rgb(71 85 105 / 24%) !important;
+  background-color: rgb(226 225 218 / 62%) !important;
+  box-shadow: 0 12px 30px rgb(30 41 59 / 14%) !important;
+  --tw-ring-color: rgb(71 85 105 / 12%) !important;
+}
+
+.admin-light-mode .admin-navigable-card:hover,
+.admin-light-mode .admin-agency-glass-card:hover,
+.admin-light-mode .admin-user-glass-card:hover,
+.admin-light-mode .admin-complaint-card:hover {
+  background-color: rgb(218 219 213 / 92%) !important;
 }
 
 .admin-light-mode .text-white {
   color: #0f172a !important;
 }
 
-.admin-light-mode .text-white\/70,
+.admin-light-mode .text-white\/80,
+.admin-light-mode .text-white\/75,
+.admin-light-mode .text-white\/70 {
+  color: #1e293b !important;
+}
+
+.admin-light-mode .text-white\/65,
 .admin-light-mode .text-white\/60,
 .admin-light-mode .text-white\/55,
 .admin-light-mode .text-white\/50,
-.admin-light-mode .text-white\/40 {
-  color: #475569 !important;
+.admin-light-mode .text-white\/45,
+.admin-light-mode .text-white\/40,
+.admin-light-mode .text-white\/30 {
+  color: #334155 !important;
+}
+
+.admin-light-mode .text-slate-500,
+.admin-light-mode .text-slate-600 {
+  color: #334155 !important;
+}
+
+.admin-light-mode .border-white\/10,
+.admin-light-mode .border-white\/15,
+.admin-light-mode .border-white\/20,
+.admin-light-mode .border-white\/25,
+.admin-light-mode .border-white\/30 {
+  border-color: rgb(71 85 105 / 28%) !important;
+}
+
+.admin-themed-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 70% at 50% 110%, rgb(0 90 110 / 80%) 0%, rgb(0 45 60 / 50%) 40%, transparent 75%);
+  filter: blur(125px);
+  mix-blend-mode: screen;
+}
+
+.admin-themed-page.admin-light-mode::before {
+  background: linear-gradient(transparent 0%, rgb(148 190 194 / 8%) 30%, rgb(112 166 174 / 36%) 78%, rgb(65 101 119 / 50%) 100%);
+  filter: blur(90px);
+  mix-blend-mode: multiply;
+}
+
+.admin-light-mode .admin-field-label {
+  color: #0f172a !important;
+}
+
+.admin-light-mode .admin-secondary-panel {
+  background-color: rgb(203 205 200 / 52%) !important;
+  color: #334155 !important;
+}
+
+.admin-light-mode .admin-theme-toggle {
+  border-color: rgb(100 116 139 / 45%) !important;
+  background-color: rgb(226 225 218 / 58%) !important;
+}
+
+.admin-light-mode .admin-outline-button {
+  border-color: rgb(51 65 85 / 45%) !important;
+  color: #1e293b !important;
+}
+
+.admin-light-mode .admin-outline-button:hover {
+  background-color: rgb(71 85 105 / 10%) !important;
 }
 
 .admin-light-mode .text-cyan-100\/60,
@@ -142,13 +226,13 @@
 .admin-light-mode .border-glow-inner .text-cyan-100,
 .admin-light-mode .border-glow-inner .text-emerald-100,
 .admin-light-mode .border-glow-inner .text-amber-100 {
-  filter: drop-shadow(0 1px 1px rgb(255 255 255 / 65%));
+  filter: none;
 }
 
 .admin-light-mode .dashboard-icon-box {
   border-color: rgb(14 116 144 / 30%) !important;
-  background: rgb(255 255 255 / 60%) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%), 0 4px 12px rgb(71 85 105 / 12%);
+  background: rgb(214 217 211 / 78%) !important;
+  box-shadow: 0 3px 10px rgb(71 85 105 / 12%);
 }
 
 .admin-light-mode button.text-amber-600 {
@@ -158,12 +242,12 @@
 .admin-light-mode .border-glow-inner .bg-white\/5,
 .admin-light-mode .border-glow-inner .bg-white\/10,
 .admin-light-mode .border-glow-inner .bg-white\/15 {
-  background-color: rgb(255 255 255 / 10%) !important;
+  background-color: rgb(71 85 105 / 8%) !important;
 }
 
 .admin-light-mode .queue-status-row {
   border-color: rgb(71 85 105 / 20%);
-  background: rgb(255 255 255 / 65%) !important;
+  background: rgb(215 216 210 / 72%) !important;
 }
 
 .admin-light-mode .queue-status-row .text-white\/70 {
@@ -172,7 +256,20 @@
 
 .admin-light-mode .live-feed-row {
   border-color: rgb(71 85 105 / 20%);
-  background: rgb(255 255 255 / 65%) !important;
+  background: rgb(215 216 210 / 72%) !important;
+}
+
+.admin-light-mode input,
+.admin-light-mode select,
+.admin-light-mode textarea {
+  border-color: rgb(71 85 105 / 30%) !important;
+  background-color: rgb(232 231 225 / 88%) !important;
+  color: #1e293b !important;
+}
+
+.admin-light-mode input::placeholder,
+.admin-light-mode textarea::placeholder {
+  color: #64748b !important;
 }
 
 .admin-light-mode .live-feed-row .text-white\/50,

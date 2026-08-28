@@ -3,10 +3,13 @@ import {
   useNavigate,
   useParams
 } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
+import { useAdminTheme } from "./useAdminTheme";
 
 function AdminComplaintDetailsPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
+  const [isLightMode, setIsLightMode] = useAdminTheme();
 
   /*
     Temporary complaint data.
@@ -70,21 +73,46 @@ function AdminComplaintDetailsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <section className="mx-auto max-w-6xl">
+    <main
+      className={`admin-themed-page relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${
+        isLightMode ? "admin-light-mode" : ""
+      }`}
+    >
+      <section className="relative z-[1] mx-auto max-w-6xl text-white">
         <button
           type="button"
           onClick={() =>
             navigate("/admin/complaints")
           }
-          className="font-bold text-emerald-700"
+          className="font-bold text-cyan-200 transition hover:text-white"
         >
           ← Back to All Complaints
         </button>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 rounded-2xl bg-white p-7 shadow md:flex-row md:items-center">
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsLightMode((mode) => !mode)}
+            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
+            className="admin-theme-toggle relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border border-white/30 bg-white/10 px-1.5 text-white shadow-lg backdrop-blur-xl transition focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            <Sun size={13} aria-hidden="true" />
+            <Moon size={13} aria-hidden="true" />
+            <span
+              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-500 ${
+                isLightMode
+                  ? "translate-x-6 bg-amber-300"
+                  : "bg-cyan-200"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div
+          className="admin-glass-card mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl md:flex-row md:items-center"
+        >
           <div>
-            <p className="font-bold text-emerald-700">
+            <p className="font-bold text-cyan-200/70">
               Complaint #{complaint.id}
             </p>
 
@@ -92,7 +120,7 @@ function AdminComplaintDetailsPage() {
               {complaint.title}
             </h1>
 
-            <p className="mt-2 text-slate-500">
+            <p className="mt-2 text-white/60">
               Submitted on{" "}
               {complaint.submittedDate}
             </p>
@@ -111,7 +139,7 @@ function AdminComplaintDetailsPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {/* Complaint information */}
-          <section className="rounded-2xl bg-white p-7 shadow">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
             <h2 className="text-xl font-bold">
               Complaint Information
             </h2>
@@ -138,11 +166,13 @@ function AdminComplaintDetailsPage() {
               />
 
               <div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-white/50">
                   Complaint Photograph
                 </p>
 
-                <div className="mt-2 flex h-56 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                <div
+                  className="admin-secondary-panel mt-2 flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+                >
                   Complaint image will appear here
                 </div>
               </div>
@@ -150,7 +180,7 @@ function AdminComplaintDetailsPage() {
           </section>
 
           {/* Assignment information */}
-          <section className="rounded-2xl bg-white p-7 shadow">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
             <h2 className="text-xl font-bold">
               Facility and Assignment
             </h2>
@@ -186,7 +216,7 @@ function AdminComplaintDetailsPage() {
 
               <Link
                 to={`/facilities/${complaint.facility.id}`}
-                className="inline-block rounded-xl border border-emerald-700 px-5 py-3 text-center font-bold text-emerald-700"
+                className="admin-outline-button inline-block rounded-xl border border-cyan-200/40 px-5 py-3 text-center font-bold text-cyan-200 transition hover:bg-white/10"
               >
                 View Facility
               </Link>
@@ -195,12 +225,12 @@ function AdminComplaintDetailsPage() {
         </div>
 
         {/* Status history */}
-        <section className="mt-6 rounded-2xl bg-white p-7 shadow">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
           <h2 className="text-xl font-bold">
             Complaint Status
           </h2>
 
-          <div className="mt-6 border-l-2 border-emerald-200 pl-6">
+          <div className="mt-6 border-l-2 border-cyan-200/40 pl-6">
             <StatusHistoryItem
               title="Complaint Submitted"
               date="20 August 2026, 10:30 AM"
@@ -222,7 +252,7 @@ function AdminComplaintDetailsPage() {
         </section>
 
         {/* Resolution information */}
-        <section className="mt-6 rounded-2xl bg-white p-7 shadow">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
           <h2 className="text-xl font-bold">
             Resolution Information
           </h2>
@@ -248,12 +278,14 @@ function AdminComplaintDetailsPage() {
                 </div>
               </div>
 
-              <div className="flex h-56 items-center justify-center rounded-xl bg-slate-100">
+              <div
+                className="admin-secondary-panel flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+              >
                 Resolution photograph
               </div>
             </div>
           ) : (
-            <div className="mt-5 rounded-xl bg-yellow-50 p-5 text-yellow-800">
+            <div className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 p-5 text-amber-200">
               Resolution information will be
               available after the agency
               resolves the complaint.
@@ -271,7 +303,7 @@ function Information({
 }) {
   return (
     <div>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-white/50">
         {label}
       </p>
 
@@ -289,17 +321,17 @@ function StatusHistoryItem({
 }) {
   return (
     <div className="relative mb-7">
-      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-emerald-700" />
+      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-cyan-300" />
 
       <h3 className="font-bold">
         {title}
       </h3>
 
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-white/50">
         {date}
       </p>
 
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-white/60">
         {description}
       </p>
     </div>
