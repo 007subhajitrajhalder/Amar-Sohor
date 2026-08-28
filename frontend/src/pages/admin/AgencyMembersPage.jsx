@@ -1,5 +1,6 @@
-import { ArrowLeft, ArrowUpDown, Mail, Moon, Phone, Search, ShieldAlert, ShieldCheck, Sun, UserMinus, UserPlus, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowUpDown, Mail, Moon, Phone, Search, ShieldAlert, ShieldCheck, Sun, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { useState } from "react";
+import AdminBrandLockup from "./AdminBrandLockup";
 import { useAdminTheme } from "./useAdminTheme";
 
 import {
@@ -326,9 +327,9 @@ function AgencyMembersPage() {
           }}
         />
       ))}
-      <section className="relative z-[1] mx-auto w-full max-w-6xl">
+      <section className="admin-dashboard-welcome relative z-[1] mx-auto w-full max-w-6xl">
         {/* Back button */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="admin-dashboard-reveal flex items-center justify-between gap-4" style={{ "--dashboard-delay": "80ms" }}>
         <button
           type="button"
           onClick={() =>
@@ -353,11 +354,9 @@ function AgencyMembersPage() {
         </div>
 
         {/* Page heading */}
-        <div className="mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <div className="admin-dashboard-reveal mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end" style={{ "--dashboard-delay": "180ms" }}>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-200/70">
-              Admin Portal
-            </p>
+            <AdminBrandLockup />
 
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
               Agency Members
@@ -384,7 +383,7 @@ function AgencyMembersPage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="admin-dashboard-reveal mt-8 grid gap-4 sm:grid-cols-3" style={{ "--dashboard-delay": "280ms" }}>
           <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
             <div className="flex items-center justify-between"><p className="text-sm text-white/60">Total members</p><Users size={18} className="text-cyan-200" aria-hidden="true" /></div>
             <p className="mt-3 text-3xl font-bold">{agencyMembers.length}</p>
@@ -402,7 +401,7 @@ function AgencyMembersPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex items-center justify-between gap-4">
+        <div className="admin-dashboard-reveal mt-8 flex items-center justify-between gap-4" style={{ "--dashboard-delay": "380ms" }}>
           <h2 className="text-xl font-bold text-white">Member directory</h2>
           <button type="button" onClick={() => navigate("/admin/agency-members/add")} className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/70 hover:bg-cyan-300/20 hover:text-white">
             <UserPlus size={16} aria-hidden="true" />
@@ -424,7 +423,7 @@ function AgencyMembersPage() {
         )}
 
         {/* Search and count */}
-        <section className="admin-glass-card mt-7 rounded-2xl border border-white/20 p-5 text-white shadow-xl">
+        <section className="admin-dashboard-reveal admin-glass-card mt-7 rounded-2xl border border-white/20 p-5 text-white shadow-xl" style={{ "--dashboard-delay": "460ms" }}>
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
             <div className="relative">
             <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/45" aria-hidden="true" />
@@ -471,7 +470,7 @@ function AgencyMembersPage() {
         </section>
 
         {/* Member list */}
-        <section className="mt-6 grid gap-4">
+        <section className="admin-dashboard-reveal mt-6 grid gap-4" style={{ "--dashboard-delay": "540ms" }}>
           {filteredMembers.map((member) => (
             <article
               key={member.id}

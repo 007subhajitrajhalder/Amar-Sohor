@@ -5,9 +5,7 @@ import {
   ArrowUpRight,
   Building2,
   Calendar,
-  Check,
   CheckCircle2,
-  ChevronDown,
   ClipboardList,
   Clock3,
   MapPin,
@@ -20,6 +18,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import AdminBrandLockup from "./AdminBrandLockup";
+import AdminDropdown from "./AdminDropdown";
+import { getComplaintWorkflow } from "./adminComplaintStore";
 import { useAdminTheme } from "./useAdminTheme";
 
 const auraLayers = [
@@ -65,20 +66,7 @@ function AllComplaintsPage() {
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [sortKey, setSortKey] = useState("submittedDate");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const sortDropdownRef = useRef(null);
   const searchInputRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
-        setSortMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -135,7 +123,10 @@ function AllComplaintsPage() {
       status: "PENDING",
       submittedDate: "17 August 2026"
     }
-  ];
+  ].map((complaint) => ({
+    ...complaint,
+    status: getComplaintWorkflow(complaint.id).status || complaint.status
+  }));
 
   const filteredComplaints = complaints.filter((complaint) => {
     const searchValue = searchText.toLowerCase();
@@ -259,9 +250,7 @@ function AllComplaintsPage() {
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
-              City operations
-            </p>
+            <AdminBrandLockup />
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               All Complaints
             </h1>
@@ -459,57 +448,14 @@ function AllComplaintsPage() {
             </div>
 
             <div className="relative flex flex-wrap items-center gap-2" aria-label="Sort complaints">
-              <div className="relative" ref={sortDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setSortMenuOpen((currentOpen) => !currentOpen)}
-                  aria-haspopup="listbox"
-                  aria-expanded={sortMenuOpen}
-                  aria-label={`Sort complaints by ${currentSortOption.label}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white/70 backdrop-blur-xl transition hover:bg-white/15 hover:text-white"
-                >
-                  <currentSortOption.icon size={16} className="text-cyan-200" aria-hidden="true" />
-                  {currentSortOption.label}
-                  <ChevronDown size={15} className={`transition-transform duration-300 ${sortMenuOpen ? "rotate-180" : ""}`} aria-hidden="true" />
-                </button>
-
-                {sortMenuOpen && (
-                  <div
-                    role="listbox"
-                    aria-label="Sort complaints by"
-                    className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-2xl border border-white/20 bg-[#1a1713]/95 p-1.5 shadow-2xl shadow-cyan-950/40 backdrop-blur-2xl"
-                  >
-                    {SORT_OPTIONS.map((option) => {
-                      const OptionIcon = option.icon;
-                      const isSelected = sortKey === option.value;
-
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          role="option"
-                          aria-selected={isSelected}
-                          onClick={() => {
-                            setSortKey(option.value);
-                            setSortMenuOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-                            isSelected
-                              ? "border border-cyan-200/40 bg-cyan-300/15 text-cyan-100"
-                              : "border border-transparent text-white/70 hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          <OptionIcon size={15} className={isSelected ? "text-cyan-200" : "text-white/45"} aria-hidden="true" />
-                          {option.label}
-                          {isSelected && (
-                            <Check size={15} className="ml-auto text-cyan-200" aria-hidden="true" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <AdminDropdown
+                id="complaint-sort"
+                value={sortKey}
+                onChange={setSortKey}
+                options={SORT_OPTIONS}
+                className="w-56"
+                menuClassName="right-0 left-auto"
+              />
 
               <button
                 type="button"
@@ -576,8 +522,8 @@ function AllComplaintsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 lg:w-[320px] lg:justify-end">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${statusInfo.badge}`}>
+                <div className="flex flex-wrap items-center gap-3 lg:w-[380px] lg:flex-nowrap lg:justify-end">
+                  <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-bold ${statusInfo.badge}`}>
                     <StatusIcon size={13} aria-hidden="true" />
                     {formatStatus(complaint.status)}
                   </span>

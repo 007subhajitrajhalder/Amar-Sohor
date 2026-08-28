@@ -44,6 +44,8 @@ function AddAgencyMemberPage() {
   const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
 
   const handleChange = ({ target: { name, value } }) => {
     setFormData((current) => ({
@@ -200,6 +202,7 @@ function AddAgencyMemberPage() {
                 type="submit"
                 className="rounded-xl bg-cyan-700 px-5 py-3 font-bold text-white shadow-lg transition hover:bg-cyan-600"
               >
+                <UserPlus size={17} aria-hidden="true" />
                 Add Agency Member
               </button>
               <button
