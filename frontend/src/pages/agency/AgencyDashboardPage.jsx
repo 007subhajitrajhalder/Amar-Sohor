@@ -98,7 +98,7 @@ function AgencyDashboardPage() {
           </h1>
 
           <p className="mt-2 text-sm text-white/60">
-            View agency complaints and facility information.
+            View agencies complaints and facility information.
           </p>
         </div>
 
