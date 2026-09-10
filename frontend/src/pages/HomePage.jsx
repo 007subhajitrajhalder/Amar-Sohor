@@ -13,6 +13,8 @@ import {
   Droplets,
   Mail,
   Phone,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
@@ -172,7 +174,7 @@ function HomePage() {
 
       <header
         className={`fixed left-0 right-0 top-0 z-[100] px-4 py-4 transition-all duration-300 ease-in-out md:px-8 ${
-          showHeader ? "translate-y-0" : "-translate-y-full"
+          showHeader || mobileMenu ? "translate-y-0" : "-translate-y-full"
         } ${
           isScrolled
             ? "bg-slate-950/90 shadow-2xl backdrop-blur-md border-b border-white/10"
@@ -206,10 +208,18 @@ function HomePage() {
               <a href="#about" className="text-sm text-white/70 transition duration-300 hover:text-white">
                 About Us
               </a>
-
+              <a href="#report-issue" className="text-sm text-white/70 transition duration-300 hover:text-white">
+                Report an Issue
+              </a>
+              <a href="#your-recommendations" className="text-sm text-white/70 transition duration-300 hover:text-white">
+                Your Recommendations
+              </a>
+              
               <a href="#how-it-works" className="text-sm text-white/70 transition duration-300 hover:text-white">
                 How It Works
               </a>
+                
+              
             </nav>
 
             <div className="hidden items-center gap-3 md:flex">
@@ -231,6 +241,9 @@ function HomePage() {
             <button
               type="button"
               onClick={() => setMobileMenu(!mobileMenu)}
+              aria-label={mobileMenu ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileMenu}
+              aria-controls="mobile-navigation"
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/10 lg:hidden"
             >
               {mobileMenu ? <X size={21} /> : <Menu size={21} />}
@@ -238,7 +251,7 @@ function HomePage() {
           </div>
 
           {mobileMenu && (
-            <div className="mt-2 rounded-2xl border border-white/15 bg-black/85 p-4 shadow-2xl backdrop-blur-xl lg:hidden">
+            <div id="mobile-navigation" className="mt-2 rounded-2xl border border-white/15 bg-black/85 p-4 shadow-2xl backdrop-blur-xl lg:hidden">
               <div className="flex flex-col gap-1">
                 <Link to="/" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-lime-300 hover:bg-white/10">
                   Home
@@ -250,6 +263,14 @@ function HomePage() {
 
                 <a href="#how-it-works" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-white/70 hover:bg-white/10">
                   How It Works
+                </a>
+
+                <a href="#report-issue" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-white/70 hover:bg-white/10">
+                  Report an Issue
+                </a>
+
+                <a href="#your-recommendations" onClick={() => setMobileMenu(false)} className="rounded-xl px-4 py-3 text-white/70 hover:bg-white/10">
+                  Your Recommendations
                 </a>
               </div>
 
@@ -406,10 +427,10 @@ function HomePage() {
                   <Link
                     key={facility.name}
                     to={category ? `/map?category=${category}` : "/map"}
-                    className="group flex aspect-square flex-col items-center justify-center rounded-3xl border border-white/10 bg-black/25 p-6 text-center backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:border-lime-300/30 hover:bg-white/10"
+                    className="group flex min-w-0 flex-col items-center justify-center rounded-3xl border border-white/10 bg-black/25 p-4 text-center backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:border-lime-300/30 hover:bg-white/10 sm:aspect-square sm:p-6"
                   >
-                    <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black md:h-32 md:w-32">
-                      <Icon size={65} strokeWidth={1.5} />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-lime-300/10 text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black sm:h-28 sm:w-28 lg:h-32 lg:w-32">
+                      <Icon className="h-10 w-10 sm:h-16 sm:w-16" strokeWidth={1.5} />
                     </div>
 
                     <p className="mt-6 text-base font-semibold text-white md:text-lg">
@@ -423,11 +444,116 @@ function HomePage() {
                 );
               })}
             </div>
+
+            <div id="report-issue" className="mx-auto mt-12 max-w-5xl scroll-mt-28">
+              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-blue-500/10 blur-2xl" />
+
+                <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/25 bg-lime-300/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[2px] text-lime-300">
+                      <MapPin size={13} />
+                      <span>Citizen Issue Report</span>
+                    </div>
+
+                    <h3 className="mt-3 font-serif text-2xl font-bold text-white md:text-3xl">
+                      Report an issue with a public facility.
+                    </h3>
+
+                    <p className="mt-2.5 text-sm leading-relaxed text-white/65 md:text-base">
+                      Find the facility on the map and let the right agency know about any problem that needs attention.
+                    </p>
+                    {/* Facility type tags */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Trash2 size={13} className="text-lime-300" /> Dustbins
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Droplets size={13} className="text-lime-300" /> Water Dispensers
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <DoorOpen size={13} className="text-lime-300" /> Public Toilets
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Car size={13} className="text-lime-300" /> Parking Spots
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <Link
+                      to="/map"
+                      className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-lime-300 px-7 py-4 text-sm font-bold text-black shadow-lg shadow-lime-300/15 transition duration-300 hover:scale-[1.02] hover:bg-lime-200 md:w-auto md:text-base"
+                    >
+                      <span>Report an Issue</span>
+                      <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
+            {/* CITIZEN FACILITY RECOMMENDATION CARD */}
+            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
+
+            <div className="mx-auto mt-12 max-w-5xl">
+              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
+                {/* Decorative background gradients */}
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-blue-500/10 blur-2xl" />
+
+                <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/25 bg-lime-300/10 px-3.5 py-1 text-xs font-bold tracking-[2px] text-lime-300 uppercase">
+                      <Sparkles size={13} />
+                      <span>Citizen Recommendation</span>
+                    </div>
+
+                    <h3 className="mt-3 font-serif text-2xl font-bold text-white md:text-3xl">
+                      Notice a missing facility in your neighborhood?
+                    </h3>
+
+                    <p className="mt-2.5 text-sm leading-relaxed text-white/65 md:text-base">
+                      Recommend new spots for <strong className="text-lime-300 font-semibold">dustbins</strong>, <strong className="text-lime-300 font-semibold">water dispensers</strong>, <strong className="text-lime-300 font-semibold">public toilets</strong>, or <strong className="text-lime-300 font-semibold">parking spaces</strong>. Provide your location and upload a photo to notify municipal authorities.
+                    </p>
+
+                    {/* Facility type tags */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Trash2 size={13} className="text-lime-300" /> Dustbins
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Droplets size={13} className="text-lime-300" /> Water Dispensers
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <DoorOpen size={13} className="text-lime-300" /> Public Toilets
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Car size={13} className="text-lime-300" /> Parking Spots
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <Link
+                      to="/citizen/recommendation"
+                      className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-lime-300 px-7 py-4 text-sm font-bold text-black shadow-lg shadow-lime-300/15 transition duration-300 hover:scale-[1.02] hover:bg-lime-200 md:w-auto md:text-base"
+                    >
+                      <span>Recommend a Facility</span>
+                      <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </section>
+
         {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
-        <section id="about" className="mx-auto max-w-6xl px-4 py-8 md:px-8">
+        <section id="about" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
             {/* Left Column: Compact Content */}
             <div className="p-6 md:p-8">
@@ -496,7 +622,7 @@ function HomePage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="mx-auto max-w-7xl px-5 py-20 md:px-10">
+        <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-28 px-5 py-20 md:px-10">
           <div className="mb-10">
             <p className="text-xs font-bold tracking-[4px] text-lime-300">
               HOW IT WORKS
@@ -606,6 +732,14 @@ function HomePage() {
                   <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
                   How It Works
                 </a>
+
+                <Link
+                  to="/citizen/recommendation"
+                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
+                >
+                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
+                  Recommend Facility
+                </Link>
               </div>
             </div>
 

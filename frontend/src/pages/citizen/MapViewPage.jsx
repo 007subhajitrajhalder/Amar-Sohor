@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  ArrowLeft,
   Search,
   MapPin,
   Navigation,
@@ -92,6 +93,7 @@ function facilityIcon(category, props) {
 }
 
 function MapViewPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const selectedCategory = searchParams.get("category") || "all";
@@ -178,6 +180,15 @@ function MapViewPage() {
               </h1>
             </div>
           </Link>
+
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
+          >
+            <ArrowLeft size={17} />
+            <span className="hidden sm:inline">Back to Previous Page</span>
+          </button>
         </div>
       </header>
 
