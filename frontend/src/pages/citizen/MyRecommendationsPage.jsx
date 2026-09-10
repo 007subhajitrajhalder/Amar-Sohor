@@ -12,7 +12,6 @@ import {
   MapPin,
   Plus,
   Search,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -21,8 +20,12 @@ import { SEED_RECOMMENDATIONS } from "./recommendationsData";
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
 const statusStyle = {
-  "Under Review": "bg-amber-400/10 text-amber-300 border border-amber-400/20",
+  Submitted: "bg-amber-400/10 text-amber-300 border border-amber-400/20",
+  "Pending Review": "bg-amber-400/10 text-amber-300 border border-amber-400/20",
+  "Under Review": "bg-blue-400/10 text-blue-300 border border-blue-400/20",
   "Site Survey Completed": "bg-blue-400/10 text-blue-300 border border-blue-400/20",
+  Allotted: "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20",
+  "Under Investigation": "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20",
   Approved: "bg-purple-400/10 text-purple-300 border border-purple-400/20",
   Installed: "bg-lime-300/10 text-lime-300 border border-lime-300/20",
 };
@@ -77,8 +80,10 @@ function MyRecommendationsPage() {
     // Status filter
     const matchesFilter =
       selectedFilter === "all" ||
+      (selectedFilter === "submitted" &&
+        (r.status === "Submitted" || r.status === "Pending Review" || !r.status)) ||
       (selectedFilter === "under-review" &&
-        (r.status === "Under Review" || r.status === "Site Survey Completed")) ||
+        (r.status === "Under Review" || r.status === "Site Survey Completed" || r.status === "Allotted" || r.status === "Under Investigation")) ||
       (selectedFilter === "approved" && r.status === "Approved") ||
       (selectedFilter === "installed" && r.status === "Installed");
 
@@ -93,9 +98,14 @@ function MyRecommendationsPage() {
   });
 
   const countStatus = (stageFilter) => {
+    if (stageFilter === "submitted") {
+      return recommendations.filter(
+        (r) => r.status === "Submitted" || r.status === "Pending Review" || !r.status
+      ).length;
+    }
     if (stageFilter === "under-review") {
       return recommendations.filter(
-        (r) => r.status === "Under Review" || r.status === "Site Survey Completed"
+        (r) => r.status === "Under Review" || r.status === "Site Survey Completed" || r.status === "Allotted" || r.status === "Under Investigation"
       ).length;
     }
     if (stageFilter === "approved") {
@@ -109,22 +119,22 @@ function MyRecommendationsPage() {
 
   const stats = [
     {
-      label: "Total Recommendations",
+      label: "Total Proposals",
       value: recommendations.length,
       icon: Lightbulb,
       color: "text-white",
     },
     {
-      label: "Under Review",
-      value: countStatus("under-review"),
+      label: "Awaiting Review",
+      value: countStatus("submitted"),
       icon: CircleDashed,
       color: "text-amber-300",
     },
     {
-      label: "Approved",
-      value: countStatus("approved"),
-      icon: Sparkles,
-      color: "text-purple-300",
+      label: "Under Review / Survey",
+      value: countStatus("under-review"),
+      icon: CircleDashed,
+      color: "text-blue-300",
     },
     {
       label: "Installed & Live",
@@ -221,7 +231,8 @@ function MyRecommendationsPage() {
             <div className="flex flex-wrap gap-2">
               {[
                 { id: "all", label: "All Proposals" },
-                { id: "under-review", label: "Under Review" },
+                { id: "submitted", label: "Awaiting Review" },
+                { id: "under-review", label: "In Review / Survey" },
                 { id: "approved", label: "Approved" },
                 { id: "installed", label: "Installed & Live" },
               ].map((tab) => (

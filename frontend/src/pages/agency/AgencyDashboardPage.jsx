@@ -69,7 +69,16 @@ function AgencyDashboardPage() {
         "View, add and manage public facilities belonging to your agency.",
       icon: "🏢",
       route: "/agency/facilities",
-      buttonText: "Manage Facilities"
+      buttonText: "Manage Facilities",
+      addFacilityRoute: "/agency/facilities/add"
+    },
+    {
+      title: "Assigned Recommendations",
+      description:
+        "Review citizen facility proposals allocated to you, conduct field investigations, and approve or reject them.",
+      icon: "💡",
+      route: "/agency/recommendations",
+      buttonText: "View Recommendations"
     }
   ];
 
@@ -221,7 +230,7 @@ function AgencyDashboardPage() {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-5 md:grid-cols-3">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {navigationCards.map((card) => (
               <article
                 key={card.title}
@@ -261,6 +270,19 @@ function AgencyDashboardPage() {
                 >
                   {card.buttonText}
                 </Link>
+
+                {card.addFacilityRoute && (
+                  <Link
+                    to={card.addFacilityRoute}
+                    className={`mt-3 rounded-xl border px-5 py-3 text-center text-sm font-bold shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 ${
+                      isDarkMode
+                        ? "border-lime-300/30 bg-lime-300/10 text-lime-200 shadow-lime-950/20 hover:bg-lime-300/20 hover:text-white"
+                        : "border-lime-300 bg-lime-50 text-lime-700 shadow-lime-200/40 hover:bg-lime-100 hover:text-lime-800"
+                    }`}
+                  >
+                    Add New Facility
+                  </Link>
+                )}
               </article>
             ))}
           </div>

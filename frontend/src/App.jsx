@@ -25,6 +25,8 @@ import AddFacilityPage from "./pages/agency/AddFacilityPage";
 import FacilityManagementPage from "./pages/agency/FacilityManagementPage";
 import UploadResolutionPage from "./pages/agency/UploadResolutionPage";
 import EditFacilityPage from "./pages/agency/EditFacilityPage";
+import AssignedRecommendationsPage from "./pages/agency/AssignedRecommendationsPage";
+import RecommendationInvestigationPage from "./pages/agency/RecommendationInvestigationPage";
 
 // Admin pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -140,6 +142,16 @@ function App() {
       <Route
         path="/agency/reports/:reportId/resolution"
         element={<UploadResolutionPage />}
+      />
+
+      <Route
+        path="/agency/recommendations"
+        element={<AssignedRecommendationsPage />}
+      />
+
+      <Route
+        path="/agency/recommendations/:recommendationId/investigate"
+        element={<RecommendationInvestigationPage />}
       />
 
       {/* Admin */}
