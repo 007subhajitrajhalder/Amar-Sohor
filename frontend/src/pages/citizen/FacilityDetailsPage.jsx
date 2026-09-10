@@ -77,21 +77,25 @@ function FacilityDetailsPage() {
     facilities[facilityId] || facilities[1];
   const [reviews, setReviews] = useState(seedReviews);
   const [review, setReview] = useState("");
+  const [userRating, setUserRating] = useState(0);
   const submitReview = (event) => {
-    event.preventDefault();
-    if (!review.trim()) return;
-    setReviews([
-      {
-        id: Date.now(),
-        name: "You",
-        rating: 5,
-        date: "Just now",
-        text: review.trim(),
-      },
-      ...reviews,
-    ]);
-    setReview("");
-  };
+  event.preventDefault();
+  if (!review.trim() || userRating === 0) return;
+
+  setReviews([
+    {
+      id: Date.now(),
+      name: "You",
+      rating: userRating,
+      date: "Just now",
+      text: review.trim(),
+    },
+    ...reviews,
+  ]);
+
+  setReview("");
+  setUserRating(0);
+};
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#070b18] text-white">
@@ -191,7 +195,25 @@ function FacilityDetailsPage() {
                 onSubmit={submitReview}
                 className="mt-6 border-b border-white/10 pb-6"
               >
-                <Stars value={5} />
+                <div className="flex gap-1">
+  {[1, 2, 3, 4, 5].map((star) => (
+    <button
+      key={star}
+      type="button"
+      onClick={() => setUserRating(star)}
+      className="transition-transform hover:scale-110"
+    >
+      <Star
+        size={22}
+        className={
+          star <= userRating
+            ? "fill-lime-300 text-lime-300"
+            : "text-white/20"
+        }
+      />
+    </button>
+  ))}
+</div>
                 <textarea
                   value={review}
                   onChange={(e) => setReview(e.target.value)}

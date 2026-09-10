@@ -14,6 +14,7 @@ import {
   Clock,
   Phone,
   Mail,
+  Flag,
 } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -94,18 +95,11 @@ function facilityIcon(category, props) {
 
 function MapViewPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedCategory = searchParams.get("category") || "all";
 
   const [location, setLocation] = useState("");
-
-  const filteredFacilities =
-    selectedCategory === "all"
-      ? facilityList
-      : facilityList.filter(
-          (facility) => facility.category === selectedCategory,
-        );
 
   const categoryLabel = {
     all: "All Categories",
@@ -115,13 +109,33 @@ function MapViewPage() {
     parking: "Parking",
   };
 
-  const currentCategoryLabel = categoryLabel[selectedCategory] || "Facilities";
+  const currentCategoryLabel =
+    categoryLabel[selectedCategory] || "Facilities";
+
+  const filteredFacilities =
+    selectedCategory === "all"
+      ? facilityList
+      : facilityList.filter(
+          (facility) => facility.category === selectedCategory
+        );
 
   const mapQuery =
     selectedCategory === "all"
       ? "public facilities Kolkata India"
       : `${currentCategoryLabel} Kolkata India`;
 
+  // CATEGORY DROPDOWN
+  const handleCategoryChange = (event) => {
+    const newCategory = event.target.value;
+
+    setSearchParams(
+      newCategory === "all"
+        ? {}
+        : { category: newCategory }
+    );
+  };
+
+  // CURRENT LOCATION
   const handleCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -137,12 +151,18 @@ function MapViewPage() {
       },
       () => {
         alert("Unable to access your current location.");
-      },
+      }
     );
   };
 
+  // REPORT ISSUE
+  const handleReportIssue = (facility) => {
+  navigate(`/citizen/report-issue/${facility.id}`);
+};
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#070b18] text-white">
+
       {/* =====================================================
           BACKGROUND
       ====================================================== */}
@@ -163,6 +183,7 @@ function MapViewPage() {
 
       <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#07101f]/75 px-4 py-4 backdrop-blur-2xl md:px-8">
         <div className="flex items-center justify-between px-2 py-1">
+
           {/* LOGO */}
 
           <Link to="/" className="group flex shrink-0 items-center gap-3">
@@ -187,7 +208,9 @@ function MapViewPage() {
             className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
           >
             <ArrowLeft size={17} />
-            <span className="hidden sm:inline">Back to Previous Page</span>
+            <span className="hidden sm:inline">
+              Back to Previous Page
+            </span>
           </button>
         </div>
       </header>
@@ -197,12 +220,14 @@ function MapViewPage() {
       ====================================================== */}
 
       <main className="relative z-10">
+
         {/* =====================================================
             SEARCH / HERO
         ====================================================== */}
 
         <section className="relative overflow-hidden px-5 pb-14 pt-16 md:px-10 md:pt-20">
           <div className="mx-auto max-w-7xl">
+
             {/* Breadcrumb */}
 
             <div className="mb-8 flex items-center gap-2 text-xs text-white/35">
@@ -212,7 +237,9 @@ function MapViewPage() {
 
               <ChevronRight size={14} />
 
-              <span className="text-white/65">{currentCategoryLabel}</span>
+              <span className="text-white/65">
+                {currentCategoryLabel}
+              </span>
             </div>
 
             {/* HERO */}
@@ -231,14 +258,17 @@ function MapViewPage() {
 
               <h2 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
                 Find a{" "}
-                <span className="text-lime-300">{currentCategoryLabel}</span>
+                <span className="text-lime-300">
+                  {currentCategoryLabel}
+                </span>
                 <br />
                 Near You.
               </h2>
 
               <p className="mt-5 max-w-2xl text-sm leading-7 text-white/50 md:text-base">
-                Locate registered public facilities around your current location
-                and find the nearest available service point within 10 km.
+                Locate registered public facilities around your current
+                location and find the nearest available service point
+                within 10 km.
               </p>
             </div>
 
@@ -246,6 +276,7 @@ function MapViewPage() {
 
             <div className="relative z-20 mt-10 max-w-6xl rounded-3xl border border-white/10 bg-white/[0.055] p-2 shadow-2xl shadow-black/30 backdrop-blur-2xl">
               <div className="flex flex-col gap-2 md:flex-row">
+
                 {/* LOCATION */}
 
                 <div className="flex min-h-[62px] flex-1 items-center gap-3 rounded-2xl bg-white/[0.045] px-4">
@@ -299,29 +330,70 @@ function MapViewPage() {
 
         <section id="map" className="px-5 py-10 md:px-10">
           <div className="mx-auto max-w-7xl">
-            <div className="mb-7">
-              <p className="text-xs font-bold tracking-[3px] text-lime-300">
-                LOCATION MAP
-              </p>
 
-              <h2 className="mt-2 text-2xl font-bold md:text-3xl">
-                {currentCategoryLabel}{" "}
-                <span className="text-white/45">near Kolkata</span>
-              </h2>
+            <div className="mb-7 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
-              <p className="mt-2 text-sm text-white/40">
-                Explore nearby {currentCategoryLabel.toLowerCase()} locations.
-              </p>
+              <div>
+                <p className="text-xs font-bold tracking-[3px] text-lime-300">
+                  LOCATION MAP
+                </p>
+
+                <h2 className="mt-2 text-2xl font-bold md:text-3xl">
+                  {currentCategoryLabel}{" "}
+                  <span className="text-white/45">
+                    near Kolkata
+                  </span>
+                </h2>
+
+                <p className="mt-2 text-sm text-white/40">
+                  Explore nearby{" "}
+                  {currentCategoryLabel.toLowerCase()} locations.
+                </p>
+              </div>
+
+              {/* =================================================
+                  FACILITY CATEGORY DROPDOWN
+              ================================================== */}
+
+              <div className="w-full md:w-[240px]">
+                <label
+                  htmlFor="facility-category"
+                  className="mb-2 block text-[10px] font-semibold uppercase tracking-[2px] text-white/35"
+                >
+                  Select Facility
+                </label>
+
+                <div className="relative">
+                  <select
+                    id="facility-category"
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    className="w-full appearance-none rounded-2xl border border-white/10 bg-[#101728] px-4 py-3.5 pr-10 text-sm font-medium text-white outline-none transition duration-300 hover:border-lime-300/30 focus:border-lime-300/50 focus:ring-1 focus:ring-lime-300/20"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="toilet">Public Toilet</option>
+                    <option value="dustbin">Dustbin</option>
+                    <option value="water">Drinking Water</option>
+                    <option value="parking">Parking</option>
+                  </select>
+
+                  <ChevronRight
+                    size={17}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* MAP GLASS BOX */}
 
             <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
               <div className="relative h-[420px] w-full overflow-hidden rounded-[22px]">
+
                 <iframe
                   title={`${currentCategoryLabel} locations in Kolkata`}
                   src={`https://www.google.com/maps?q=${encodeURIComponent(
-                    mapQuery,
+                    mapQuery
                   )}&output=embed`}
                   className="h-full w-full border-0"
                   loading="lazy"
@@ -332,8 +404,11 @@ function MapViewPage() {
 
                 <div className="pointer-events-none absolute left-5 top-5 rounded-2xl border border-white/10 bg-[#070b18]/80 px-4 py-3 shadow-xl backdrop-blur-xl">
                   <div className="flex items-center gap-3">
+
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-300 text-black">
-                      {facilityIcon(selectedCategory, { size: 19 })}
+                      {facilityIcon(selectedCategory, {
+                        size: 19,
+                      })}
                     </div>
 
                     <div>
@@ -345,8 +420,10 @@ function MapViewPage() {
                         Kolkata
                       </p>
                     </div>
+
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -358,9 +435,11 @@ function MapViewPage() {
 
         <section id="facilities" className="px-5 py-16 md:px-10">
           <div className="mx-auto max-w-7xl">
+
             {/* TITLE */}
 
             <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+
               <div>
                 <p className="text-xs font-bold tracking-[3px] text-lime-300">
                   NEARBY FACILITIES
@@ -391,6 +470,7 @@ function MapViewPage() {
                     key={facility.id}
                     className="group rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/10 backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/25 hover:bg-white/[0.07]"
                   >
+
                     {/* CARD TOP */}
 
                     <div className="flex items-start justify-between">
@@ -411,7 +491,9 @@ function MapViewPage() {
 
                     {/* NAME */}
 
-                    <h3 className="mt-5 text-lg font-bold">{facility.name}</h3>
+                    <h3 className="mt-5 text-lg font-bold">
+                      {facility.name}
+                    </h3>
 
                     {/* ADDRESS */}
 
@@ -427,15 +509,20 @@ function MapViewPage() {
                     {/* INFO */}
 
                     <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
-                      <div className="flex items-center gap-1.5 text-xs text-white/50">
-                        <Navigation size={14} className="text-lime-300" />
 
+                      <div className="flex items-center gap-1.5 text-xs text-white/50">
+                        <Navigation
+                          size={14}
+                          className="text-lime-300"
+                        />
                         {facility.distance}
                       </div>
 
                       <div className="flex items-center gap-1.5 text-xs text-white/50">
-                        <Star size={14} className="text-lime-300" />
-
+                        <Star
+                          size={14}
+                          className="text-lime-300"
+                        />
                         {facility.rating}
                       </div>
 
@@ -443,6 +530,7 @@ function MapViewPage() {
                         <Clock size={14} />
                         Open
                       </div>
+
                     </div>
 
                     {/* VIEW DETAILS */}
@@ -454,6 +542,18 @@ function MapViewPage() {
                       View Details
                       <ChevronRight size={16} />
                     </Link>
+
+                    {/* REPORT ISSUE */}
+
+                    <button
+                      type="button"
+                      onClick={() => handleReportIssue(facility)}
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-medium text-red-300 transition duration-300 hover:border-red-400/40 hover:bg-red-400 hover:text-white"
+                    >
+                      <Flag size={16} />
+                      Report Issue
+                    </button>
+
                   </div>
                 );
               })}
@@ -470,6 +570,7 @@ function MapViewPage() {
         id="contact"
         className="relative overflow-hidden border-t border-white/10 bg-[#07101f]/80 px-5 py-14 text-white backdrop-blur-2xl md:px-10"
       >
+
         {/* FOOTER GLOW */}
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -481,9 +582,11 @@ function MapViewPage() {
         </div>
 
         <div className="relative mx-auto max-w-7xl">
+
           {/* FOOTER GRID */}
 
           <div className="grid gap-12 md:grid-cols-4">
+
             {/* BRAND */}
 
             <div>
@@ -508,8 +611,9 @@ function MapViewPage() {
               </Link>
 
               <p className="mt-6 max-w-sm text-sm leading-7 text-white/45">
-                A citizen-centric smart city platform designed to help people
-                discover public facilities and stay connected with their city.
+                A citizen-centric smart city platform designed to help
+                people discover public facilities and stay connected with
+                their city.
               </p>
 
               <div className="mt-6 flex items-center gap-2">
@@ -531,6 +635,7 @@ function MapViewPage() {
               </h4>
 
               <div className="mt-6 flex flex-col gap-4">
+
                 <Link
                   to="/"
                   className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
@@ -554,6 +659,7 @@ function MapViewPage() {
                   <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
                   How It Works
                 </Link>
+
               </div>
             </div>
 
@@ -565,6 +671,7 @@ function MapViewPage() {
               </h4>
 
               <div className="mt-6 flex flex-col gap-5">
+
                 {/* EMAIL */}
 
                 <a
@@ -606,6 +713,7 @@ function MapViewPage() {
                     </p>
                   </div>
                 </a>
+
               </div>
             </div>
 
@@ -622,6 +730,7 @@ function MapViewPage() {
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
+
                 {/* FACEBOOK */}
 
                 <a
@@ -669,8 +778,10 @@ function MapViewPage() {
                 >
                   <span className="text-sm font-bold">𝕏</span>
                 </a>
+
               </div>
             </div>
+
           </div>
 
           {/* DIVIDER */}
@@ -688,6 +799,7 @@ function MapViewPage() {
               Making cities smarter, cleaner and more connected.
             </p>
           </div>
+
         </div>
       </footer>
     </div>
