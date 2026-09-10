@@ -112,13 +112,13 @@ function AgencyDashboardPage() {
         {/* Dashboard heading */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-cyan-100/60">
-            Agency Portal
-          </p>
+            <p className={`text-sm font-semibold uppercase tracking-widest ${isDarkMode ? "text-cyan-100/60" : "text-cyan-700"}`}>
+              Agency Portal
+            </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-            Agency Dashboard
-          </h1>
+            <h1 className={`mt-2 text-3xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+              Agency Dashboard
+            </h1>
 
             <p
               className={`mt-2 text-sm ${
@@ -158,7 +158,7 @@ function AgencyDashboardPage() {
 
         {/* Statistics cards */}
         <section className="mt-8">
-          <h2 className="text-xl font-bold tracking-tight text-white">
+          <h2 className={`text-xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"}`}>
             Agency Overview
           </h2>
 

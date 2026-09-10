@@ -74,6 +74,17 @@ function AssignedReportsPage() {
           isDarkMode ? "text-white" : "text-slate-900"
         }`}
       >
+        <div className="mb-6">
+          <Link
+            to="/agency"
+            className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
+              isDarkMode ? "text-cyan-400 hover:text-cyan-300" : "text-cyan-700 hover:text-cyan-800"
+            }`}
+          >
+            <span>&larr;</span> Back to Dashboard
+          </Link>
+        </div>
+
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p
@@ -132,19 +143,53 @@ function AssignedReportsPage() {
           {reports.map((report) => (
             <article
               key={report.id}
-              className="flex justify-between rounded-2xl bg-white p-6 shadow"
+              className={`group flex items-center justify-between rounded-2xl border p-6 shadow-xl ring-1 ring-inset backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                isDarkMode
+                  ? "border-white/30 bg-white/5 shadow-cyan-950/20 ring-white/15 hover:border-cyan-200/40 hover:bg-white/10"
+                  : "border-slate-200 bg-white/85 shadow-slate-300/40 ring-white hover:border-cyan-300 hover:bg-white"
+              }`}
             >
               <div>
-                <p className="text-sm text-slate-500">Report #{report.id}</p>
+                <p
+                  className={`text-sm font-semibold ${
+                    isDarkMode ? "text-cyan-200/60" : "text-cyan-700"
+                  }`}
+                >
+                  Report #{report.id}
+                </p>
 
-                <h2 className="mt-1 text-xl font-bold">{report.title}</h2>
+                <h2
+                  className={`mt-1 text-xl font-bold ${
+                    isDarkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {report.title}
+                </h2>
 
-                <p className="mt-2">{report.status}</p>
+                <div className="mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                  <span
+                    className={`${
+                      isDarkMode
+                        ? report.status === "Pending"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                          : "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
+                        : report.status === "Pending"
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-cyan-200 bg-cyan-50 text-cyan-700"
+                    }`}
+                  >
+                    {report.status}
+                  </span>
+                </div>
               </div>
 
               <Link
                 to={`/agency/reports/${report.id}/investigate`}
-                className="self-center rounded-xl bg-emerald-700 px-4 py-2 font-bold text-white"
+                className={`self-center rounded-xl border px-5 py-3 text-center text-sm font-bold shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 ${
+                  isDarkMode
+                    ? "border-emerald-200/30 bg-emerald-500/20 text-emerald-100 shadow-emerald-950/20 hover:bg-emerald-500/30 hover:text-white"
+                    : "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-200/40 hover:bg-emerald-100 hover:text-emerald-800"
+                }`}
               >
                 Investigate
               </Link>
