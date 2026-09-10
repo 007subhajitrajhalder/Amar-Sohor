@@ -34,6 +34,9 @@ import AddAgencyMemberPage from "./pages/admin/AddAgencyMemberPage";
 import AllComplaintsPage from "./pages/admin/AllComplaintsPage";
 import AdminComplaintDetailsPage from "./pages/admin/AdminComplaintDetailsPage";
 import AgencyMembersPage from "./pages/admin/AgencyMembersPage";
+import AllRecommendationsPage from "./pages/admin/AllRecommendationsPage";
+import AllocateRecommendationPage from "./pages/admin/AllocateRecommendationPage";
+import AdminRecommendationProgressPage from "./pages/admin/AdminRecommendationProgressPage";
 
 
 function App() {
@@ -173,7 +176,18 @@ function App() {
         element={<AgencyMembersPage />}
       />
 
-      
+      <Route
+        path="/admin/recommendations"
+        element={<AllRecommendationsPage />}
+      />
+      <Route
+        path="/admin/recommendations/:recommendationId/allocate"
+        element={<AllocateRecommendationPage />}
+      />
+      <Route
+        path="/admin/recommendations/:recommendationId/progress"
+        element={<AdminRecommendationProgressPage />}
+      />
     </Routes>
   );
 }

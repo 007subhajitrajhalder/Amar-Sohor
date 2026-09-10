@@ -9,6 +9,7 @@ import {
   Home,
   Moon,
   Sun,
+  Sparkles,
   UserRound,
   Users
 } from "lucide-react";
@@ -192,7 +193,7 @@ function AdminDashboardPage() {
           </article>
         </div>
 
-        <div className="admin-dashboard-reveal mt-8 grid gap-5 md:grid-cols-3" style={{ "--dashboard-delay": "380ms" }}>
+        <div className="admin-dashboard-reveal mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" style={{ "--dashboard-delay": "380ms" }}>
           <Link
             to="/admin/users"
             className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
@@ -222,6 +223,7 @@ function AdminDashboardPage() {
             <h2 className="mt-2 text-xl font-bold tracking-tight">Manage Agencies</h2>
             <p className="mt-3 text-sm leading-6 text-white/60">Organize agencies and manage their assigned members.</p>
           </Link>
+
           <Link
             to="/admin/complaints"
             className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
@@ -237,6 +239,23 @@ function AdminDashboardPage() {
             <h2 className="mt-2 text-xl font-bold text-white">View All Complaints</h2>
 
             <p className="mt-3 text-sm leading-6 text-white/60">Monitor complaints and their current statuses.</p>
+          </Link>
+
+          <Link
+            to="/admin/recommendations"
+            className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
+          >
+            <div className="flex items-start justify-between">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-cyan-200">
+                <Sparkles size={22} aria-hidden="true" />
+              </div>
+              <ArrowUpRight size={21} className="text-white/50 transition group-hover:text-white" aria-hidden="true" />
+            </div>
+
+            <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-white/50">Proposals</p>
+            <h2 className="mt-2 text-xl font-bold text-white">Citizen Recommendations</h2>
+
+            <p className="mt-3 text-sm leading-6 text-white/60">Review new facility suggestions and allocate agency members.</p>
           </Link>
         </div>
 
