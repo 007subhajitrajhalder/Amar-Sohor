@@ -1,29 +1,30 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  Car,
   CheckCircle2,
   ChevronRight,
   CircleDashed,
-  ClipboardList,
   DoorOpen,
   Droplets,
   Filter,
-  Map,
+  Lightbulb,
   MapPin,
   Plus,
   Search,
+  Sparkles,
   Trash2,
-  Car,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getStoredReports } from "./reportsData";
+import { SEED_RECOMMENDATIONS } from "./recommendationsData";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
 const statusStyle = {
-  Pending: "bg-amber-400/10 text-amber-300 border border-amber-400/20",
-  "Under Investigation": "bg-blue-400/10 text-blue-300 border border-blue-400/20",
-  Resolved: "bg-lime-300/10 text-lime-300 border border-lime-300/20",
+  "Under Review": "bg-amber-400/10 text-amber-300 border border-amber-400/20",
+  "Site Survey Completed": "bg-blue-400/10 text-blue-300 border border-blue-400/20",
+  Approved: "bg-purple-400/10 text-purple-300 border border-purple-400/20",
+  Installed: "bg-lime-300/10 text-lime-300 border border-lime-300/20",
 };
 
 const facilityIcons = {
@@ -33,57 +34,105 @@ const facilityIcons = {
   parking: Car,
 };
 
-function MyReportsPage() {
+function getStoredRecommendations() {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem("citizen_recommendations") || "[]"
+    );
+    const formattedStored = stored.map((item) => ({
+      ...item,
+      date: item.createdAt
+        ? new Date(item.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "Recently",
+      stage: item.stage || 1,
+      reviewDepartment:
+        item.reviewDepartment || "Municipal Civic Works Evaluation Wing",
+      reviewNotes:
+        item.reviewNotes ||
+        "Your recommendation has been registered. Initial review by the urban planning officer is pending.",
+    }));
+
+    const existingIds = new Set(formattedStored.map((r) => r.id));
+    return [
+      ...formattedStored,
+      ...SEED_RECOMMENDATIONS.filter((seed) => !existingIds.has(seed.id)),
+    ];
+  } catch {
+    return SEED_RECOMMENDATIONS;
+  }
+}
+
+function MyRecommendationsPage() {
   const navigate = useNavigate();
-  const [reports] = useState(getStoredReports);
+  const [recommendations] = useState(getStoredRecommendations);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const count = (status) =>
-    reports.filter((r) => r.status?.toLowerCase() === status.toLowerCase()).length;
+  // Filter recommendations
+  const filtered = recommendations.filter((r) => {
+    // Status filter
+    const matchesFilter =
+      selectedFilter === "all" ||
+      (selectedFilter === "under-review" &&
+        (r.status === "Under Review" || r.status === "Site Survey Completed")) ||
+      (selectedFilter === "approved" && r.status === "Approved") ||
+      (selectedFilter === "installed" && r.status === "Installed");
+
+    // Search query
+    const matchesSearch =
+      !searchQuery.trim() ||
+      r.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.facilityLabel?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const countStatus = (stageFilter) => {
+    if (stageFilter === "under-review") {
+      return recommendations.filter(
+        (r) => r.status === "Under Review" || r.status === "Site Survey Completed"
+      ).length;
+    }
+    if (stageFilter === "approved") {
+      return recommendations.filter((r) => r.status === "Approved").length;
+    }
+    if (stageFilter === "installed") {
+      return recommendations.filter((r) => r.status === "Installed").length;
+    }
+    return recommendations.length;
+  };
 
   const stats = [
     {
-      label: "Total Reports",
-      value: reports.length,
-      icon: ClipboardList,
+      label: "Total Recommendations",
+      value: recommendations.length,
+      icon: Lightbulb,
       color: "text-white",
     },
     {
-      label: "Pending",
-      value: count("Pending"),
+      label: "Under Review",
+      value: countStatus("under-review"),
       icon: CircleDashed,
       color: "text-amber-300",
     },
     {
-      label: "Under Investigation",
-      value: count("Under Investigation"),
-      icon: Search,
-      color: "text-blue-300",
+      label: "Approved",
+      value: countStatus("approved"),
+      icon: Sparkles,
+      color: "text-purple-300",
     },
     {
-      label: "Resolved",
-      value: count("Resolved"),
+      label: "Installed & Live",
+      value: countStatus("installed"),
       icon: CheckCircle2,
       color: "text-lime-300",
     },
   ];
-
-  const filtered = reports.filter((report) => {
-    const matchesFilter =
-      selectedFilter === "all" ||
-      (selectedFilter === "pending" && report.status === "Pending") ||
-      (selectedFilter === "investigating" && report.status === "Under Investigation") ||
-      (selectedFilter === "resolved" && report.status === "Resolved");
-
-    const matchesSearch =
-      !searchQuery.trim() ||
-      report.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.facility?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.facilityAddress?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesFilter && matchesSearch;
-  });
 
   return (
     <div className="relative min-h-screen bg-[#070b18] text-white">
@@ -106,18 +155,16 @@ function MyReportsPage() {
             </h1>
           </Link>
           <div className="flex items-center gap-3">
-            {/* User Request: Button to report a new issue redirects to Map view page where user can choose facility */}
             <Link
-              to="/map"
+              to="/citizen/recommendation"
               className="flex items-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/10"
             >
               <Plus size={16} />
-              <span className="hidden sm:inline">Report a New Issue</span>
-              <span className="sm:hidden">Report</span>
+              <span className="hidden sm:inline">Recommend Facility</span>
             </Link>
-
             <button
-            onClick={() => navigate("/citizen/dashboard")}              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:bg-lime-300 hover:text-black transition"
+              onClick={() => navigate("/citizen/dashboard")}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:bg-lime-300 hover:text-black transition"
             >
               <ArrowLeft size={17} />
               <span className="hidden sm:inline">Back to Dashboard</span>
@@ -129,29 +176,30 @@ function MyReportsPage() {
       {/* Main Content */}
       <main className="relative z-10 px-5 py-12 md:px-10 md:py-16">
         <section className="mx-auto max-w-7xl">
-          {/* Header titles */}
+          {/* Header Title */}
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="text-xs font-bold tracking-[3px] text-lime-300">
-                GRIEVANCE TRACKER
+                RECOMMENDATION TRACKER
               </p>
-              <h1 className="mt-3 text-3xl font-bold md:text-5xl">My Reports</h1>
+              <h1 className="mt-3 text-3xl font-bold md:text-5xl">
+                My Recommendations
+              </h1>
               <p className="mt-3 text-white/45 max-w-2xl">
-                Track every issue you have submitted and follow real-time progress from agency investigation to field resolution.
+                Monitor the status of your civic proposals for new dustbins, water dispensers, toilets, and parking spaces as municipal authorities inspect and commission them.
               </p>
             </div>
-
             <div className="flex gap-3">
               <Link
-                to="/citizen/my-recommendations"
+                to="/citizen/my-reports"
                 className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:border-lime-300/30 hover:text-white transition"
               >
-                Switch to My Recommendations
+                Switch to My Reports
               </Link>
             </div>
           </div>
 
-          {/* Stats Bar */}
+          {/* Stats Grid */}
           <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map(({ label, value, icon: Icon, color }) => (
               <article
@@ -167,14 +215,15 @@ function MyReportsPage() {
             ))}
           </div>
 
-          {/* Filter & Search Bar */}
+          {/* Controls Bar: Filters & Search */}
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Status Tabs */}
             <div className="flex flex-wrap gap-2">
               {[
-                { id: "all", label: "All Reports" },
-                { id: "pending", label: "Pending" },
-                { id: "investigating", label: "Under Investigation" },
-                { id: "resolved", label: "Resolved" },
+                { id: "all", label: "All Proposals" },
+                { id: "under-review", label: "Under Review" },
+                { id: "approved", label: "Approved" },
+                { id: "installed", label: "Installed & Live" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -190,12 +239,13 @@ function MyReportsPage() {
               ))}
             </div>
 
+            {/* Search Box */}
             <div className="relative min-w-[260px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search reports or facilities..."
+                placeholder="Search by title or location..."
                 className="w-full rounded-xl border border-white/10 bg-white/[0.05] py-2.5 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-lime-300/40"
               />
               <Search
@@ -205,37 +255,32 @@ function MyReportsPage() {
             </div>
           </div>
 
-          {/* Reports List */}
+          {/* Recommendations List */}
           <div className="mt-6 grid gap-4">
             {filtered.length === 0 ? (
               <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-12 text-center backdrop-blur-2xl">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/5 text-white/40">
                   <Filter size={24} />
                 </div>
-                <h3 className="mt-4 text-xl font-bold">No reports found</h3>
+                <h3 className="mt-4 text-xl font-bold">No recommendations found</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-white/40">
                   {searchQuery
                     ? "Try adjusting your search query or filter."
-                    : "No civic issue reports currently match this filter."}
+                    : "You haven't recommended any facilities in this category yet."}
                 </p>
-                {/* Redirects to map view to choose facility */}
                 <Link
-                  to="/map"
+                  to="/citizen/recommendation"
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-3 text-sm font-bold text-black hover:bg-lime-200 transition"
                 >
-                  <Map size={16} /> Choose Facility to Report on Map
+                  <Plus size={16} /> Recommend a Facility
                 </Link>
               </div>
             ) : (
-              filtered.map((report) => {
-                const Icon = facilityIcons[report.facilityCategory] || ClipboardList;
-                const reportCode = String(report.id).startsWith("REP-")
-                  ? report.id
-                  : `REPORT #${String(report.id).padStart(3, "0")}`;
-
+              filtered.map((item) => {
+                const Icon = facilityIcons[item.facilityType] || Lightbulb;
                 return (
                   <article
-                    key={report.id}
+                    key={item.id}
                     className="group flex flex-col justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.045] p-6 shadow-xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/30 hover:bg-white/[0.06] md:flex-row md:items-center"
                   >
                     <div className="flex items-start gap-4">
@@ -246,29 +291,22 @@ function MyReportsPage() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-bold tracking-wider text-lime-300">
-                            {reportCode}
+                            {item.id}
                           </span>
                           <span className="text-xs text-white/30">•</span>
-                          <span className="text-xs text-white/40">{report.date}</span>
-                          {report.issueCategory && (
-                            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/70">
-                              {report.issueCategory}
-                            </span>
-                          )}
+                          <span className="text-xs text-white/40">{item.date}</span>
+                          <span className="rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/70">
+                            {item.facilityLabel}
+                          </span>
                         </div>
 
                         <h2 className="mt-1.5 text-lg font-bold text-white group-hover:text-lime-200 transition">
-                          {report.title}
+                          {item.title}
                         </h2>
 
                         <p className="mt-1 flex items-center gap-1.5 text-sm text-white/50">
                           <MapPin size={14} className="text-lime-300 shrink-0" />
-                          <span>{report.facility}</span>
-                          {report.facilityAddress && (
-                            <span className="text-white/30 text-xs">
-                              ({report.facilityAddress})
-                            </span>
-                          )}
+                          <span>{item.location}</span>
                         </p>
                       </div>
                     </div>
@@ -276,18 +314,18 @@ function MyReportsPage() {
                     <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
                       <span
                         className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-                          statusStyle[report.status] ||
+                          statusStyle[item.status] ||
                           "bg-white/10 text-white/70 border border-white/15"
                         }`}
                       >
-                        ● {report.status}
+                        ● {item.status}
                       </span>
 
                       <Link
-                        to={`/citizen/reports/${report.id}`}
+                        to={`/citizen/recommendations/${item.id}`}
                         className="flex items-center gap-1.5 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-black hover:bg-lime-200 transition"
                       >
-                        <span>View Details</span>
+                        <span>View Status</span>
                         <ChevronRight size={16} />
                       </Link>
                     </div>
@@ -310,11 +348,14 @@ function MyReportsPage() {
             My City. My Responsibility.
           </p>
           <div className="flex gap-5">
+            <Link to="/citizen/recommendation" className="hover:text-lime-300">
+              Recommend Facility
+            </Link>
+            <Link to="/citizen/my-reports" className="hover:text-lime-300">
+              My Reports
+            </Link>
             <Link to="/map" className="hover:text-lime-300">
               Facility Map
-            </Link>
-            <Link to="/citizen/my-recommendations" className="hover:text-lime-300">
-              My Recommendations
             </Link>
             <Link to="/citizen/dashboard" className="hover:text-lime-300">
               Dashboard
@@ -327,4 +368,4 @@ function MyReportsPage() {
   );
 }
 
-export default MyReportsPage;
+export default MyRecommendationsPage;

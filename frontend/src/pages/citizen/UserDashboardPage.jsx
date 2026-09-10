@@ -1,9 +1,12 @@
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   ClipboardList,
+  Lightbulb,
   Map,
   Save,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -46,10 +49,40 @@ function UserDashboardPage() {
                 Citizen Dashboard
               </h1>
               <p className="mt-3 text-white/45">
-                Manage your profile and stay up to date with your civic reports.
+                Manage your profile and stay up to date with your civic reports and recommendations.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/map"
+                className="flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-3 font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/10"
+              >
+                <AlertTriangle size={18} />
+                Report an Issue
+              </Link>
+              <Link
+                to="/citizen/recommendation"
+                className="flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/10 px-5 py-3 font-bold text-lime-300 hover:bg-lime-300 hover:text-black transition"
+              >
+                <Sparkles size={18} />
+                Recommend Facility
+              </Link>
+              <Link
+                to="/citizen/my-recommendations"
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-bold text-white/70 hover:border-lime-300/30 hover:text-white transition"
+              >
+                <Lightbulb size={18} />
+                My Recommendations
+              </Link>
+              <Link
+                to="/citizen/my-reports"
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-bold text-white/70 hover:border-lime-300/30 hover:text-white transition"
+              >
+                <ClipboardList size={18} />
+                View My Reports
+              </Link>
               <Link
                 to="/map"
                 className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-bold text-white/70 hover:border-lime-300/30"
@@ -57,15 +90,7 @@ function UserDashboardPage() {
                 <Map size={18} />
                 Explore Map
               </Link>
-              <Link
-                to="/citizen/my-reports"
-                className="flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-3 font-bold text-black hover:bg-lime-200"
-              >
-                <ClipboardList size={18} />
-                View My Reports
-              </Link>
             </div>
-          </div>
           <div className="mt-9 grid gap-4 md:grid-cols-3">
             {[
               ["Reports Submitted", 6, ClipboardList, "text-white"],

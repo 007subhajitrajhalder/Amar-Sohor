@@ -12,6 +12,9 @@ import FacilityDetailsPage from "./pages/citizen/FacilityDetailsPage";
 import ReportIssuePage from "./pages/citizen/ReportIssuePage";
 import MyReportsPage from "./pages/citizen/MyReportsPage";
 import ReportStatusPage from "./pages/citizen/ReportStatusPage";
+import UserRecommendationPage from "./pages/citizen/UserRecommendationPage";
+import MyRecommendationsPage from "./pages/citizen/MyRecommendationsPage";
+import RecommendationStatusPage from "./pages/citizen/RecommendationStatusPage";
 
 // Agency pages
 import AgencyDashboardPage from "./pages/agency/AgencyDashboardPage";
@@ -59,6 +62,10 @@ function App() {
       />
 
       <Route
+        path="/citizen/report-issue"
+        element={<ReportIssuePage />}
+      />
+      <Route
         path="/citizen/report-issue/:facilityId"
         element={<ReportIssuePage />}
       />
@@ -71,6 +78,24 @@ function App() {
       <Route
         path="/citizen/reports/:reportId"
         element={<ReportStatusPage />}
+      />
+
+      <Route
+        path="/citizen/recommendation"
+        element={<UserRecommendationPage />}
+      />
+      <Route
+        path="/citizen/user-recommendation"
+        element={<UserRecommendationPage />}
+      />
+
+      <Route
+        path="/citizen/my-recommendations"
+        element={<MyRecommendationsPage />}
+      />
+      <Route
+        path="/citizen/recommendations/:recommendationId"
+        element={<RecommendationStatusPage />}
       />
 
       {/* Agency */}
