@@ -7,7 +7,6 @@ import {
   CircleDashed,
   DoorOpen,
   Droplets,
-  Map,
   MapPin,
   ShieldCheck,
   Sparkles,
@@ -220,6 +219,8 @@ function RecommendationStatusPage() {
                     ? "bg-lime-300/15 text-lime-300 border border-lime-300/30"
                     : data.status === "Approved"
                     ? "bg-purple-400/15 text-purple-300 border border-purple-400/30"
+                    : data.status === "Submitted"
+                    ? "bg-amber-400/15 text-amber-300 border border-amber-400/30"
                     : "bg-blue-400/15 text-blue-300 border border-blue-400/30"
                 }`}
               >

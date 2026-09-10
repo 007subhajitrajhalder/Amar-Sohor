@@ -244,6 +244,121 @@ export const DEFAULT_ADMIN_OVERRIDES = {
         action: "Bay markings and e-ticketing kiosk commissioned and operational."
       }
     ]
+  },
+  "REC-105": {
+    assignedMember: AGENCY_MEMBERS[0], // Amit Kumar (KMC SWM)
+    assignedAgency: FACILITY_AGENCIES.dustbin,
+    status: "ALLOTTED",
+    statusLabel: "Allocated",
+    stage: 2,
+    citizen: {
+      name: "Dipayan Sen",
+      email: "dipayan@example.com",
+      phone: "9830012345"
+    },
+    inspectionNotes: "Assigned to Amit Kumar for pedestrian footpath clearance and bin sizing assessment.",
+    history: [
+      {
+        date: "04 Sep 2026",
+        actor: "Dipayan Sen (Citizen)",
+        action: "Proposal submitted online"
+      },
+      {
+        date: "06 Sep 2026",
+        actor: "Municipal Admin",
+        action: "Allocated responsibility to Amit Kumar (KMC SWM Department)"
+      }
+    ]
+  },
+  "REC-106": {
+    assignedMember: AGENCY_MEMBERS[4], // Suman Ghosh (KMC Water)
+    assignedAgency: FACILITY_AGENCIES.water,
+    status: "UNDER_INVESTIGATION",
+    statusLabel: "Under Investigation",
+    stage: 2,
+    citizen: {
+      name: "Moumita Roy",
+      email: "moumita@example.com",
+      phone: "9831123456"
+    },
+    inspectionNotes: "Site inspection underway. Verifying pressure in 100mm main line with water engineering team.",
+    history: [
+      {
+        date: "01 Sep 2026",
+        actor: "Moumita Roy (Citizen)",
+        action: "Proposal submitted online"
+      },
+      {
+        date: "03 Sep 2026",
+        actor: "Municipal Admin",
+        action: "Allocated responsibility to Suman Ghosh (KMC Water Department)"
+      },
+      {
+        date: "05 Sep 2026",
+        actor: "Suman Ghosh",
+        action: "Investigation initiated. Site inspection scheduled."
+      }
+    ]
+  },
+  "REC-107": {
+    assignedMember: null,
+    assignedAgency: FACILITY_AGENCIES.dustbin,
+    status: "PENDING_ALLOCATION",
+    statusLabel: "Pending Allocation (Awaiting Review)",
+    stage: 1,
+    citizen: {
+      name: "Debashis Mukherjee",
+      email: "debashis.m@example.com",
+      phone: "9830112233"
+    },
+    inspectionNotes: "Newly submitted proposal. Awaiting initial administrative review and allocation to KMC SWM supervisor.",
+    history: [
+      {
+        date: "10 Sep 2026",
+        actor: "Debashis Mukherjee (Citizen)",
+        action: "Proposal submitted online - Not yet under review"
+      }
+    ]
+  },
+  "REC-108": {
+    assignedMember: null,
+    assignedAgency: FACILITY_AGENCIES.water,
+    status: "PENDING_ALLOCATION",
+    statusLabel: "Pending Allocation (Awaiting Review)",
+    stage: 1,
+    citizen: {
+      name: "Tanmoy Sen",
+      email: "tanmoy.sen@example.com",
+      phone: "9831445566"
+    },
+    inspectionNotes: "Fresh citizen request. Not yet assigned to a water supply engineer for field inspection.",
+    history: [
+      {
+        date: "09 Sep 2026",
+        actor: "Tanmoy Sen (Citizen)",
+        action: "Proposal submitted online - Not yet under review"
+      }
+    ]
+  },
+  "REC-109": {
+    assignedMember: null,
+    assignedAgency: FACILITY_AGENCIES.toilet,
+    status: "PENDING_ALLOCATION",
+    statusLabel: "Pending Allocation (Awaiting Review)",
+    stage: 1,
+    citizen: {
+      name: "Roshni Chatterjee",
+      email: "roshni.c@example.com",
+      phone: "9832778899"
+    },
+    inspectionNotes: "Fresh submission. Requires sanitation feasibility check near Shyambazar tram terminus.",
+    history: [
+      {
+        date: "10 Sep 2026",
+        actor: "Roshni Chatterjee (Citizen)",
+        action: "Proposal submitted online - Not yet under review"
+      }
+    ]
   }
 };
 
@@ -256,7 +371,8 @@ export function getAdminOverrides() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ADMIN_OVERRIDES));
       return DEFAULT_ADMIN_OVERRIDES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_ADMIN_OVERRIDES, ...parsed };
   } catch {
     return DEFAULT_ADMIN_OVERRIDES;
   }
@@ -407,7 +523,8 @@ export function allocateMemberToRecommendation(recId, member, notes) {
     ...existing,
     assignedMember: member,
     assignedAgency: agency,
-    status: "UNDER_INVESTIGATION",
+    status: "ALLOTTED",
+    statusLabel: "Allocated",
     stage: 2,
     inspectionNotes: notes?.trim() || existing.inspectionNotes || `Allocated to ${member.fullName} for field inspection.`,
     history: newHistory
@@ -424,7 +541,7 @@ export function allocateMemberToRecommendation(recId, member, notes) {
         if (String(item.id).toLowerCase() === String(recId).toLowerCase()) {
           return {
             ...item,
-            status: "Site Survey Scheduled",
+            status: "Allotted for Investigation",
             stage: 2,
             reviewDepartment: agency.name,
             reviewNotes: notes?.trim() || `Assigned to field officer ${member.fullName} for survey.`
@@ -437,6 +554,9 @@ export function allocateMemberToRecommendation(recId, member, notes) {
   } catch (e) {
     console.error("Failed to sync citizen recommendation:", e);
   }
+
+  window.dispatchEvent(new Event("storage"));
+  window.dispatchEvent(new Event("recommendationsUpdated"));
 
   return overrides[idKey];
 }
@@ -493,6 +613,124 @@ export function updateRecommendationProgress(recId, { stage, status, inspectionN
     console.error("Failed to sync citizen recommendation:", e);
   }
 
+  window.dispatchEvent(new Event("storage"));
+  window.dispatchEvent(new Event("recommendationsUpdated"));
+
   return overrides[idKey];
+}
+
+export function updateRecommendationByAgency(recId, { status, stage, notes, rejectionReason, actorName }) {
+  const overrides = getAdminOverrides();
+  const idKey = String(recId);
+  const existing = overrides[idKey] || {};
+  const assignedMember = existing.assignedMember || null;
+  const assignedAgency = existing.assignedAgency || null;
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+
+  const officerName = actorName || assignedMember?.fullName || "Agency Specialist";
+  const agencyName = assignedAgency?.name || "Designated Agency";
+
+  let actionText = `Status updated to ${status} by ${officerName}`;
+  let citizenStatusText = "In Progress";
+  let targetStage = stage;
+
+  if (status === "UNDER_INVESTIGATION") {
+    actionText = `Field investigation initiated by ${officerName} (${agencyName})`;
+    citizenStatusText = "Under Investigation";
+    if (targetStage === undefined) targetStage = 2;
+  } else if (status === "APPROVED") {
+    actionText = `Proposal feasibility approved by ${officerName} (${agencyName}). Forwarded for installation.`;
+    citizenStatusText = "Approved";
+    if (targetStage === undefined) targetStage = 3;
+  } else if (status === "REJECTED") {
+    actionText = `Proposal rejected by ${officerName}: ${rejectionReason || "Site condition unsuitable"}`;
+    citizenStatusText = "Rejected";
+    if (targetStage === undefined) targetStage = 2;
+  } else if (status === "INSTALLED") {
+    actionText = `Civic facility installed and commissioned by ${officerName} (${agencyName}).`;
+    citizenStatusText = "Installed";
+    if (targetStage === undefined) targetStage = 5;
+  }
+
+  const updatedHistory = [
+    ...(existing.history || []),
+    {
+      date: today,
+      actor: `${officerName} (${agencyName})`,
+      action: actionText
+    }
+  ];
+
+  if (notes && notes.trim() && status !== "REJECTED") {
+    updatedHistory.push({
+      date: today,
+      actor: officerName,
+      action: `Field notes: ${notes.trim()}`
+    });
+  }
+
+  overrides[idKey] = {
+    ...existing,
+    status,
+    stage: targetStage !== undefined ? targetStage : existing.stage || 2,
+    inspectionNotes: notes?.trim() || existing.inspectionNotes || "",
+    rejectionReason: rejectionReason || existing.rejectionReason || null,
+    history: updatedHistory
+  };
+
+  saveAdminOverrides(overrides);
+
+  // Sync with citizen_recommendations if present
+  try {
+    const citizenRaw = localStorage.getItem("citizen_recommendations");
+    if (citizenRaw) {
+      const citizenList = JSON.parse(citizenRaw);
+      const updated = citizenList.map((item) => {
+        if (String(item.id).toLowerCase() === String(recId).toLowerCase()) {
+          return {
+            ...item,
+            status: citizenStatusText,
+            stage: targetStage,
+            reviewNotes: notes?.trim() || (rejectionReason ? `Rejected: ${rejectionReason}` : item.reviewNotes)
+          };
+        }
+        return item;
+      });
+      localStorage.setItem("citizen_recommendations", JSON.stringify(updated));
+    }
+  } catch (e) {
+    console.error("Failed to sync citizen recommendation:", e);
+  }
+
+  window.dispatchEvent(new Event("storage"));
+  window.dispatchEvent(new Event("recommendationsUpdated"));
+
+  return overrides[idKey];
+}
+
+export function getRecommendationsForAgencyMember(memberIdOrFilter = "ALL") {
+  const all = getAdminRecommendations();
+  // Filter for items that have an assignedMember
+  const allocated = all.filter((item) => Boolean(item.assignedMember));
+
+  if (!memberIdOrFilter || memberIdOrFilter === "ALL") {
+    return allocated;
+  }
+
+  const idNum = Number(memberIdOrFilter);
+  if (!Number.isNaN(idNum)) {
+    return allocated.filter((item) => item.assignedMember?.id === idNum);
+  }
+
+  return allocated.filter(
+    (item) =>
+      item.assignedMember?.fullName?.toLowerCase().includes(memberIdOrFilter.toLowerCase()) ||
+      item.facilityType?.toLowerCase() === memberIdOrFilter.toLowerCase()
+  );
 }
 
