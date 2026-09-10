@@ -62,12 +62,7 @@ function getRecommendationById(recommendationId) {
     (item) => String(item.id).toLowerCase() === String(recommendationId).toLowerCase()
   );
 
-  if (foundInSeed) {
-    return foundInSeed;
-  }
-
-  // Default fallback if arbitrary ID is entered
-  return {
+  let base = foundInSeed || {
     id: recommendationId,
     title: "Proposed Civic Facility Spot",
     facilityType: "dustbin",
@@ -84,6 +79,27 @@ function getRecommendationById(recommendationId) {
       "Your proposal has been registered in the municipal portal. A civic inspector will assess the location shortly.",
     stage: 1,
   };
+
+  try {
+    const rawOverrides = localStorage.getItem("admin_recommendation_overrides");
+    if (rawOverrides) {
+      const overrides = JSON.parse(rawOverrides);
+      const match = overrides[base.id] || overrides[String(base.id).toUpperCase()];
+      if (match) {
+        return {
+          ...base,
+          stage: match.stage || base.stage,
+          status: match.status === "INSTALLED" ? "Installed" : match.status === "APPROVED" ? "Approved" : match.assignedMember ? "Site Survey Scheduled" : base.status,
+          reviewDepartment: match.assignedAgency?.name || base.reviewDepartment,
+          reviewNotes: match.inspectionNotes || base.reviewNotes
+        };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return base;
 }
 
 function RecommendationStatusPage() {
