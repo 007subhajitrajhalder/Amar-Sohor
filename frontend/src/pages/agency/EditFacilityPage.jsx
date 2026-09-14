@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { findFacilityById, saveFacilityUpdate } from "./facilitiesData";
 
+const logo = new URL("../../assets/logo.png", import.meta.url).href;
+
 function EditFacilityPage() {
   const navigate = useNavigate();
   const { facilityId } = useParams();
@@ -171,7 +173,7 @@ function EditFacilityPage() {
 
   if (!initialFacility) {
     return (
-      <main
+      <div
         className={`flex min-h-screen items-center justify-center p-6 ${
           isDarkMode ? "bg-[#100e0b] text-white" : "bg-slate-100 text-slate-900"
         }`}
@@ -197,13 +199,13 @@ function EditFacilityPage() {
             <ArrowLeft size={14} /> Return to Facilities
           </Link>
         </section>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden p-6 transition-colors duration-500 ${
+    <div
+      className={`relative min-h-screen transition-colors duration-500 ${
         isDarkMode ? "bg-[#100e0b] text-white" : "bg-slate-100 text-slate-900"
       }`}
     >
@@ -231,7 +233,59 @@ function EditFacilityPage() {
         </>
       )}
 
-      <section className="relative z-10 mx-auto max-w-3xl">
+      {/* Sticky Header */}
+      <header
+        className={`sticky top-0 z-50 border-b px-5 py-4 backdrop-blur-2xl md:px-10 ${
+          isDarkMode
+            ? "border-white/10 bg-[#100e0b]/80"
+            : "border-slate-300 bg-white/80"
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02]">
+            <img
+              src={logo}
+              alt="Amar Sohor Logo"
+              className={`h-11 w-11 rounded-full border object-cover ${
+                isDarkMode ? "border-lime-300/20 bg-transparent" : "border-slate-300 bg-white"
+              }`}
+            />
+            <h1 className="text-xl font-bold md:text-2xl">
+              <span className={isDarkMode ? "text-white" : "text-slate-900"}>Amar </span>
+              <span className="text-lime-300">Sohor</span>
+            </h1>
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+              className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+                isDarkMode
+                  ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
+              <span className="hidden sm:inline">{isDarkMode ? "Light mode" : "Dark mode"}</span>
+              <span
+                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
+                  isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                    isDarkMode ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 md:px-10 md:py-12">
         {/* Navigation Bar */}
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -245,19 +299,6 @@ function EditFacilityPage() {
             <ArrowLeft size={14} />
             Back to Facility Management
           </Link>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle dark/light theme"
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold shadow-md backdrop-blur-xl transition ${
-              isDarkMode
-                ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            {isDarkMode ? "☀️ Light mode" : "🌙 Dark mode"}
-          </button>
         </div>
 
         {/* Form Card */}
@@ -279,7 +320,7 @@ function EditFacilityPage() {
               <Building2 size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? "text-cyan-400" : "text-cyan-700"}`}>
                 Facility ID #{facilityId}
               </p>
               <h1 className="text-2xl font-bold tracking-tight">Edit Facility Details</h1>
@@ -290,13 +331,13 @@ function EditFacilityPage() {
           </div>
 
           {error && (
-            <div className="mt-5 rounded-xl bg-rose-500/15 border border-rose-500/30 p-3.5 text-xs font-semibold text-rose-300">
+            <div className={`mt-5 rounded-xl border p-3.5 text-xs font-semibold ${isDarkMode ? "bg-rose-500/15 border-rose-500/30 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 p-3.5 text-xs font-semibold text-emerald-300">
+            <div className={`mt-5 flex items-center gap-2 rounded-xl border p-3.5 text-xs font-semibold ${isDarkMode ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
               <CheckCircle2 size={16} />
               <span>{success}</span>
             </div>
@@ -350,7 +391,7 @@ function EditFacilityPage() {
             {/* Address */}
             <div>
               <label htmlFor="address" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                <MapPin size={12} className="inline mr-1 text-amber-400" />
+                <MapPin size={12} className={`inline mr-1 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
                 Physical Address & Landmark *
               </label>
               <textarea
@@ -373,7 +414,7 @@ function EditFacilityPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="latitude" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                  <Compass size={12} className="inline mr-1 text-cyan-300" />
+                  <Compass size={12} className={`inline mr-1 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
                   Latitude
                 </label>
                 <input
@@ -394,7 +435,7 @@ function EditFacilityPage() {
 
               <div>
                 <label htmlFor="longitude" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                  <Compass size={12} className="inline mr-1 text-cyan-300" />
+                  <Compass size={12} className={`inline mr-1 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
                   Longitude
                 </label>
                 <input
@@ -424,7 +465,7 @@ function EditFacilityPage() {
             >
               <div className="flex items-center justify-between gap-2 mb-3">
                 <label className="block font-bold uppercase tracking-wider opacity-70">
-                  <Camera size={13} className="inline mr-1.5 text-cyan-400" />
+                  <Camera size={13} className={`inline mr-1.5 ${isDarkMode ? "text-cyan-400" : "text-cyan-600"}`} />
                   Facility Image / Site Photo
                 </label>
 
@@ -510,14 +551,14 @@ function EditFacilityPage() {
               )}
 
               {imagePreview && (
-                <div className="mt-3 relative overflow-hidden rounded-xl border border-white/20 bg-black/40 p-2.5 flex items-center gap-3">
+                <div className={`mt-3 relative overflow-hidden rounded-xl border p-2.5 flex items-center gap-3 ${isDarkMode ? "border-white/20 bg-black/40" : "border-slate-200 bg-slate-100"}`}>
                   <img
                     src={imagePreview}
                     alt="Facility preview"
                     className="h-16 w-24 rounded-lg object-cover border border-white/10 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
+                    <div className={`flex items-center gap-1.5 font-semibold text-[11px] ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
                       <ImageIcon size={12} />
                       <span>Photo Attached</span>
                     </div>
@@ -527,7 +568,7 @@ function EditFacilityPage() {
                     type="button"
                     onClick={handleRemoveImage}
                     title="Remove image"
-                    className="rounded-lg p-1.5 text-rose-400 hover:bg-rose-500/20 transition shrink-0"
+                    className={`rounded-lg p-1.5 transition shrink-0 ${isDarkMode ? "text-rose-400 hover:bg-rose-500/20" : "text-rose-600 hover:bg-rose-100"}`}
                   >
                     <X size={16} />
                   </button>
@@ -580,8 +621,8 @@ function EditFacilityPage() {
             </div>
           </form>
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 

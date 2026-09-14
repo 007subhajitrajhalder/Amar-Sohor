@@ -1,7 +1,8 @@
-import { Activity, ArrowLeft, Moon, Search, ShieldCheck, Sun, UserCheck, UserMinus, Users, X } from "lucide-react";
+import { Activity, ArrowLeft, Search, ShieldCheck, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAdminTheme } from "./useAdminTheme";
+import AdminHeader from "./AdminHeader";
 
 function UserManagementPage() {
   const [isLightMode, setIsLightMode] = useAdminTheme();
@@ -62,7 +63,7 @@ function UserManagementPage() {
   };
 
   return (
-    <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+    <main className={`admin-user-management-page relative min-h-screen w-full bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
       <div
         className="pointer-events-none absolute inset-0 blur-[125px] md:blur-[180px]"
         style={{
@@ -94,27 +95,18 @@ function UserManagementPage() {
         }}
         aria-hidden="true"
       />
-      <div className="relative z-[1]">
-        <section className="mx-auto max-w-6xl">
+      <div className="z-[1]">
+        <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+        <section className="admin-user-management-content mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <Link
               to="/admin/dashboard"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+              className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
             >
               <ArrowLeft size={16} aria-hidden="true" />
               Back to dashboard
             </Link>
 
-            <button
-              type="button"
-              onClick={() => setIsLightMode((currentMode) => !currentMode)}
-              aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-              className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
-            >
-              <Sun size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-0 scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
-              <Moon size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-90 scale-75 opacity-50" : "rotate-0 scale-110 opacity-100"}`} aria-hidden="true" />
-              <span className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ease-in-out ${isLightMode ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60" : "translate-x-0 bg-cyan-200 shadow-lg shadow-cyan-200/50"}`} />
-            </button>
           </div>
 
           <div className="mt-8 flex flex-col justify-between gap-6 border-b border-white/15 pb-8 sm:flex-row sm:items-end">
@@ -206,21 +198,21 @@ function UserManagementPage() {
           )}
 
           {pendingRemoval && (
-            <div className="fixed inset-0 z-20 flex items-center justify-center bg-slate-950/60 p-5 backdrop-blur-sm" role="presentation">
-              <div className="admin-glass-card w-full max-w-md rounded-2xl border border-white/25 p-6 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="remove-user-title">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-500/15 text-red-200">
-                  <UserMinus size={20} aria-hidden="true" />
+            <div className="admin-removal-overlay fixed inset-0 z-[100] flex min-h-screen items-center justify-center bg-slate-950/60 p-5 backdrop-blur-sm" role="presentation">
+              <div className="admin-glass-card w-full max-w-md rounded-2xl border border-white/25 p-7 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="remove-user-title" aria-describedby="remove-user-description">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-red-200">
+                  <UserMinus size={24} aria-hidden="true" />
                 </div>
-                <h2 id="remove-user-title" className="mt-5 text-xl font-bold">Remove {pendingRemoval.name}?</h2>
-                <p className="mt-2 text-sm leading-6 text-white/60">This will remove the account from the local admin list. This action cannot be undone here.</p>
-                <div className="mt-6 flex justify-end gap-3">
-                  <button type="button" onClick={() => setPendingRemoval(null)} className="rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white">
+                <h2 id="remove-user-title" className="mt-5 text-2xl font-bold">Remove {pendingRemoval.name}?</h2>
+                <p id="remove-user-description" className="mt-3 text-sm leading-7 text-white/60">This will remove the account from the local admin list. This action cannot be undone here.</p>
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={() => setPendingRemoval(null)} className="rounded-xl border border-white/20 px-5 py-3 font-bold text-white/70 transition hover:bg-white/10 hover:text-white">
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={confirmRemoveUser}
-                    className="admin-danger-action admin-confirm-remove inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold text-white"
+                    className="admin-danger-action admin-confirm-remove inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white"
                   >
                     <UserMinus size={16} aria-hidden="true" />
                     Confirm remove

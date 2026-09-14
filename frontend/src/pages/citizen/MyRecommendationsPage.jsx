@@ -304,7 +304,7 @@ function MyRecommendationsPage() {
                         <Icon size={20} />
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-bold tracking-wider text-lime-300">
                             {item.id}

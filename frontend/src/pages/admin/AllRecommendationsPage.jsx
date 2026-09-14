@@ -8,15 +8,15 @@ import {
   Calendar,
   Car,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   DoorOpen,
   Droplets,
+  Download,
   HelpCircle,
   MapPin,
-  Moon,
   Search,
   Sparkles,
-  Sun,
   Trash2,
   UserCheck,
   UserRound,
@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
+import AdminHeader from "./AdminHeader";
 import { getAdminRecommendations } from "./adminRecommendationsData";
 
 const auraLayers = [
@@ -167,6 +168,10 @@ function getStatusStyle(assignedMember, status) {
   };
 }
 
+function csvValue(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
 function AllRecommendationsPage() {
   const [isLightMode, setIsLightMode] = useAdminTheme();
   const navigate = useNavigate();
@@ -175,6 +180,11 @@ function AllRecommendationsPage() {
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedAgency, setSelectedAgency] = useState("ALL");
+  const [citizenSearch, setCitizenSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
   const [sortKey, setSortKey] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
   const searchInputRef = useRef(null);
@@ -232,6 +242,22 @@ function AllRecommendationsPage() {
         return false;
       }
 
+      if (selectedAgency !== "ALL" && (item.assignedAgency?.name || "") !== selectedAgency) {
+        return false;
+      }
+
+      if (citizenSearch.trim() && !(item.citizen?.name || "").toLowerCase().includes(citizenSearch.trim().toLowerCase())) {
+        return false;
+      }
+
+      const itemTime = new Date(item.date).getTime();
+      if (dateFrom && (!itemTime || itemTime < new Date(`${dateFrom}T00:00:00`).getTime())) {
+        return false;
+      }
+      if (dateTo && (!itemTime || itemTime > new Date(`${dateTo}T23:59:59`).getTime())) {
+        return false;
+      }
+
       // Search text
       if (searchText.trim()) {
         const query = searchText.toLowerCase();
@@ -256,7 +282,7 @@ function AllRecommendationsPage() {
 
       return true;
     });
-  }, [recommendations, selectedStatus, selectedCategory, searchText]);
+  }, [recommendations, selectedStatus, selectedCategory, selectedAgency, citizenSearch, dateFrom, dateTo, searchText]);
 
   // Sorted list
   const sorted = useMemo(() => {
@@ -293,6 +319,62 @@ function AllRecommendationsPage() {
     }
   };
 
+  const visibleIds = sorted.map((recommendation) => String(recommendation.id));
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+
+  const toggleRecommendation = (recommendationId) => {
+    const id = String(recommendationId);
+    setSelectedIds((currentIds) =>
+      currentIds.includes(id)
+        ? currentIds.filter((currentId) => currentId !== id)
+        : [...currentIds, id]
+    );
+  };
+
+  const toggleAllVisible = () => {
+    setSelectedIds((currentIds) =>
+      allVisibleSelected
+        ? currentIds.filter((id) => !visibleIds.includes(id))
+        : [...new Set([...currentIds, ...visibleIds])]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchText("");
+    setSelectedStatus("ALL");
+    setSelectedCategory("ALL");
+    setSelectedAgency("ALL");
+    setCitizenSearch("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  const exportSelected = () => {
+    const selectedRecommendations = recommendations.filter((recommendation) =>
+      selectedIds.includes(String(recommendation.id))
+    );
+    const headers = ["ID", "Title", "Facility", "Location", "Citizen", "Agency", "Status", "Date"];
+    const rows = selectedRecommendations.map((recommendation) => [
+      recommendation.id,
+      recommendation.title,
+      recommendation.facilityLabel,
+      recommendation.location,
+      recommendation.citizen?.name || "Verified Citizen",
+      recommendation.assignedAgency?.name || "Civic Works",
+      formatStatus(recommendation.status, recommendation.assignedMember),
+      recommendation.date
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(csvValue).join(",")).join("\n");
+    const downloadUrl = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const downloadLink = document.createElement("a");
+    downloadLink.href = downloadUrl;
+    downloadLink.download = "citizen-recommendations.csv";
+    downloadLink.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
+  const agencyOptions = [...new Set(recommendations.map((recommendation) => recommendation.assignedAgency?.name).filter(Boolean))].sort();
+
   return (
     <main
       className={`admin-themed-page relative min-h-screen overflow-x-hidden p-6 transition-colors duration-500 ${
@@ -313,49 +395,19 @@ function AllRecommendationsPage() {
         />
       ))}
 
+      <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : "text-white"}`}>
         {/* Top bar */}
         <div className="flex items-center justify-between gap-4">
-          <Link
+            <Link
             to="/admin/dashboard"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+            className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Back to dashboard
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setIsLightMode((m) => !m)}
-            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-            className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${
-              isLightMode
-                ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100"
-                : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"
-            }`}
-          >
-            <Sun
-              size={13}
-              className={`transition-all duration-700 ${
-                isLightMode ? "scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"
-              }`}
-              aria-hidden="true"
-            />
-            <Moon
-              size={13}
-              className={`transition-all duration-700 ${
-                isLightMode ? "rotate-90 scale-75 opacity-50" : "scale-110 opacity-100"
-              }`}
-              aria-hidden="true"
-            />
-            <span
-              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ${
-                isLightMode
-                  ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60"
-                  : "bg-cyan-200 shadow-lg shadow-cyan-200/50"
-              }`}
-            />
-          </button>
         </div>
 
         {/* Page Title & Counter */}
@@ -629,6 +681,104 @@ function AllRecommendationsPage() {
               </button>
             </div>
           </div>
+
+          <div className="grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="relative">
+              <Building2
+                size={15}
+                className={`pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 ${isLightMode ? "text-teal-700" : "text-cyan-200/70"}`}
+                aria-hidden="true"
+              />
+              <select
+                value={selectedAgency}
+                onChange={(event) => setSelectedAgency(event.target.value)}
+                aria-label="Filter by agency"
+                className={`admin-agency-select w-full appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pl-9 pr-9 text-xs outline-none transition focus:border-cyan-300 ${isLightMode ? "text-slate-700" : "text-cyan-100"}`}
+              >
+                <option value="ALL">All agencies</option>
+                {agencyOptions.map((agency) => (
+                  <option key={agency} value={agency}>{agency}</option>
+                ))}
+              </select>
+              <ChevronDown
+                size={15}
+                className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${isLightMode ? "text-slate-500" : "text-white/50"}`}
+                aria-hidden="true"
+              />
+            </div>
+
+            <input
+              type="text"
+              value={citizenSearch}
+              onChange={(event) => setCitizenSearch(event.target.value)}
+              placeholder="Filter by citizen"
+              aria-label="Filter by citizen"
+              className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none placeholder:text-white/40 transition focus:border-cyan-300"
+            />
+
+            <label className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/60">
+              From
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(event) => setDateFrom(event.target.value)}
+                aria-label="Filter from date"
+                className="admin-date-filter min-w-0 flex-1 bg-transparent text-white outline-none"
+              />
+            </label>
+
+            <label className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/60">
+              To
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(event) => setDateTo(event.target.value)}
+                aria-label="Filter to date"
+                className="admin-date-filter min-w-0 flex-1 bg-transparent text-white outline-none"
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
+            <label className="inline-flex items-center gap-2 text-xs font-semibold text-white/65">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={toggleAllVisible}
+                className="h-4 w-4 accent-cyan-300"
+              />
+              Select all visible ({sorted.length})
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+              >
+                Clear filters
+              </button>
+              {selectedIds.length > 0 && (
+                <>
+                  <span className="text-xs font-semibold text-cyan-200">{selectedIds.length} selected</span>
+                  <button
+                    type="button"
+                    onClick={exportSelected}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/20"
+                  >
+                    <Download size={14} aria-hidden="true" />
+                    Export selected
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds([])}
+                    className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+                  >
+                    Clear selection
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Recommendations List */}
@@ -643,11 +793,18 @@ function AllRecommendationsPage() {
             return (
               <article
                 key={rec.id}
-                className="admin-glass-card admin-complaint-card group relative flex flex-col justify-between gap-4 rounded-2xl border border-white/20 p-4 sm:p-5 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:shadow-cyan-950/40 xl:flex-row xl:items-center xl:gap-5"
+                className="admin-glass-card admin-complaint-card group relative grid gap-4 rounded-2xl border border-white/20 p-4 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:shadow-cyan-950/40 sm:p-5 xl:grid-cols-[minmax(0,1fr)_320px_280px] xl:items-center xl:gap-5"
                 style={{ "--agency-card-delay": `${index * 60}ms` }}
               >
                 {/* Left side: Icon, ID, Title, Location */}
-                <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
+                <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(String(rec.id))}
+                    onChange={() => toggleRecommendation(rec.id)}
+                    aria-label={`Select recommendation ${rec.id}`}
+                    className="h-4 w-4 shrink-0 accent-cyan-300"
+                  />
                   <div
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border p-2.5 ${facilityBadge.iconClass}`}
                   >
@@ -687,8 +844,8 @@ function AllRecommendationsPage() {
                 </div>
 
                 {/* Middle Info: Citizen Proposer & Agency Mapping */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full xl:w-[320px] shrink-0">
-                  <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 min-w-0 flex flex-col items-center justify-center text-center">
+                <div className="grid w-full min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:w-auto">
+                  <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 text-center">
                       Citizen Proposer
                     </p>
@@ -698,7 +855,7 @@ function AllRecommendationsPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 min-w-0 flex flex-col items-center justify-center text-center">
+                  <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 text-center">
                       Mapped Agency
                     </p>
@@ -710,7 +867,7 @@ function AllRecommendationsPage() {
                 </div>
 
                 {/* Right side: Status Button & Action Redirect */}
-                <div className="flex flex-wrap items-center justify-center gap-2.5 w-full xl:w-[280px] shrink-0 pt-3 border-t border-white/10 xl:border-t-0 xl:pt-0">
+                <div className="flex w-full flex-wrap items-center justify-center gap-2.5 border-t border-white/10 pt-3 xl:w-auto xl:border-t-0 xl:pt-0">
                   {/* Clickable Status Badge (Dual Possibility Target) */}
                   <button
                     type="button"
