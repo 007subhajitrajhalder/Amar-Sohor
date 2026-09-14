@@ -373,10 +373,17 @@ function HomePage() {
               </div>
             </div>
 
+<<<<<<< HEAD
             <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 md:grid-cols-4">
   {facilities.map((facility) => {
     const Icon = facility.icon;
     const category = getCategoryQuery(facility.name);
+=======
+            <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-4 md:grid-cols-4">
+              {facilities.map((facility) => {
+                const Icon = facility.icon;
+                const category = getCategoryQuery(facility.name);
+>>>>>>> 3701102 (Update HomePage)
 
     return (
       <Link
@@ -392,10 +399,73 @@ function HomePage() {
           />
         </div>
 
+<<<<<<< HEAD
         {/* Label */}
         <p className="mt-6 text-base font-semibold text-white md:text-lg">
           {facility.name.replace("Nearest ", "")}
         </p>
+=======
+                    <p className="mt-6 text-base font-semibold text-white md:text-lg">
+                      {facility.name.replace("Nearest ", "")}
+                    </p>
+
+                    <p className="mt-1 text-xs text-white/40">
+                      Find nearby
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div id="report-issue" className="mx-auto mt-8 max-w-5xl scroll-mt-28">
+              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-blue-500/10 blur-2xl" />
+
+                <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/25 bg-lime-300/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[2px] text-lime-300">
+                      <MapPin size={13} />
+                      <span>Citizen Issue Report</span>
+                    </div>
+
+                    <h3 className="mt-3 font-serif text-2xl font-bold text-white md:text-3xl">
+                      Report an issue with a public facility.
+                    </h3>
+
+                    <p className="mt-2.5 text-sm leading-relaxed text-white/65 md:text-base">
+                      Find the facility on the map and let the right agency know about any problem that needs attention.
+                    </p>
+                    {/* Facility type tags */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Trash2 size={13} className="text-lime-300" /> Dustbins
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Droplets size={13} className="text-lime-300" /> Water Dispensers
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <DoorOpen size={13} className="text-lime-300" /> Public Toilets
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Car size={13} className="text-lime-300" /> Parking Spots
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <Link
+                      to="/map"
+                      className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-lime-300 px-7 py-4 text-sm font-bold text-black shadow-lg shadow-lime-300/15 transition duration-300 hover:scale-[1.02] hover:bg-lime-200 md:w-auto md:text-base"
+                    >
+                      <span>Report an Issue</span>
+                      <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+>>>>>>> 3701102 (Update HomePage)
 
         <p className="mt-1 text-xs text-white/40">
           Find nearby
@@ -407,10 +477,74 @@ function HomePage() {
           </div>
         </section>
 
+<<<<<<< HEAD
         <section id="about" className="mx-auto max-w-7xl px-5 pt-8 pb-16 md:px-10 md:pt-10 md:pb-16">
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
             <div className="p-8 md:p-12">
               <p className="text-xs font-bold tracking-[4px] text-lime-300">
+=======
+            {/* CITIZEN FACILITY RECOMMENDATION CARD */}
+            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-6 md:px-8">
+
+            <div className="mx-auto mt-6 max-w-5xl">
+              <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
+                {/* Decorative background gradients */}
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-blue-500/10 blur-2xl" />
+
+                <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/25 bg-lime-300/10 px-3.5 py-1 text-xs font-bold tracking-[2px] text-lime-300 uppercase">
+                      <Sparkles size={13} />
+                      <span>Citizen Recommendation</span>
+                    </div>
+
+                    <h3 className="mt-3 font-serif text-2xl font-bold text-white md:text-3xl">
+                      Notice a missing facility in your neighborhood?
+                    </h3>
+
+                    <p className="mt-2.5 text-sm leading-relaxed text-white/65 md:text-base">
+                      Recommend new spots for <strong className="text-lime-300 font-semibold">dustbins</strong>, <strong className="text-lime-300 font-semibold">water dispensers</strong>, <strong className="text-lime-300 font-semibold">public toilets</strong>, or <strong className="text-lime-300 font-semibold">parking spaces</strong>. Provide your location and upload a photo to notify municipal authorities.
+                    </p>
+
+                    {/* Facility type tags */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Trash2 size={13} className="text-lime-300" /> Dustbins
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Droplets size={13} className="text-lime-300" /> Water Dispensers
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <DoorOpen size={13} className="text-lime-300" /> Public Toilets
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5">
+                        <Car size={13} className="text-lime-300" /> Parking Spots
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <Link
+                      to="/citizen/recommendation"
+                      className="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-lime-300 px-7 py-4 text-sm font-bold text-black shadow-lg shadow-lime-300/15 transition duration-300 hover:scale-[1.02] hover:bg-lime-200 md:w-auto md:text-base"
+                    >
+                      <span>Recommend a Facility</span>
+                      <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </section>
+
+        {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
+        <section id="about" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
+            {/* Left Column: Compact Content */}
+            <div className="p-6 md:p-8">
+              <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
+>>>>>>> 3701102 (Update HomePage)
                 ABOUT AMAR SOHOR
               </p>
 
@@ -505,13 +639,35 @@ function HomePage() {
         </section>
       </main>
 
+<<<<<<< HEAD
    <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-14 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
   <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
     <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
+=======
+      <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-6px_20px_rgba(0,0,0,0.09)] backdrop-blur-2xl md:px-10">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 -top-16 h-44 w-44 rounded-full bg-lime-300/10 blur-[64px]" />
+          <div className="absolute -bottom-24 -right-20 h-56 w-56 rounded-full bg-blue-400/10 blur-[72px]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-1">
+              <Link to="/" className="group inline-flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
+                  <img
+                    src={logo}
+                    alt="Amar Sohor Logo"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+>>>>>>> 3701102 (Update HomePage)
 
     <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
 
+<<<<<<< HEAD
     <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
 
   </div>
@@ -523,17 +679,63 @@ function HomePage() {
     {/* ================= MAIN FOOTER ================= */}
 
     <div className="grid gap-12 md:grid-cols-4">
+=======
+              <p className="mt-4 max-w-sm text-sm leading-6 text-white/50">
+                A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
+              </p>
+
+              <div className="mt-4 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                <span className="h-px w-12 bg-lime-300/40" />
+                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
+                  Smart City Platform
+                </span>
+              </div>
+            </div>
+
+  
+>>>>>>> 3701102 (Update HomePage)
 
 
+<<<<<<< HEAD
       {/* ================= BRAND ================= */}
 
       <div className="md:col-span-1">
+=======
+              <div className="mt-4 flex flex-col gap-4">
+                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Mail size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      amersohor@gmail.com
+                    </p>
+                  </div>
+                </a>
+
+                <a href="tel:+919876543210" className="group flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Phone size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      +91 98765 43210
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
+>>>>>>> 3701102 (Update HomePage)
 
         <Link
           to="/"
           className="group inline-flex items-center gap-3"
         >
 
+<<<<<<< HEAD
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
             <img
               src={logo}
@@ -551,6 +753,61 @@ function HomePage() {
 
             <p className="mt-1 text-[11px] tracking-wide text-white/40">
               My City. My Responsibility.
+=======
+              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
+                Stay connected with Amar Sohor and follow our latest updates across social platforms.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-3">
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">f</span>
+                </a>
+
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">◎</span>
+                </a>
+
+                <a
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="YouTube"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-xs font-bold">▶</span>
+                </a>
+
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="X / Twitter"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-sm font-bold">𝕏</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="my-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+          <div className="flex flex-col items-center justify-between gap-2 text-center md:flex-row md:text-left">
+            <p className="text-xs text-white/35">
+              © 2026 Amar Sohor. All rights reserved.
+>>>>>>> 3701102 (Update HomePage)
             </p>
 
           </div>
