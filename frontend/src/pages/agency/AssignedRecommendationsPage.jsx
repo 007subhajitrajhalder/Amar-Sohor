@@ -542,7 +542,7 @@ function AssignedRecommendationsPage() {
                       >
                         {facilityBadge.label}
                       </span>
-                      <span className="text-xs opacity-50">{rec.date}</span>
+                      <span className={`text-xs ${isDarkMode ? "text-white/50" : "text-slate-500"}`}>{rec.date}</span>
                     </div>
 
                     <h2
@@ -553,7 +553,7 @@ function AssignedRecommendationsPage() {
                       {rec.title}
                     </h2>
 
-                    <p className="mt-0.5 flex items-center gap-1.5 text-xs opacity-70 truncate">
+                    <p className={`mt-0.5 flex items-center gap-1.5 text-xs truncate ${isDarkMode ? "text-white/70" : "text-slate-600"}`}>
                       <MapPin size={13} className={`shrink-0 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
                       <span className="truncate">{rec.location}</span>
                     </p>
