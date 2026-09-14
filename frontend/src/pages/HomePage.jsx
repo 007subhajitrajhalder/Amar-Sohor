@@ -633,7 +633,7 @@ function HomePage() {
             </h2>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-black/30 p-7 backdrop-blur-xl">
               <span className="text-sm font-bold text-lime-300">01</span>
               <h3 className="mt-4 text-xl font-bold">Select Facility</h3>
@@ -661,15 +661,16 @@ function HomePage() {
         </section>
       </main>
 
-      <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-14 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
+      <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
           <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+
         </div>
 
         <div className="relative mx-auto max-w-7xl">
-          <div className="grid gap-12 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-1">
               <Link to="/" className="group inline-flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
@@ -690,11 +691,11 @@ function HomePage() {
                 </div>
               </Link>
 
-              <p className="mt-6 max-w-sm text-sm leading-7 text-white/50">
+              <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
                 A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
               </p>
 
-              <div className="mt-6 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
                 <span className="h-px w-12 bg-lime-300/40" />
                 <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
@@ -705,50 +706,10 @@ function HomePage() {
 
             <div>
               <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Quick Links
-              </h4>
-
-              <div className="mt-6 flex flex-col gap-4">
-                <a
-                  href="/"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  Home
-                </a>
-
-                <a
-                  href="/#about"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  About Us
-                </a>
-
-                <a
-                  href="/#how-it-works"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  How It Works
-                </a>
-
-                <Link
-                  to="/citizen/recommendation"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  Recommend Facility
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
                 Contact Us
               </h4>
 
-              <div className="mt-6 flex flex-col gap-5">
+              <div className="mt-4 flex flex-col gap-4">
                 <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
                     <Mail size={17} />
@@ -780,11 +741,11 @@ function HomePage() {
                 Follow Us
               </h4>
 
-              <p className="mt-6 max-w-xs text-sm leading-6 text-white/45">
+              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
                 Stay connected with Amar Sohor and follow our latest updates across social platforms.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <a
                   href="https://facebook.com"
                   target="_blank"
@@ -828,7 +789,7 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
           <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
             <p className="text-xs text-white/35">
