@@ -310,6 +310,29 @@ function MapViewPage() {
                   Use Current Location
                 </button>
 
+                {/* CATEGORY SELECT (between Use Current Location and Search) */}
+                <div className="w-full md:w-[240px]">
+                  <div className="relative">
+                    <select
+                      id="facility-category"
+                      value={selectedCategory}
+                      onChange={handleCategoryChange}
+                      className="w-full appearance-none rounded-2xl border border-lime-300/20 bg-[#07101f]/60 text-white px-4 py-3.5 pr-10 min-h-[62px] text-sm font-medium outline-none backdrop-blur-sm transition duration-300 hover:scale-[1.02] focus:border-lime-300/40"
+                    >
+                      <option value="all" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>All Categories</option>
+                      <option value="toilet" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Public Toilet</option>
+                      <option value="dustbin" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Dustbin</option>
+                      <option value="water" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Drinking Water</option>
+                      <option value="parking" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Parking</option>
+                    </select>
+
+                    <ChevronRight
+                      size={17}
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
+                    />
+                  </div>
+                </div>
+
                 {/* SEARCH */}
 
                 <button
@@ -351,38 +374,7 @@ function MapViewPage() {
                 </p>
               </div>
 
-              {/* =================================================
-                  FACILITY CATEGORY DROPDOWN
-              ================================================== */}
-
-              <div className="w-full md:w-[240px]">
-                <label
-                  htmlFor="facility-category"
-                  className="mb-2 block text-[10px] font-semibold uppercase tracking-[2px] text-white/35"
-                >
-                  Select Facility
-                </label>
-
-                <div className="relative">
-                  <select
-                    id="facility-category"
-                    value={selectedCategory}
-                    onChange={handleCategoryChange}
-                    className="w-full appearance-none rounded-2xl border border-white/10 bg-[#101728] px-4 py-3.5 pr-10 text-sm font-medium text-white outline-none transition duration-300 hover:border-lime-300/30 focus:border-lime-300/50 focus:ring-1 focus:ring-lime-300/20"
-                  >
-                    <option value="all">All Categories</option>
-                    <option value="toilet">Public Toilet</option>
-                    <option value="dustbin">Dustbin</option>
-                    <option value="water">Drinking Water</option>
-                    <option value="parking">Parking</option>
-                  </select>
-
-                  <ChevronRight
-                    size={17}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
-                  />
-                </div>
-              </div>
+              
             </div>
 
             {/* MAP GLASS BOX */}

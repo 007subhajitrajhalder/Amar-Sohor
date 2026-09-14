@@ -141,7 +141,7 @@ function FacilityDetailsPage() {
               {rating} rating
             </span>
           </div>
-          <div className="mt-9 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="mt-9 grid gap-6 lg:grid-cols-1">
             <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] shadow-2xl backdrop-blur-2xl">
               <iframe
                 title={`${name} map`}
