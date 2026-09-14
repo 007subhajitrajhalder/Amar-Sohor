@@ -3,16 +3,18 @@ import {
   ArrowUpRight,
   Building2,
   CheckCircle2,
-    Check,
+  Check,
   ClipboardList,
   Clock3,
   Home,
   Moon,
   Sun,
+  Sparkles,
   UserRound,
   Users
 } from "lucide-react";
 import { Link } from "react-router-dom";
+
 import { useAdminTheme } from "./useAdminTheme";
 
 const auraLayers = [
@@ -33,13 +35,13 @@ const auraLayers = [
 const lightAuraLayers = [
   {
     background:
-      "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.12) 28%, rgb(255,255,255) 18%, rgb(77,182,200) 68%, rgb(45,100,130) 100%)",
+      "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.08) 28%, rgb(218,218,211) 48%, rgb(112,166,174) 76%, rgb(69,105,122) 100%)",
     mixBlendMode: "multiply",
     filter: "blur(90px)"
   },
   {
     background:
-      "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.22) 34%, rgb(255,255,255) 66%, rgb(77,182,200) 82%, rgb(45,100,130) 100%)",
+      "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.10) 34%, rgb(214,215,209) 66%, rgb(103,159,168) 82%, rgb(65,101,119) 100%)",
     mixBlendMode: "multiply",
     filter: "blur(90px)"
   }
@@ -80,12 +82,9 @@ function AdminDashboardPage() {
         />
       ))}
 
-      <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
-        <div className="flex items-center justify-between">
+      <section className={`admin-dashboard-welcome relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
+        <div className="admin-dashboard-reveal flex items-center justify-between" style={{ "--dashboard-delay": "80ms" }}>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
-              City operations
-            </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
               Admin Dashboard
             </h1>
@@ -96,7 +95,7 @@ function AdminDashboardPage() {
               type="button"
               onClick={() => setIsLightMode((currentMode) => !currentMode)}
               aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-              className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
+              className={`group relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${isLightMode ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100" : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"}`}
             >
               <Sun size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-0 scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"}`} aria-hidden="true" />
               <Moon size={13} className={`transition-all duration-700 ease-in-out ${isLightMode ? "rotate-90 scale-75 opacity-50" : "rotate-0 scale-110 opacity-100"}`} aria-hidden="true" />
@@ -115,7 +114,7 @@ function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="admin-glass-card mt-8 flex flex-col justify-between gap-5 rounded-2xl border border-white/30 p-5 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl sm:flex-row sm:items-center">
+        <div className="admin-dashboard-reveal admin-glass-card mt-8 flex flex-col justify-between gap-5 rounded-2xl border border-white/30 p-5 text-white shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl sm:flex-row sm:items-center" style={{ "--dashboard-delay": "180ms" }}>
           <div className="flex items-center gap-4">
             <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-emerald-300/15 text-emerald-200">
               <span className="absolute h-3 w-3 animate-ping rounded-full bg-emerald-300/70" />
@@ -138,7 +137,7 @@ function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <div className="admin-dashboard-reveal mt-8 grid gap-5 md:grid-cols-3" style={{ "--dashboard-delay": "280ms" }}>
           <article className="admin-glass-card relative h-full overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl">
             <div className="flex items-start justify-between">
               <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-cyan-100">
@@ -187,14 +186,14 @@ function AdminDashboardPage() {
             <p className="mt-6 text-sm font-medium text-white/70">Agencies</p>
             <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">4</h2>
             <p className="mt-2 text-xs font-medium text-white/50">Registered service agencies</p>
-            <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-amber-200/70">
+            <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-amber-200">
               <Activity size={14} aria-hidden="true" />
               Service coverage
             </div>
           </article>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <div className="admin-dashboard-reveal mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" style={{ "--dashboard-delay": "380ms" }}>
           <Link
             to="/admin/users"
             className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
@@ -224,6 +223,7 @@ function AdminDashboardPage() {
             <h2 className="mt-2 text-xl font-bold tracking-tight">Manage Agencies</h2>
             <p className="mt-3 text-sm leading-6 text-white/60">Organize agencies and manage their assigned members.</p>
           </Link>
+
           <Link
             to="/admin/complaints"
             className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
@@ -240,9 +240,26 @@ function AdminDashboardPage() {
 
             <p className="mt-3 text-sm leading-6 text-white/60">Monitor complaints and their current statuses.</p>
           </Link>
+
+          <Link
+            to="/admin/recommendations"
+            className="admin-glass-card admin-navigable-card group flex h-full min-h-64 flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl transition hover:bg-white/10"
+          >
+            <div className="flex items-start justify-between">
+              <div className="dashboard-icon-box rounded-xl border border-white/30 bg-white/5 p-3 text-cyan-200">
+                <Sparkles size={22} aria-hidden="true" />
+              </div>
+              <ArrowUpRight size={21} className="text-white/50 transition group-hover:text-white" aria-hidden="true" />
+            </div>
+
+            <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-white/50">Proposals</p>
+            <h2 className="mt-2 text-xl font-bold text-white">Citizen Recommendations</h2>
+
+            <p className="mt-3 text-sm leading-6 text-white/60">Review new facility suggestions and allocate agency members.</p>
+          </Link>
         </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+        <div className="admin-dashboard-reveal mt-8 grid gap-5 lg:grid-cols-[1.35fr_1fr]" style={{ "--dashboard-delay": "480ms" }}>
           <section className="admin-glass-card flex min-h-72 h-full flex-col rounded-2xl border border-white/30 p-6 text-white shadow-xl shadow-cyan-950/20 ring-1 ring-inset ring-white/15 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <div>

@@ -666,6 +666,7 @@ function HomePage() {
           <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
           <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+
         </div>
 
         <div className="relative mx-auto max-w-7xl">
@@ -790,7 +791,7 @@ function HomePage() {
 
           <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-          <div className="flex flex-col items-center justify-between gap-2 text-center md:flex-row md:text-left">
+          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
             <p className="text-xs text-white/35">
               © 2026 Amar Sohor. All rights reserved.
             </p>

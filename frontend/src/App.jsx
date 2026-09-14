@@ -12,6 +12,9 @@ import FacilityDetailsPage from "./pages/citizen/FacilityDetailsPage";
 import ReportIssuePage from "./pages/citizen/ReportIssuePage";
 import MyReportsPage from "./pages/citizen/MyReportsPage";
 import ReportStatusPage from "./pages/citizen/ReportStatusPage";
+import UserRecommendationPage from "./pages/citizen/UserRecommendationPage";
+import MyRecommendationsPage from "./pages/citizen/MyRecommendationsPage";
+import RecommendationStatusPage from "./pages/citizen/RecommendationStatusPage";
 
 // Agency pages
 import AgencyDashboardPage from "./pages/agency/AgencyDashboardPage";
@@ -22,6 +25,8 @@ import AddFacilityPage from "./pages/agency/AddFacilityPage";
 import FacilityManagementPage from "./pages/agency/FacilityManagementPage";
 import UploadResolutionPage from "./pages/agency/UploadResolutionPage";
 import EditFacilityPage from "./pages/agency/EditFacilityPage";
+import AssignedRecommendationsPage from "./pages/agency/AssignedRecommendationsPage";
+import RecommendationInvestigationPage from "./pages/agency/RecommendationInvestigationPage";
 
 // Admin pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -31,6 +36,9 @@ import AddAgencyMemberPage from "./pages/admin/AddAgencyMemberPage";
 import AllComplaintsPage from "./pages/admin/AllComplaintsPage";
 import AdminComplaintDetailsPage from "./pages/admin/AdminComplaintDetailsPage";
 import AgencyMembersPage from "./pages/admin/AgencyMembersPage";
+import AllRecommendationsPage from "./pages/admin/AllRecommendationsPage";
+import AllocateRecommendationPage from "./pages/admin/AllocateRecommendationPage";
+import AdminRecommendationProgressPage from "./pages/admin/AdminRecommendationProgressPage";
 
 
 function App() {
@@ -59,6 +67,10 @@ function App() {
       />
 
       <Route
+        path="/citizen/report-issue"
+        element={<ReportIssuePage />}
+      />
+      <Route
         path="/citizen/report-issue/:facilityId"
         element={<ReportIssuePage />}
       />
@@ -71,6 +83,24 @@ function App() {
       <Route
         path="/citizen/reports/:reportId"
         element={<ReportStatusPage />}
+      />
+
+      <Route
+        path="/citizen/recommendation"
+        element={<UserRecommendationPage />}
+      />
+      <Route
+        path="/citizen/user-recommendation"
+        element={<UserRecommendationPage />}
+      />
+
+      <Route
+        path="/citizen/my-recommendations"
+        element={<MyRecommendationsPage />}
+      />
+      <Route
+        path="/citizen/recommendations/:recommendationId"
+        element={<RecommendationStatusPage />}
       />
 
       {/* Agency */}
@@ -114,6 +144,16 @@ function App() {
         element={<UploadResolutionPage />}
       />
 
+      <Route
+        path="/agency/recommendations"
+        element={<AssignedRecommendationsPage />}
+      />
+
+      <Route
+        path="/agency/recommendations/:recommendationId/investigate"
+        element={<RecommendationInvestigationPage />}
+      />
+
       {/* Admin */}
       <Route
         path="/admin/dashboard"
@@ -148,7 +188,18 @@ function App() {
         element={<AgencyMembersPage />}
       />
 
-      
+      <Route
+        path="/admin/recommendations"
+        element={<AllRecommendationsPage />}
+      />
+      <Route
+        path="/admin/recommendations/:recommendationId/allocate"
+        element={<AllocateRecommendationPage />}
+      />
+      <Route
+        path="/admin/recommendations/:recommendationId/progress"
+        element={<AdminRecommendationProgressPage />}
+      />
     </Routes>
   );
 }
