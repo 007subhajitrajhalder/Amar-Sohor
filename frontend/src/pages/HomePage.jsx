@@ -418,7 +418,7 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 md:grid-cols-4">
+            <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-4 md:grid-cols-4">
               {facilities.map((facility) => {
                 const Icon = facility.icon;
                 const category = getCategoryQuery(facility.name);
@@ -498,9 +498,9 @@ function HomePage() {
         </section>
 
             {/* CITIZEN FACILITY RECOMMENDATION CARD */}
-            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 pt-2 pb-8 md:px-8">
+            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-6 md:px-8">
 
-            <div className="mx-auto mt-0 max-w-5xl">
+            <div className="mx-auto mt-6 max-w-5xl">
               <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
                 {/* Decorative background gradients */}
                 <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
@@ -666,6 +666,7 @@ function HomePage() {
           <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
           <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+
         </div>
 
         <div className="relative mx-auto max-w-7xl">
