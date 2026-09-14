@@ -91,7 +91,7 @@ function UploadResolutionPage() {
                 isDarkMode ? "text-white/60" : "text-slate-600"
               }`}
             >
-              Submit the completed work information and after-repair evidence.
+              Submit the completed work information & after-repair evidence.
             </p>
           </div>
 
