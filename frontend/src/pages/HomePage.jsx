@@ -498,9 +498,9 @@ function HomePage() {
         </section>
 
             {/* CITIZEN FACILITY RECOMMENDATION CARD */}
-            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
+            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 pt-2 pb-8 md:px-8">
 
-            <div className="mx-auto mt-12 max-w-5xl">
+            <div className="mx-auto mt-0 max-w-5xl">
               <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
                 {/* Decorative background gradients */}
                 <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
