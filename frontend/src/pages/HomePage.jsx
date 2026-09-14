@@ -289,7 +289,7 @@ function HomePage() {
       </header>
 
       <main className="relative z-30">
-        <section className="flex min-h-screen items-center px-5 pb-20 pt-32 md:px-10">
+        <section className="flex min-h-screen items-center px-5 pb-10 pt-32 md:px-10 md:pb-12">
           <div className="mx-auto w-full max-w-7xl">
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/10 px-4 py-2 backdrop-blur-md">
@@ -418,7 +418,7 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-5 md:grid-cols-4">
+            <div className="mx-auto mt-6 grid max-w-5xl grid-cols-2 gap-6 md:grid-cols-4">
               {facilities.map((facility) => {
                 const Icon = facility.icon;
                 const category = getCategoryQuery(facility.name);
@@ -445,7 +445,7 @@ function HomePage() {
               })}
             </div>
 
-            <div id="report-issue" className="mx-auto mt-12 max-w-5xl scroll-mt-28">
+            <div id="report-issue" className="mx-auto mt-6 max-w-5xl scroll-mt-28">
               <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
                 <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-blue-500/10 blur-2xl" />
@@ -494,13 +494,8 @@ function HomePage() {
               </div>
             </div>
 
-          </div>
-        </section>
-
             {/* CITIZEN FACILITY RECOMMENDATION CARD */}
-            <section id="your-recommendations" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
-
-            <div className="mx-auto mt-12 max-w-5xl">
+            <div id="your-recommendations" className="mx-auto mt-6 max-w-5xl scroll-mt-28">
               <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-black/40 p-7 shadow-2xl backdrop-blur-2xl transition duration-300 hover:border-lime-300/40 md:p-9">
                 {/* Decorative background gradients */}
                 <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-lime-300/15 blur-3xl" />
@@ -550,13 +545,11 @@ function HomePage() {
                 </div>
               </div>
             </div>
-        </section>
-
-        {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
-        <section id="about" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-8 md:px-8">
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl md:grid md:grid-cols-[1.1fr_0.9fr]">
+            {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
+        <section id="about" className="mx-auto mt-6 max-w-5xl scroll-mt-28">
+          <div className="overflow-hidden rounded-3xl border border-white/15 bg-black/40 shadow-2xl backdrop-blur-2xl md:grid md:grid-cols-[1.1fr_0.9fr]">
             {/* Left Column: Compact Content */}
-            <div className="p-6 md:p-8">
+            <div className="p-7 md:p-9">
               <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
                 ABOUT AMAR SOHOR
               </p>
@@ -622,8 +615,8 @@ function HomePage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-28 px-5 py-20 md:px-10">
-          <div className="mb-10">
+        <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-28 px-5 py-6 md:px-10">
+          <div className="mb-6">
             <p className="text-xs font-bold tracking-[4px] text-lime-300">
               HOW IT WORKS
             </p>
@@ -633,7 +626,7 @@ function HomePage() {
             </h2>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-black/30 p-7 backdrop-blur-xl">
               <span className="text-sm font-bold text-lime-300">01</span>
               <h3 className="mt-4 text-xl font-bold">Select Facility</h3>
@@ -659,6 +652,11 @@ function HomePage() {
             </div>
           </div>
         </section>
+
+          </div>
+        </section>
+
+        
       </main>
 
       <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">

@@ -4,9 +4,12 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  ChevronRight,
   HelpCircle,
+  Mail,
   Map,
   MapPin,
+  Phone,
   Send,
   Sparkles,
   Upload,
@@ -16,6 +19,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { REGISTERED_FACILITIES } from "./reportsData";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
+const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function ReportIssuePage() {
   const { facilityId } = useParams();
@@ -78,6 +82,11 @@ function ReportIssuePage() {
       return;
     }
 
+    if (!photoPreview) {
+      alert("Please upload a complaint photograph before submitting.");
+      return;
+    }
+
     const newReport = {
       id: "REP-" + Date.now().toString().slice(-5),
       facilityId: facility.id,
@@ -111,21 +120,14 @@ function ReportIssuePage() {
     setIsSubmitted(true);
   };
 
-  const handleReset = () => {
-    setTitle("");
-    setDescription("");
-    setPhotoPreview(null);
-    setPhotoName("");
-    setIsSubmitted(false);
-    setSubmittedData(null);
-  };
-
   return (
-    <div className="relative min-h-screen bg-[#070b18] text-white">
-      {/* Background gradients */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-[#07101f] via-[#080d1b] to-[#050812]" />
-      <div className="pointer-events-none fixed -top-40 -right-40 h-96 w-96 rounded-full bg-lime-300/10 blur-[140px]" />
-      <div className="pointer-events-none fixed bottom-0 -left-40 h-96 w-96 rounded-full bg-red-500/10 blur-[150px]" />
+    <div className="relative min-h-screen overflow-x-hidden text-white">
+      <div
+        className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${kolkataBg})` }}
+      />
+      <div className="pointer-events-none fixed inset-0 z-10 bg-black/60" />
+      <div className="pointer-events-none fixed inset-0 z-20 bg-gradient-to-b from-black/40 via-black/20 to-black/75" />
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07101f]/75 px-5 py-4 backdrop-blur-2xl md:px-10">
@@ -166,7 +168,7 @@ function ReportIssuePage() {
       </header>
 
       {/* Main Form Content */}
-      <main className="relative z-10 px-5 py-12 md:px-10 md:py-16">
+      <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
         <section className="mx-auto max-w-3xl">
           {/* Top Title */}
           <div>
@@ -174,30 +176,30 @@ function ReportIssuePage() {
               <AlertTriangle size={13} />
               CIVIC GRIEVANCE & MAINTENANCE
             </div>
-            <h1 className="mt-3 text-3xl font-bold md:text-5xl">
+            <h1 className="mt-2 text-2xl font-bold md:text-4xl">
               Report an <span className="text-lime-300">Issue</span>
             </h1>
-            <p className="mt-3 text-sm md:text-base text-white/50">
+            <p className="mt-1.5 text-xs text-white/50 md:text-sm max-w-2xl">
               Help keep Kolkata clean, safe, and functioning by reporting facility damage, overflow, or service disruptions to the municipal authorities.
             </p>
           </div>
 
           {/* Submission Success View */}
           {isSubmitted && submittedData ? (
-            <div className="mt-8 rounded-[28px] border border-lime-300/30 bg-white/[0.045] p-6 text-center shadow-2xl backdrop-blur-2xl md:p-10">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lime-300/20 text-lime-300">
-                <CheckCircle2 size={36} />
+            <div className="mt-6 rounded-2xl border border-lime-300/30 bg-white/[0.045] p-5 text-center shadow-xl backdrop-blur-2xl md:p-6">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lime-300/20 text-lime-300">
+                <CheckCircle2 size={32} />
               </div>
 
-              <span className="mt-5 inline-block rounded-full bg-lime-300/15 px-3.5 py-1 text-xs font-semibold text-lime-300">
+              <span className="mt-4 inline-block rounded-full bg-lime-300/15 px-3 py-1 text-xs font-semibold text-lime-300">
                 Grievance Registered • {submittedData.id}
               </span>
 
-              <h2 className="mt-3 text-2xl font-bold md:text-3xl">
+              <h2 className="mt-2.5 text-xl font-bold md:text-2xl">
                 Report Submitted Successfully!
               </h2>
 
-              <p className="mx-auto mt-2 max-w-lg text-sm text-white/60">
+              <p className="mx-auto mt-1.5 max-w-lg text-xs md:text-sm text-white/60">
                 Your report for{" "}
                 <strong className="text-white font-semibold">
                   {submittedData.facility}
@@ -206,7 +208,7 @@ function ReportIssuePage() {
               </p>
 
               {/* Summary card */}
-              <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-5 text-left text-sm space-y-3">
+              <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4 text-left text-sm space-y-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/40">Issue Title</p>
@@ -243,58 +245,57 @@ function ReportIssuePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5">
                 <Link
                   to={`/citizen/reports/${submittedData.id}`}
-                  className="w-full sm:w-auto rounded-xl bg-lime-300 px-6 py-3 font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/15"
+                  className="w-full sm:w-auto rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/15"
                 >
                   Track Report Status
                 </Link>
                 
-                <Link
-                  to="/map"
-                  className="w-full sm:w-auto rounded-xl border border-white/15 bg-white/[0.06] px-6 py-3 font-semibold text-white/80 hover:bg-white/15 hover:text-white transition"
+                <button
+                  type="button"
+                  onClick={() => navigate("/map")}
+                  className="w-full sm:w-auto rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/15 hover:text-white transition"
                 >
-                  Report Another Facility on Map
-                </Link>
-                
+                  File Another Report
+                </button>
               </div>
             </div>
           ) : (
             /* Report Issue Form */
             <form
               onSubmit={handleSubmit}
-              className="mt-8 grid gap-6 rounded-[28px] border border-white/10 bg-white/[0.045] p-6 shadow-2xl backdrop-blur-2xl md:p-8"
+              className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6"
             >
               {/* Selected Facility Card with Change Option */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white/70">
+                  <span className="text-xs font-medium text-white/70">
                     Selected Facility <span className="text-lime-300">*</span>
                   </span>
-                  
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] p-4 text-white/85">
+                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] p-3 text-white/85">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300">
-                      <MapPin size={20} />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-lime-300/10 text-lime-300">
+                      <MapPin size={18} />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-base">{facility.name}</p>
+                      <p className="font-bold text-white text-sm sm:text-base">{facility.name}</p>
                       <p className="text-xs text-white/45 mt-0.5">{facility.address}</p>
                     </div>
                   </div>
 
-                  <span className="hidden sm:inline-block rounded-lg bg-white/10 px-2.5 py-1 text-xs font-medium text-white/60">
+                  <span className="hidden sm:inline-block rounded-lg bg-white/10 px-2 py-0.5 text-xs font-medium text-white/60">
                     {facility.categoryLabel || "Public Facility"}
                   </span>
                 </div>
               </div>
 
               {/* Issue Title */}
-              <div className="space-y-2">
-                <label htmlFor="issue-title" className="text-sm font-medium text-white/70">
+              <div className="space-y-1.5">
+                <label htmlFor="issue-title" className="text-xs font-medium text-white/70">
                   Report Title <span className="text-lime-300">*</span>
                 </label>
                 <input
@@ -304,7 +305,7 @@ function ReportIssuePage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Dustbin overflow onto walkway / Tap leaking heavily"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.05] p-3.5 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
                 />
                 <p className="text-xs text-white/35">
                   Briefly name the main problem observed.
@@ -312,68 +313,69 @@ function ReportIssuePage() {
               </div>
 
               {/* Description */}
-              <div className="space-y-2">
-                <label htmlFor="issue-description" className="text-sm font-medium text-white/70">
+              <div className="space-y-1.5">
+                <label htmlFor="issue-description" className="text-xs font-medium text-white/70">
                   Detailed Description <span className="text-lime-300">*</span>
                 </label>
                 <textarea
                   id="issue-description"
                   required
-                  rows={4}
+                  rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe what is damaged, when you observed it, and any immediate hazard..."
-                  className="min-h-[120px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.05] p-3.5 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
+                  className="min-h-[100px] w-full resize-y rounded-xl border border-white/10 bg-white/[0.05] p-3 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
                 />
               </div>
 
               {/* Photo Upload */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/70">
-                  Upload Complaint Photograph (Optional but recommended)
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-white/70">
+                  Upload Complaint Photograph <span className="text-lime-300">*</span>
                 </label>
 
                 {photoPreview ? (
-                  <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/40 p-3">
+                  <div className="relative overflow-hidden rounded-xl border border-white/15 bg-black/40 p-2.5">
                     <img
                       src={photoPreview}
                       alt="Complaint evidence preview"
-                      className="max-h-60 w-full rounded-xl object-cover"
+                      className="max-h-56 w-full rounded-lg object-cover"
                     />
-                    <div className="mt-3 flex items-center justify-between px-2 text-xs">
+                    <div className="mt-2.5 flex items-center justify-between px-2 text-xs">
                       <span className="truncate max-w-xs text-white/60 font-mono">
                         {photoName || "Uploaded photograph"}
                       </span>
                       <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        className="flex items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-red-300 hover:bg-red-500 hover:text-white transition"
+                        className="flex items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-300 hover:bg-red-500 hover:text-white transition"
                       >
-                        <X size={14} /> Remove
+                        <X size={13} /> Remove
                       </button>
                     </div>
                   </div>
                 ) : (
                   <label
                     htmlFor="complaint-photo"
-                    className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.025] p-8 text-center transition duration-200 hover:border-lime-300/40 hover:bg-white/[0.05]"
+                    className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.025] p-5 sm:p-6 text-center transition duration-200 hover:border-lime-300/40 hover:bg-white/[0.05]"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-lime-300/10 text-lime-300 transition duration-300 group-hover:scale-110 group-hover:bg-lime-300 group-hover:text-black">
-                      <Camera size={22} />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-lime-300/10 text-lime-300 transition duration-300 group-hover:scale-110 group-hover:bg-lime-300 group-hover:text-black">
+                      <Camera size={20} />
                     </div>
-                    <span className="mt-3 block text-sm font-bold text-white">
+                    <span className="mt-2.5 block text-sm font-bold text-white">
                       Upload Complaint Photograph
                     </span>
-                    <span className="mt-1 block text-xs text-white/40">
+                    <span className="mt-0.5 block text-xs text-white/40">
                       Help agency field teams quickly assess the issue (PNG, JPG up to 10 MB)
                     </span>
-                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/70">
+                    <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/70">
                       <Upload size={13} /> Select Image File
                     </div>
                     <input
                       id="complaint-photo"
                       type="file"
                       accept="image/*"
+                      required
                       onChange={handlePhotoChange}
                       className="hidden"
                     />
@@ -384,14 +386,14 @@ function ReportIssuePage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-4 font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01]"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01]"
               >
                 <span>Submit Grievance Report</span>
-                <Send size={18} />
+                <Send size={16} />
               </button>
 
               <div className="flex items-center justify-center gap-2 text-xs text-white/40">
-                <HelpCircle size={14} />
+                <HelpCircle size={13} />
                 <span>
                   Reports are officially sent to the assigned municipal department and given a tracking ID.
                 </span>
@@ -400,9 +402,9 @@ function ReportIssuePage() {
           )}
 
           {/* Quick Info Callout */}
-          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-md">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-md">
             <div className="flex items-start gap-3">
-              <Sparkles size={20} className="text-lime-300 shrink-0 mt-0.5" />
+              <Sparkles size={18} className="text-lime-300 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-semibold text-white">How does issue resolution work?</h3>
                 <p className="mt-1 text-xs text-white/50 leading-relaxed">
@@ -411,31 +413,157 @@ function ReportIssuePage() {
               </div>
             </div>
           </div>
+          <div className="mt-6 flex ">
+              <Link
+                to="/citizen/recommendation"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-6 py-3 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition duration-300 hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300"
+              >
+                Any new recommendations?
+                <ChevronRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 bg-[#07101f]/80 px-5 py-9 md:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm text-white/40 md:flex-row">
-          <p>
-            <b className="text-white">
-              Amar <span className="text-lime-300">Sohor</span>
-            </b>
-            <br />
-            My City. My Responsibility.
-          </p>
-          <div className="flex gap-5">
-            <Link to="/map" className="hover:text-lime-300">
-              Facility Map
-            </Link>
-            <Link to="/citizen/my-reports" className="hover:text-lime-300">
-              My Reports
-            </Link>
-            <Link to="/citizen/my-recommendations" className="hover:text-lime-300">
-              My Recommendations
-            </Link>
+      <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
+          <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-1">
+              <Link to="/" className="group inline-flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
+                  <img
+                    src={logo}
+                    alt="Amar Sohor Logo"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold tracking-wide text-white">
+                    Amar <span className="text-lime-300">Sohor</span>
+                  </h3>
+                  <p className="mt-1 text-[11px] tracking-wide text-white/40">
+                    My City. My Responsibility.
+                  </p>
+                </div>
+              </Link>
+
+              <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
+                A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
+              </p>
+
+              <div className="mt-3 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                <span className="h-px w-12 bg-lime-300/40" />
+                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
+                  Smart City Platform
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+                Contact Us
+              </h4>
+
+              <div className="mt-4 flex flex-col gap-4">
+                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Mail size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      amersohor@gmail.com
+                    </p>
+                  </div>
+                </a>
+
+                <a href="tel:+919876543210" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
+                    <Phone size={17} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      +91 98765 43210
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
+                Follow Us
+              </h4>
+
+              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
+                Stay connected with Amar Sohor and follow our latest updates across social platforms.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">f</span>
+                </a>
+
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-lg font-bold">◎</span>
+                </a>
+
+                <a
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="YouTube"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-xs font-bold">▶</span>
+                </a>
+
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="X / Twitter"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
+                >
+                  <span className="text-sm font-bold">𝕏</span>
+                </a>
+              </div>
+            </div>
           </div>
-          <p>© 2026 Amar Sohor. All rights reserved.</p>
+
+          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
+            <p className="text-xs text-white/35">
+              © 2026 Amar Sohor. All rights reserved.
+            </p>
+
+            <p className="text-xs text-white/35">
+              Making cities smarter, cleaner and more connected.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

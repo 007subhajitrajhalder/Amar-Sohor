@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
+const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 const facilityList = [
   {
@@ -161,21 +162,18 @@ function MapViewPage() {
 };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#070b18] text-white">
+    <div className="relative min-h-screen overflow-x-hidden text-white">
 
       {/* =====================================================
           BACKGROUND
       ====================================================== */}
 
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-lime-300/[0.07] blur-[140px]" />
-
-        <div className="absolute left-[40%] top-[20%] h-[420px] w-[420px] rounded-full bg-blue-500/[0.08] blur-[150px]" />
-
-        <div className="absolute -bottom-40 -right-40 h-[550px] w-[550px] rounded-full bg-purple-500/[0.08] blur-[160px]" />
-
-        <div className="absolute inset-0 bg-gradient-to-b from-[#07101f] via-[#080d1b] to-[#050812]" />
-      </div>
+      <div
+        className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${kolkataBg})` }}
+      />
+      <div className="pointer-events-none fixed inset-0 z-10 bg-black/60" />
+      <div className="pointer-events-none fixed inset-0 z-20 bg-gradient-to-b from-black/40 via-black/20 to-black/75" />
 
       {/* =====================================================
           HEADER
@@ -219,18 +217,18 @@ function MapViewPage() {
           MAIN
       ====================================================== */}
 
-      <main className="relative z-10">
+      <main className="relative z-30">
 
         {/* =====================================================
             SEARCH / HERO
         ====================================================== */}
 
-        <section className="relative overflow-hidden px-5 pb-14 pt-16 md:px-10 md:pt-20">
+        <section className="relative overflow-hidden px-4 py-6 md:px-8 md:py-8">
           <div className="mx-auto max-w-7xl">
 
             {/* Breadcrumb */}
 
-            <div className="mb-8 flex items-center gap-2 text-xs text-white/35">
+            <div className="mb-4 flex items-center gap-2 text-xs text-white/35">
               <Link to="/" className="transition hover:text-lime-300">
                 Home
               </Link>
@@ -245,18 +243,18 @@ function MapViewPage() {
             {/* HERO */}
 
             <div className="max-w-4xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/[0.08] px-4 py-2 backdrop-blur-md">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/[0.08] px-3.5 py-1.5 backdrop-blur-md">
                 {facilityIcon(selectedCategory, {
-                  size: 15,
+                  size: 14,
                   className: "text-lime-300",
                 })}
 
-                <span className="text-xs font-medium tracking-[2px] text-lime-200">
+                <span className="text-[11px] font-medium tracking-[2px] text-lime-200">
                   SMART CITY FACILITIES
                 </span>
               </div>
 
-              <h2 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
+              <h2 className="font-serif text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
                 Find a{" "}
                 <span className="text-lime-300">
                   {currentCategoryLabel}
@@ -265,7 +263,7 @@ function MapViewPage() {
                 Near You.
               </h2>
 
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-white/50 md:text-base">
+              <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/50">
                 Locate registered public facilities around your current
                 location and find the nearest available service point
                 within 10 km.
@@ -274,14 +272,14 @@ function MapViewPage() {
 
             {/* SEARCH BOX */}
 
-            <div className="relative z-20 mt-10 max-w-6xl rounded-3xl border border-white/10 bg-white/[0.055] p-2 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+            <div className="relative z-20 mt-6 max-w-6xl rounded-2xl border border-white/10 bg-white/[0.055] p-2 shadow-xl shadow-black/30 backdrop-blur-2xl">
               <div className="flex flex-col gap-2 md:flex-row">
 
                 {/* LOCATION */}
 
-                <div className="flex min-h-[62px] flex-1 items-center gap-3 rounded-2xl bg-white/[0.045] px-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-300/10 text-lime-300">
-                    <MapPin size={20} />
+                <div className="flex min-h-[52px] flex-1 items-center gap-3 rounded-xl bg-white/[0.045] px-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-300/10 text-lime-300">
+                    <MapPin size={18} />
                   </div>
 
                   <div className="flex-1">
@@ -294,7 +292,7 @@ function MapViewPage() {
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder="Enter your current location"
-                      className="mt-1 w-full bg-transparent text-sm text-white outline-none placeholder:text-white/25 md:text-base"
+                      className="mt-0.5 w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25 sm:text-sm"
                     />
                   </div>
                 </div>
@@ -304,20 +302,20 @@ function MapViewPage() {
                 <button
                   type="button"
                   onClick={handleCurrentLocation}
-                  className="flex min-h-[62px] items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 text-sm text-white/55 transition duration-300 hover:border-lime-300/20 hover:bg-white/[0.06] hover:text-lime-300"
+                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-xs font-medium text-white/60 transition duration-300 hover:border-lime-300/20 hover:bg-white/[0.06] hover:text-lime-300 sm:text-sm"
                 >
-                  <Navigation size={17} />
+                  <Navigation size={15} />
                   Use Current Location
                 </button>
 
                 {/* CATEGORY SELECT (between Use Current Location and Search) */}
-                <div className="w-full md:w-[240px]">
+                <div className="w-full md:w-[220px]">
                   <div className="relative">
                     <select
                       id="facility-category"
                       value={selectedCategory}
                       onChange={handleCategoryChange}
-                      className="w-full appearance-none rounded-2xl border border-lime-300/20 bg-[#07101f]/60 text-white px-4 py-3.5 pr-10 min-h-[62px] text-sm font-medium outline-none backdrop-blur-sm transition duration-300 hover:scale-[1.02] focus:border-lime-300/40"
+                      className="w-full appearance-none rounded-xl border border-lime-300/20 bg-[#07101f]/60 text-white px-3.5 py-2.5 pr-9 min-h-[52px] text-xs sm:text-sm font-medium outline-none backdrop-blur-sm transition duration-300 hover:border-lime-300/40 focus:border-lime-300/50"
                     >
                       <option value="all" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>All Categories</option>
                       <option value="toilet" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Public Toilet</option>
@@ -327,7 +325,7 @@ function MapViewPage() {
                     </select>
 
                     <ChevronRight
-                      size={17}
+                      size={15}
                       className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
                     />
                   </div>
@@ -337,9 +335,9 @@ function MapViewPage() {
 
                 <button
                   type="button"
-                  className="flex min-h-[62px] items-center justify-center gap-2 rounded-2xl bg-lime-300 px-8 font-bold text-black shadow-lg shadow-lime-300/10 transition duration-300 hover:bg-lime-200 hover:shadow-lime-300/20"
+                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-6 text-xs sm:text-sm font-bold text-black shadow-md shadow-lime-300/10 transition duration-300 hover:bg-lime-200"
                 >
-                  <Search size={18} />
+                  <Search size={16} />
                   Search
                 </button>
               </div>
@@ -351,24 +349,24 @@ function MapViewPage() {
             MAP — SECOND SECTION
         ====================================================== */}
 
-        <section id="map" className="px-5 py-10 md:px-10">
+        <section id="map" className="px-4 py-6 md:px-8">
           <div className="mx-auto max-w-7xl">
 
-            <div className="mb-7 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
 
               <div>
-                <p className="text-xs font-bold tracking-[3px] text-lime-300">
+                <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
                   LOCATION MAP
                 </p>
 
-                <h2 className="mt-2 text-2xl font-bold md:text-3xl">
+                <h2 className="mt-1.5 text-xl font-bold md:text-2xl">
                   {currentCategoryLabel}{" "}
                   <span className="text-white/45">
                     near Kolkata
                   </span>
                 </h2>
 
-                <p className="mt-2 text-sm text-white/40">
+                <p className="mt-1 text-xs text-white/40">
                   Explore nearby{" "}
                   {currentCategoryLabel.toLowerCase()} locations.
                 </p>
@@ -379,8 +377,8 @@ function MapViewPage() {
 
             {/* MAP GLASS BOX */}
 
-            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
-              <div className="relative h-[420px] w-full overflow-hidden rounded-[22px]">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] p-2 shadow-xl backdrop-blur-2xl">
+              <div className="relative h-[360px] md:h-[400px] w-full overflow-hidden rounded-xl">
 
                 <iframe
                   title={`${currentCategoryLabel} locations in Kolkata`}
@@ -394,17 +392,17 @@ function MapViewPage() {
 
                 {/* MAP LABEL */}
 
-                <div className="pointer-events-none absolute left-5 top-5 rounded-2xl border border-white/10 bg-[#070b18]/80 px-4 py-3 shadow-xl backdrop-blur-xl">
-                  <div className="flex items-center gap-3">
+                <div className="pointer-events-none absolute left-4 top-4 rounded-xl border border-white/10 bg-[#070b18]/80 px-3.5 py-2.5 shadow-xl backdrop-blur-xl">
+                  <div className="flex items-center gap-2.5">
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-300 text-black">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-lime-300 text-black">
                       {facilityIcon(selectedCategory, {
-                        size: 19,
+                        size: 17,
                       })}
                     </div>
 
                     <div>
-                      <p className="text-sm font-bold text-white">
+                      <p className="text-xs sm:text-sm font-bold text-white">
                         {currentCategoryLabel} Facilities
                       </p>
 
@@ -425,53 +423,53 @@ function MapViewPage() {
             FACILITIES
         ====================================================== */}
 
-        <section id="facilities" className="px-5 py-16 md:px-10">
+        <section id="facilities" className="px-4 py-6 md:px-8">
           <div className="mx-auto max-w-7xl">
 
             {/* TITLE */}
 
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
 
               <div>
-                <p className="text-xs font-bold tracking-[3px] text-lime-300">
+                <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
                   NEARBY FACILITIES
                 </p>
 
-                <h2 className="mt-2 text-2xl font-bold md:text-3xl">
+                <h2 className="mt-1.5 text-xl font-bold md:text-2xl">
                   {currentCategoryLabel} around you
                 </h2>
 
-                <p className="mt-2 text-sm text-white/40">
+                <p className="mt-1 text-xs text-white/40">
                   Showing registered facilities within 10 km.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] px-4 py-2 text-xs text-white/50 backdrop-blur-xl">
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-1.5 text-xs text-white/50 backdrop-blur-xl">
                 {filteredFacilities.length} facilities found
               </div>
             </div>
 
             {/* FACILITY CARDS */}
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredFacilities.map((facility) => {
                 const CardIcon = getFacilityIcon(facility.category);
 
                 return (
                   <div
                     key={facility.id}
-                    className="group rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/10 backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/25 hover:bg-white/[0.07]"
+                    className="group rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5 shadow-lg backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/25 hover:bg-white/[0.07]"
                   >
 
                     {/* CARD TOP */}
 
                     <div className="flex items-start justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-lime-300/10 bg-lime-300/[0.08] text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black">
-                        <CardIcon size={22} />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-lime-300/10 bg-lime-300/[0.08] text-lime-300 transition duration-300 group-hover:bg-lime-300 group-hover:text-black">
+                        <CardIcon size={20} />
                       </div>
 
                       <span
-                        className={`rounded-full px-3 py-1 text-[10px] font-medium ${
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
                           facility.status === "Available"
                             ? "bg-lime-300/10 text-lime-300"
                             : "bg-orange-400/10 text-orange-300"
@@ -483,15 +481,15 @@ function MapViewPage() {
 
                     {/* NAME */}
 
-                    <h3 className="mt-5 text-lg font-bold">
+                    <h3 className="mt-3.5 text-base font-bold">
                       {facility.name}
                     </h3>
 
                     {/* ADDRESS */}
 
-                    <div className="mt-2 flex items-start gap-2 text-sm text-white/45">
+                    <div className="mt-1.5 flex items-start gap-2 text-xs sm:text-sm text-white/45">
                       <MapPin
-                        size={15}
+                        size={14}
                         className="mt-0.5 shrink-0 text-lime-300/70"
                       />
 
@@ -500,26 +498,26 @@ function MapViewPage() {
 
                     {/* INFO */}
 
-                    <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
+                    <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs">
 
-                      <div className="flex items-center gap-1.5 text-xs text-white/50">
+                      <div className="flex items-center gap-1.5 text-white/50">
                         <Navigation
-                          size={14}
+                          size={13}
                           className="text-lime-300"
                         />
                         {facility.distance}
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-white/50">
+                      <div className="flex items-center gap-1.5 text-white/50">
                         <Star
-                          size={14}
+                          size={13}
                           className="text-lime-300"
                         />
                         {facility.rating}
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-white/40">
-                        <Clock size={14} />
+                      <div className="flex items-center gap-1.5 text-white/40">
+                        <Clock size={13} />
                         Open
                       </div>
 
@@ -529,10 +527,10 @@ function MapViewPage() {
 
                     <Link
                       to={`/facilities/${facility.id}`}
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-3 text-sm font-medium transition duration-300 hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-xs sm:text-sm font-medium transition duration-300 hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
                     >
                       View Details
-                      <ChevronRight size={16} />
+                      <ChevronRight size={15} />
                     </Link>
 
                     {/* REPORT ISSUE */}
@@ -540,15 +538,25 @@ function MapViewPage() {
                     <button
                       type="button"
                       onClick={() => handleReportIssue(facility)}
-                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.06] py-3 text-sm font-medium text-red-300 transition duration-300 hover:border-red-400/40 hover:bg-red-400 hover:text-white"
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.06] py-2.5 text-xs sm:text-sm font-medium text-red-300 transition duration-300 hover:border-red-400/40 hover:bg-red-400 hover:text-white"
                     >
-                      <Flag size={16} />
+                      <Flag size={15} />
                       Report Issue
                     </button>
-
                   </div>
                 );
               })}
+
+            </div>
+
+            <div className="mt-6 flex ">
+              <Link
+                to="/citizen/recommendation"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-6 py-3 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition duration-300 hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300"
+              >
+                Any new recommendations?
+                <ChevronRight size={16} aria-hidden="true" />
+              </Link>
             </div>
           </div>
         </section>
@@ -560,30 +568,19 @@ function MapViewPage() {
 
       <footer
         id="contact"
-        className="relative overflow-hidden border-t border-white/10 bg-[#07101f]/80 px-5 py-14 text-white backdrop-blur-2xl md:px-10"
+        className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10"
       >
-
-        {/* FOOTER GLOW */}
-
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
-
           <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
-
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-lime-300/[0.02]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
         </div>
 
         <div className="relative mx-auto max-w-7xl">
-
-          {/* FOOTER GRID */}
-
-          <div className="grid gap-12 md:grid-cols-4">
-
-            {/* BRAND */}
-
-            <div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-1">
               <Link to="/" className="group inline-flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/20 bg-white/[0.06] shadow-lg shadow-lime-300/10 transition duration-300 group-hover:scale-105">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
                   <img
                     src={logo}
                     alt="Amar Sohor Logo"
@@ -592,206 +589,124 @@ function MapViewPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-bold tracking-wide">
+                  <h3 className="text-xl font-bold tracking-wide text-white">
                     Amar <span className="text-lime-300">Sohor</span>
                   </h3>
-
                   <p className="mt-1 text-[11px] tracking-wide text-white/40">
                     My City. My Responsibility.
                   </p>
                 </div>
               </Link>
 
-              <p className="mt-6 max-w-sm text-sm leading-7 text-white/45">
-                A citizen-centric smart city platform designed to help
-                people discover public facilities and stay connected with
-                their city.
+              <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
+                A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
               </p>
 
-              <div className="mt-6 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-
                 <span className="h-px w-12 bg-lime-300/40" />
-
                 <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
                   Smart City Platform
                 </span>
               </div>
             </div>
 
-            {/* QUICK LINKS */}
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Quick Links
-              </h4>
-
-              <div className="mt-6 flex flex-col gap-4">
-
-                <Link
-                  to="/"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  Home
-                </Link>
-
-                <Link
-                  to="/#about"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  About Us
-                </Link>
-
-                <Link
-                  to="/#how-it-works"
-                  className="group flex w-fit items-center gap-3 text-sm text-white/60 transition duration-300 hover:translate-x-1 hover:text-lime-300"
-                >
-                  <span className="h-1 w-1 rounded-full bg-white/25 transition group-hover:bg-lime-300" />
-                  How It Works
-                </Link>
-
-              </div>
-            </div>
-
-            {/* CONTACT */}
-
             <div>
               <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
                 Contact Us
               </h4>
 
-              <div className="mt-6 flex flex-col gap-5">
-
-                {/* EMAIL */}
-
-                <a
-                  href="mailto:contact@amarsohor.com"
-                  className="group flex items-center gap-3"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-lime-300 transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#07101f]">
+              <div className="mt-4 flex flex-col gap-4">
+                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
                     <Mail size={17} />
                   </div>
-
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">
-                      Email
-                    </p>
-
-                    <p className="mt-1 text-sm text-white/65 transition group-hover:text-lime-300">
-                      contact@amarsohor.com
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
+                      amersohor@gmail.com
                     </p>
                   </div>
                 </a>
 
-                {/* PHONE */}
-
-                <a
-                  href="tel:+919876543210"
-                  className="group flex items-center gap-3"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-lime-300 transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#07101f]">
+                <a href="tel:+919876543210" className="group flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
                     <Phone size={17} />
                   </div>
-
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">
-                      Phone
-                    </p>
-
-                    <p className="mt-1 text-sm text-white/65 transition group-hover:text-lime-300">
+                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
+                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
                       +91 98765 43210
                     </p>
                   </div>
                 </a>
-
               </div>
             </div>
-
-            {/* SOCIAL */}
 
             <div>
               <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
                 Follow Us
               </h4>
 
-              <p className="mt-6 max-w-xs text-sm leading-6 text-white/40">
-                Stay connected with Amar Sohor and follow our latest updates
-                across social platforms.
+              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
+                Stay connected with Amar Sohor and follow our latest updates across social platforms.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-
-                {/* FACEBOOK */}
-
+              <div className="mt-4 flex flex-wrap gap-3">
                 <a
                   href="https://facebook.com"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Facebook"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/65 transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#07101f]"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
                 >
                   <span className="text-lg font-bold">f</span>
                 </a>
-
-                {/* INSTAGRAM */}
 
                 <a
                   href="https://instagram.com"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/65 transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#07101f]"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
                 >
                   <span className="text-lg font-bold">◎</span>
                 </a>
-
-                {/* YOUTUBE */}
 
                 <a
                   href="https://youtube.com"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/65 transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#07101f]"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
                 >
                   <span className="text-xs font-bold">▶</span>
                 </a>
-
-                {/* X / TWITTER */}
 
                 <a
                   href="https://x.com"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="X / Twitter"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-white/65 transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#07101f]"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
                 >
                   <span className="text-sm font-bold">𝕏</span>
                 </a>
-
               </div>
             </div>
-
           </div>
 
-          {/* DIVIDER */}
-
-          <div className="my-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          {/* BOTTOM */}
+          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
           <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/30">
+            <p className="text-xs text-white/35">
               © 2026 Amar Sohor. All rights reserved.
             </p>
 
-            <p className="text-xs text-white/30">
+            <p className="text-xs text-white/35">
               Making cities smarter, cleaner and more connected.
             </p>
           </div>
-
         </div>
       </footer>
     </div>
