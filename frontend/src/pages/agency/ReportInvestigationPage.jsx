@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 function ReportInvestigationPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
 
-  const [investigationNotes, setInvestigationNotes] =
-    useState("");
-
+  const [investigationNotes, setInvestigationNotes] = useState("");
   const [status, setStatus] = useState("Pending");
 
   const [isDark, setIsDark] = useState(
@@ -38,24 +36,17 @@ function ReportInvestigationPage() {
 
   const handleStartInvestigation = () => {
     setStatus("Under Investigation");
-
-    alert(
-      "Report status changed to Under Investigation"
-    );
+    alert("Report status changed to Under Investigation");
   };
 
   const handleGoToResolution = () => {
-    navigate(
-      `/agency/reports/${reportId}/resolution`
-    );
+    navigate(`/agency/reports/${reportId}/resolution`);
   };
 
   return (
     <main
       className={`relative min-h-screen overflow-hidden p-4 transition-colors duration-500 sm:p-6 ${
-        isDark
-          ? "bg-slate-950 text-white"
-          : "bg-slate-100 text-slate-900"
+        isDark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-900"
       }`}
     >
       {/* Ambient dashboard-style background */}
@@ -73,7 +64,16 @@ function ReportInvestigationPage() {
       </div>
 
       <section className="relative mx-auto max-w-5xl">
-        <div className="mb-5 flex justify-end">
+        <div className="mb-5 flex items-center justify-between">
+          <Link
+            to="/agency/reports"
+            className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
+              isDark ? "text-cyan-400 hover:text-cyan-300" : "text-cyan-700 hover:text-cyan-800"
+            }`}
+          >
+            <span>&larr;</span> Back to Assigned Reports
+          </Link>
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -93,7 +93,8 @@ function ReportInvestigationPage() {
             isDark
               ? "border-white/10 bg-white/[0.07] shadow-black/30"
               : "border-slate-200 bg-white/90 shadow-slate-300/50"
-          }`}>
+          }`}
+        >
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p
@@ -155,9 +156,7 @@ function ReportInvestigationPage() {
                     Report Title
                   </p>
 
-                  <p className="font-bold">
-                    Water Not Available
-                  </p>
+                  <p className="font-bold">Water Not Available</p>
                 </div>
 
                 <div>
@@ -169,9 +168,7 @@ function ReportInvestigationPage() {
                     Facility
                   </p>
 
-                  <p className="font-bold">
-                    College Street Public Toilet
-                  </p>
+                  <p className="font-bold">College Street Public Toilet</p>
                 </div>
 
                 <div>
@@ -184,12 +181,9 @@ function ReportInvestigationPage() {
                   </p>
 
                   <p
-                    className={
-                      isDark ? "text-slate-300" : "text-slate-700"
-                    }
+                    className={isDark ? "text-slate-300" : "text-slate-700"}
                   >
-                    The facility currently has no running
-                    water.
+                    The facility currently has no running water.
                   </p>
                 </div>
 
@@ -233,17 +227,11 @@ function ReportInvestigationPage() {
 
               <form className="mt-5 grid gap-5">
                 <label>
-                  <span className="font-bold">
-                    Investigation Notes
-                  </span>
+                  <span className="font-bold">Investigation Notes</span>
 
                   <textarea
                     value={investigationNotes}
-                    onChange={(event) =>
-                      setInvestigationNotes(
-                        event.target.value
-                      )
-                    }
+                    onChange={(event) => setInvestigationNotes(event.target.value)}
                     placeholder="Enter investigation notes"
                     className={`mt-2 min-h-36 w-full rounded-xl border p-3 outline-none transition-all duration-300 focus:ring-2 ${
                       isDark
