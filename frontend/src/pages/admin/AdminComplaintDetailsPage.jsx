@@ -1,12 +1,119 @@
+import { useEffect, useState } from "react";
 import {
   Link,
   useNavigate,
   useParams
 } from "react-router-dom";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Building2,
+  Check,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Moon,
+  Phone,
+  Save,
+  Sun
+} from "lucide-react";
+
+import { useAdminTheme } from "./useAdminTheme";
+
+const complaintOverrides = {
+  "101": {
+    title: "Dustbin Overflowing",
+    status: "PENDING",
+    submittedDate: "21 August 2026",
+    citizen: {
+      name: "Ananya Sen",
+      email: "ananya@example.com",
+      phone: "9876543210"
+    },
+    facility: {
+      id: 1,
+      name: "Gariahat Community Dustbin",
+      category: "Waste Management",
+      address: "Gariahat, Kolkata"
+    },
+    agency: {
+      id: 1,
+      name: "KMC SWM Department",
+      assignedMember: "Amit Kumar"
+    }
+  },
+  "102": {
+    title: "Water Not Available",
+    description: "The drinking-water dispenser is not supplying water.",
+    status: "UNDER_INVESTIGATION",
+    submittedDate: "20 August 2026",
+    citizen: {
+      name: "Rahul Das",
+      email: "rahul@example.com",
+      phone: "9876543210"
+    },
+    facility: {
+      id: 3,
+      name: "Salt Lake Water Point",
+      category: "Drinking Water",
+      address: "Sector V, Salt Lake, Kolkata"
+    },
+    agency: {
+      id: 3,
+      name: "KMC Water Department",
+      assignedMember: "Amit Kumar"
+    }
+  },
+  "103": {
+    title: "Parking Area Closed",
+    status: "RESOLVED",
+    submittedDate: "18 August 2026",
+    citizen: {
+      name: "Priya Ghosh",
+      email: "priya@example.com",
+      phone: "9123456780"
+    },
+    facility: {
+      id: 5,
+      name: "New Market Parking",
+      category: "Traffic Management",
+      address: "New Market, Kolkata"
+    },
+    agency: {
+      id: 8,
+      name: "Kolkata Police",
+      assignedMember: "Neha Sharma"
+    },
+    resolutionDescription: "The parking gate was reopened and operations resumed.",
+    completionDate: "25 August 2026"
+  },
+  "104": {
+    title: "Public Toilet Is Dirty",
+    status: "PENDING",
+    submittedDate: "17 August 2026",
+    citizen: {
+      name: "Arjun Roy",
+      email: "arjun@example.com",
+      phone: "9988776655"
+    },
+    facility: {
+      id: 7,
+      name: "College Street Public Toilet",
+      category: "Sanitation",
+      address: "College Street, Kolkata"
+    },
+    agency: {
+      id: 12,
+      name: "KMC Sanitation Department",
+      assignedMember: "Sourav Das"
+    }
+  }
+};
 
 function AdminComplaintDetailsPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
+  const [isLightMode, setIsLightMode] = useAdminTheme();
 
   /*
     Temporary complaint data.
@@ -14,7 +121,7 @@ function AdminComplaintDetailsPage() {
     Later, the page will request the selected
     report from the backend using reportId.
   */
-  const complaint = {
+  const complaintData = {
     id: reportId,
     title: "Water Not Available",
     description:
@@ -33,6 +140,7 @@ function AdminComplaintDetailsPage() {
       address: "Sector V, Salt Lake, Kolkata"
     },
     agency: {
+      id: 3,
       name: "KMC Water Department",
       assignedMember: "Amit Kumar"
     },
@@ -41,6 +149,65 @@ function AdminComplaintDetailsPage() {
     resolutionPhoto: null,
     completionDate: null
   };
+
+  const complaint = {
+    ...complaintData,
+    ...(complaintOverrides[String(reportId)] || {}),
+    id: reportId,
+    status: complaintOverrides[String(reportId)]?.status || complaintData.status,
+    agency: {
+      ...complaintData.agency,
+      ...((complaintOverrides[String(reportId)] || {}).agency || {}),
+      assignedMember: ((complaintOverrides[String(reportId)] || {}).agency || {}).assignedMember || complaintData.agency.assignedMember
+    },
+    facility: {
+      ...complaintData.facility,
+      ...((complaintOverrides[String(reportId)] || {}).facility || {})
+    },
+    citizen: {
+      ...complaintData.citizen,
+      ...((complaintOverrides[String(reportId)] || {}).citizen || {})
+    }
+  };
+
+  const [currentStatus, setCurrentStatus] = useState(complaint.status);
+  const [selectedMember, setSelectedMember] = useState(complaint.agency.assignedMember);
+  const [draftStatus, setDraftStatus] = useState(complaint.status);
+  const [draftMember, setDraftMember] = useState(complaint.agency.assignedMember);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionMessage, setActionMessage] = useState("");
+  const [isReportIdCopied, setIsReportIdCopied] = useState(false);
+
+  useEffect(() => {
+    setCurrentStatus(complaint.status);
+    setSelectedMember(complaint.agency.assignedMember);
+    setDraftStatus(complaint.status);
+    setDraftMember(complaint.agency.assignedMember);
+  }, [reportId, complaint.status, complaint.agency.assignedMember]);
+
+  const hasWorkflowChanges = draftStatus !== currentStatus || draftMember !== selectedMember;
+
+  const isKnownComplaint = ["101", "102", "103", "104"].includes(String(reportId));
+
+  if (!isKnownComplaint) {
+    return (
+      <main className={`min-h-screen bg-[#100e0b] p-6 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+        <section className="admin-glass-card mx-auto mt-16 max-w-xl rounded-2xl border border-white/30 p-8 text-center text-white shadow-xl shadow-cyan-950/25">
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber-200/70">Report unavailable</p>
+          <h1 className="mt-3 text-2xl font-bold">Complaint not found</h1>
+          <p className="mt-2 text-sm text-white/60">No complaint matches report #{reportId}.</p>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/complaints")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-cyan-200/40 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-white/10"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Back to complaints
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   const formatStatus = (status) => {
     return status
@@ -53,38 +220,81 @@ function AdminComplaintDetailsPage() {
 
   const getStatusStyle = (status) => {
     if (status === "PENDING") {
-      return "bg-yellow-100 text-yellow-800";
+      return "border-amber-200/30 bg-amber-300/15 text-amber-200";
     }
 
-    if (
-      status === "UNDER_INVESTIGATION"
-    ) {
-      return "bg-blue-100 text-blue-800";
+    if (status === "UNDER_INVESTIGATION") {
+      return "border-cyan-200/30 bg-cyan-300/15 text-cyan-200";
     }
 
     if (status === "RESOLVED") {
-      return "bg-green-100 text-green-800";
+      return "border-emerald-200/30 bg-emerald-300/15 text-emerald-200";
     }
 
-    return "bg-slate-100 text-slate-800";
+    return "border-white/20 bg-white/10 text-white/70";
+  };
+
+  const confirmAction = () => {
+    if (!pendingAction) return;
+
+    if (pendingAction.type === "workflow") {
+      setCurrentStatus(pendingAction.status);
+      setSelectedMember(pendingAction.member);
+      setDraftStatus(pendingAction.status);
+      setDraftMember(pendingAction.member);
+      setActionMessage("Complaint workflow updated successfully.");
+    } else if (pendingAction.type === "status") {
+      setCurrentStatus(pendingAction.value);
+      setActionMessage(`Status updated to ${formatStatus(pendingAction.value)}.`);
+    } else {
+      setSelectedMember(pendingAction.value);
+      setActionMessage(`Complaint reassigned to ${pendingAction.value}.`);
+    }
+
+    setPendingAction(null);
+    window.setTimeout(() => setActionMessage(""), 3000);
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <section className="mx-auto max-w-6xl">
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/admin/complaints")
-          }
-          className="font-bold text-emerald-700"
-        >
-          ← Back to All Complaints
-        </button>
+    <main
+      className={`admin-themed-page relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${
+        isLightMode ? "admin-light-mode" : ""
+      }`}
+    >
+      <section className="relative z-[1] mx-auto max-w-6xl text-white">
+        <div className="flex items-center justify-between gap-4">
+          <Link
+              to="/admin/complaints"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              Back to all complaints
+          </Link>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 rounded-2xl bg-white p-7 shadow md:flex-row md:items-center">
+        
+          <button
+            type="button"
+            onClick={() => setIsLightMode((mode) => !mode)}
+            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
+            className="admin-theme-toggle relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border border-white/30 bg-white/10 px-1.5 text-white shadow-lg backdrop-blur-xl transition focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            <Sun size={13} aria-hidden="true" />
+            <Moon size={13} aria-hidden="true" />
+            <span
+              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-500 ${
+                isLightMode
+                  ? "translate-x-6 bg-amber-300"
+                  : "bg-cyan-200"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div
+          className="admin-glass-card mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl md:flex-row md:items-center"
+        >
           <div>
-            <p className="font-bold text-emerald-700">
+            <p className="font-bold text-cyan-200/70">
               Complaint #{complaint.id}
             </p>
 
@@ -92,26 +302,46 @@ function AdminComplaintDetailsPage() {
               {complaint.title}
             </h1>
 
-            <p className="mt-2 text-slate-500">
+            <p className="mt-2 text-white/60">
               Submitted on{" "}
               {complaint.submittedDate}
             </p>
           </div>
 
           <span
-            className={`self-start rounded-full px-4 py-2 text-sm font-bold ${getStatusStyle(
-              complaint.status
+            className={`inline-flex items-center gap-2 self-start rounded-full border px-4 py-2 text-sm font-bold ${getStatusStyle(
+              currentStatus
             )}`}
           >
+            <span className="h-2 w-2 rounded-full bg-current shadow-[0_0_10px_currentColor]" />
             {formatStatus(
-              complaint.status
+              currentStatus
             )}
           </span>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="admin-dashboard-reveal mt-5 grid gap-3 sm:grid-cols-3" style={{ "--dashboard-delay": "280ms" }}>
+          <SummaryItem icon={MapPin} label="Facility" value={complaint.facility.name} />
+          <SummaryItem icon={Building2} label="Assigned agency" value={complaint.agency.name} />
+          <SummaryItem
+            icon={ExternalLink}
+            label="Assigned member"
+            value={selectedMember}
+            href={`/admin/agencies/${complaint.agency.id}/members`}
+          />
+        </div>
+
+        {actionMessage && (
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100" role="status">
+            <Check size={17} aria-hidden="true" />
+            {actionMessage}
+          </div>
+        )}
+
+        
+        <div className="admin-dashboard-reveal mt-6 grid gap-6 lg:grid-cols-2" style={{ "--dashboard-delay": "440ms" }}>
           {/* Complaint information */}
-          <section className="rounded-2xl bg-white p-7 shadow">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
             <h2 className="text-xl font-bold">
               Complaint Information
             </h2>
@@ -137,12 +367,31 @@ function AdminComplaintDetailsPage() {
                 value={complaint.citizen.phone}
               />
 
+              <div className="flex flex-wrap gap-3 border-t border-white/10 pt-5">
+                <a
+                  href={`mailto:${complaint.citizen.email}`}
+                  className="admin-navigable-card inline-flex items-center gap-2 rounded-xl border border-cyan-200/30 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-200 transition"
+                >
+                  <Mail size={15} aria-hidden="true" />
+                  Email citizen
+                </a>
+                <a
+                  href={`tel:${complaint.citizen.phone}`}
+                  className="admin-navigable-card inline-flex items-center gap-2 rounded-xl border border-emerald-200/30 bg-white/5 px-4 py-2 text-sm font-semibold text-emerald-200 transition"
+                >
+                  <Phone size={15} aria-hidden="true" />
+                  Call citizen
+                </a>
+              </div>
+
               <div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-white/50">
                   Complaint Photograph
                 </p>
 
-                <div className="mt-2 flex h-56 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                <div
+                  className="admin-secondary-panel mt-2 flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+                >
                   Complaint image will appear here
                 </div>
               </div>
@@ -150,7 +399,7 @@ function AdminComplaintDetailsPage() {
           </section>
 
           {/* Assignment information */}
-          <section className="rounded-2xl bg-white p-7 shadow">
+          <section className="admin-glass-card rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
             <h2 className="text-xl font-bold">
               Facility and Assignment
             </h2>
@@ -179,14 +428,18 @@ function AdminComplaintDetailsPage() {
               <Information
                 label="Assigned Member"
                 value={
-                  complaint.agency
-                    .assignedMember
+                  <Link
+                    to={`/admin/agencies/${complaint.agency.id}/members`}
+                    className="font-semibold text-cyan-200 transition hover:text-white hover:underline"
+                  >
+                    {selectedMember}
+                  </Link>
                 }
               />
 
               <Link
                 to={`/facilities/${complaint.facility.id}`}
-                className="inline-block rounded-xl border border-emerald-700 px-5 py-3 text-center font-bold text-emerald-700"
+                className="admin-outline-button inline-block rounded-xl border border-cyan-200/40 px-5 py-3 text-center font-bold text-cyan-200 transition hover:bg-white/10"
               >
                 View Facility
               </Link>
@@ -195,12 +448,12 @@ function AdminComplaintDetailsPage() {
         </div>
 
         {/* Status history */}
-        <section className="mt-6 rounded-2xl bg-white p-7 shadow">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
           <h2 className="text-xl font-bold">
             Complaint Status
           </h2>
 
-          <div className="mt-6 border-l-2 border-emerald-200 pl-6">
+          <div className="mt-6 border-l-2 border-cyan-200/40 pl-6">
             <StatusHistoryItem
               title="Complaint Submitted"
               date="20 August 2026, 10:30 AM"
@@ -222,12 +475,12 @@ function AdminComplaintDetailsPage() {
         </section>
 
         {/* Resolution information */}
-        <section className="mt-6 rounded-2xl bg-white p-7 shadow">
+        <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
           <h2 className="text-xl font-bold">
             Resolution Information
           </h2>
 
-          {complaint.status ===
+          {currentStatus ===
           "RESOLVED" ? (
             <div className="mt-5 grid gap-6 md:grid-cols-2">
               <div>
@@ -248,12 +501,14 @@ function AdminComplaintDetailsPage() {
                 </div>
               </div>
 
-              <div className="flex h-56 items-center justify-center rounded-xl bg-slate-100">
+              <div
+                className="admin-secondary-panel flex h-56 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50"
+              >
                 Resolution photograph
               </div>
             </div>
           ) : (
-            <div className="mt-5 rounded-xl bg-yellow-50 p-5 text-yellow-800">
+            <div className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 p-5 text-amber-200">
               Resolution information will be
               available after the agency
               resolves the complaint.
@@ -261,6 +516,34 @@ function AdminComplaintDetailsPage() {
           )}
         </section>
       </section>
+
+      {pendingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm">
+          <div className="admin-glass-card w-full max-w-md rounded-2xl border border-white/30 p-6 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="confirm-action-title">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-amber-300/15 p-3 text-amber-200">
+                <AlertCircle size={21} aria-hidden="true" />
+              </div>
+              <div>
+                <h2 id="confirm-action-title" className="text-lg font-bold">Confirm workflow change</h2>
+                <p className="mt-2 text-sm leading-6 text-white/60">
+                  {pendingAction.type === "status"
+                    ? `Change the complaint status to ${formatStatus(pendingAction.value)}?`
+                    : `Assign this complaint to ${pendingAction.value}?`}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setPendingAction(null)} className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10">
+                Cancel
+              </button>
+              <button type="button" onClick={confirmAction} className="rounded-xl border border-cyan-200/40 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25">
+                Confirm change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -271,16 +554,38 @@ function Information({
 }) {
   return (
     <div>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-white/50">
         {label}
       </p>
 
-      <p className="mt-1 font-bold">
+      <p className="mt-1 font-semibold text-white/90">
         {value || "Not available"}
       </p>
     </div>
   );
 }
+
+function SummaryItem({ icon: Icon, label, value, href }) {
+  return (
+    <div className="admin-glass-card flex min-w-0 items-center gap-3 rounded-xl border border-white/15 px-4 py-3 text-white shadow-lg shadow-cyan-950/10">
+      <div className="rounded-lg border border-white/15 bg-white/5 p-2 text-cyan-200">
+        <Icon size={16} aria-hidden="true" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-white/45">{label}</p>
+        {href ? (
+          <Link to={href} className="mt-1 block truncate text-sm font-semibold text-cyan-200 transition hover:text-white hover:underline">
+            {value}
+          </Link>
+        ) : (
+          <p className="mt-1 truncate text-sm font-semibold text-white/85">{value}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 
 function StatusHistoryItem({
   title,
@@ -289,17 +594,17 @@ function StatusHistoryItem({
 }) {
   return (
     <div className="relative mb-7">
-      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-emerald-700" />
+      <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-cyan-300" />
 
       <h3 className="font-bold">
         {title}
       </h3>
 
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-white/50">
         {date}
       </p>
 
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-white/60">
         {description}
       </p>
     </div>

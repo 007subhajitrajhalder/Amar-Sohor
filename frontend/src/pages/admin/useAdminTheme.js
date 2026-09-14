@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./BorderGlow.css";
 
 const ADMIN_THEME_KEY = "amar-sohor-admin-theme";
 
@@ -10,7 +11,7 @@ export function useAdminTheme() {
   const [isLightMode, setIsLightMode] = useState(getInitialLightMode);
 
   useEffect(() => {
-    document.body.style.backgroundColor = isLightMode ? "#faf8f2" : "#100e0b";
+    document.body.style.backgroundColor = isLightMode ? "#d9d8d2" : "#100e0b";
     document.body.style.transition = "background-color 700ms ease";
     localStorage.setItem(ADMIN_THEME_KEY, isLightMode ? "light" : "dark");
 

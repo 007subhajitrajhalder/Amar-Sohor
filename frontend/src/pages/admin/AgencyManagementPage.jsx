@@ -1,6 +1,7 @@
 import { Activity, ArrowLeft, ArrowUpDown, ArrowUpRight, Building2, CarFront, Droplets, Moon, Search, Sun, Toilet, Trash2, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+
 import { useAdminTheme } from "./useAdminTheme";
 
 function AgencyManagementPage() {
@@ -55,7 +56,6 @@ function AgencyManagementPage() {
   return (
     <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
       <div
-        className="pointer-events-none absolute inset-0 blur-[125px] md:blur-[180px]"
         style={{
           background: "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
           mixBlendMode: "screen",
@@ -75,7 +75,7 @@ function AgencyManagementPage() {
       <div
         className="pointer-events-none absolute inset-0 blur-[90px] transition-opacity duration-700"
         style={{
-          background: "linear-gradient(rgba(0,0,0,0) 0%, rgba(178,235,242,0.18) 34%, rgb(255,255,255) 66%, rgb(77,182,200) 82%, rgb(45,100,130) 100%)",
+          background: "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.09) 34%, rgb(214,215,209) 66%, rgb(103,159,168) 82%, rgb(65,101,119) 100%)",
           mixBlendMode: "multiply",
           opacity: isLightMode ? 1 : 0
         }}
@@ -102,7 +102,7 @@ function AgencyManagementPage() {
 
           <div className="mt-8 flex flex-col justify-between gap-6 border-b border-white/15 pb-8 md:flex-row md:items-end">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200/70">Admin Portal</p>
+
               <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Agency Management</h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/60">Coordinate city service agencies and manage their registered members.</p>
             </div>
@@ -116,7 +116,7 @@ function AgencyManagementPage() {
             <div className="admin-glass-card admin-agency-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between"><p className="text-sm text-white/60">Active agencies</p><Building2 size={18} className="text-cyan-200" aria-hidden="true" /></div>
               <p className="mt-3 text-3xl font-bold">{agencies.length}</p>
-              <p className="mt-1 text-xs text-cyan-300">All services connected</p>
+              <p className="mt-1 text-xs text-cyan-100">All services connected</p>
             </div>
             <div className="admin-glass-card admin-agency-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between"><p className="text-sm text-white/60">Registered members</p><Users size={18} className="text-cyan-300" aria-hidden="true" /></div>
