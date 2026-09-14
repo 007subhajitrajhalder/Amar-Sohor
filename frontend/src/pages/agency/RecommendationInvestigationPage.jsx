@@ -32,37 +32,57 @@ const FACILITY_ICONS = {
   parking: Car
 };
 
-function getFacilityBadge(type) {
+function getFacilityBadge(type, isDark) {
   switch ((type || "").toLowerCase()) {
     case "dustbin":
       return {
         label: "Dustbin",
-        className: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-        iconClass: "border-amber-400/30 bg-amber-400/15 text-amber-200"
+        className: isDark 
+          ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
+          : "border-amber-600/30 bg-amber-100 text-amber-800",
+        iconClass: isDark 
+          ? "border-amber-400/30 bg-amber-400/15 text-amber-200"
+          : "border-amber-600/30 bg-amber-200 text-amber-800"
       };
     case "water":
       return {
         label: "Water Dispenser",
-        className: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
-        iconClass: "border-cyan-400/30 bg-cyan-400/15 text-cyan-200"
+        className: isDark 
+          ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+          : "border-cyan-600/30 bg-cyan-100 text-cyan-800",
+        iconClass: isDark 
+          ? "border-cyan-400/30 bg-cyan-400/15 text-cyan-200"
+          : "border-cyan-600/30 bg-cyan-200 text-cyan-800"
       };
     case "toilet":
       return {
         label: "Public Toilet",
-        className: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-        iconClass: "border-emerald-400/30 bg-emerald-400/15 text-emerald-200"
+        className: isDark 
+          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+          : "border-emerald-600/30 bg-emerald-100 text-emerald-800",
+        iconClass: isDark 
+          ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-200"
+          : "border-emerald-600/30 bg-emerald-200 text-emerald-800"
       };
     case "parking":
       return {
         label: "Parking Spot",
-        className: "border-blue-400/30 bg-blue-400/10 text-blue-200",
-        iconClass: "border-blue-400/30 bg-blue-400/15 text-blue-200"
+        className: isDark 
+          ? "border-blue-400/30 bg-blue-400/10 text-blue-200"
+          : "border-blue-600/30 bg-blue-100 text-blue-800",
+        iconClass: isDark 
+          ? "border-blue-400/30 bg-blue-400/15 text-blue-200"
+          : "border-blue-600/30 bg-blue-200 text-blue-800"
       };
     default:
       return {
         label: "Civic Amenity",
-        className: "border-white/20 bg-white/10 text-white",
-        iconClass: "border-white/20 bg-white/10 text-white"
+        className: isDark 
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-slate-300 bg-slate-100 text-slate-800",
+        iconClass: isDark 
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-slate-300 bg-slate-200 text-slate-800"
       };
   }
 }
@@ -179,7 +199,7 @@ function RecommendationInvestigationPage() {
     );
   }
 
-  const facilityBadge = getFacilityBadge(recommendation.facilityType);
+  const facilityBadge = getFacilityBadge(recommendation.facilityType, isDark);
   const FacilityIcon = FACILITY_ICONS[recommendation.facilityType] || Trash2;
   const currentStatus = (recommendation.status || "").toUpperCase();
   const isPendingInvestigation = currentStatus === "ALLOTTED" || currentStatus === "PENDING_ALLOCATION";
@@ -314,10 +334,14 @@ function RecommendationInvestigationPage() {
         {/* Action toast */}
         {actionNotification && (
           <div
-            className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-300/40 bg-emerald-400/20 p-4 text-xs font-bold text-emerald-200 shadow-xl backdrop-blur-xl"
+            className={`mt-4 flex items-center gap-3 rounded-2xl border p-4 text-xs font-bold shadow-xl backdrop-blur-xl ${
+              isDark 
+                ? "border-emerald-300/40 bg-emerald-400/20 text-emerald-200" 
+                : "border-emerald-400/40 bg-emerald-50 text-emerald-800"
+            }`}
             role="status"
           >
-            <CheckCircle2 size={18} className="shrink-0 text-emerald-300" />
+            <CheckCircle2 size={18} className={`shrink-0 ${isDark ? "text-emerald-300" : "text-emerald-600"}`} />
             <span>{actionNotification}</span>
           </div>
         )}
@@ -333,7 +357,7 @@ function RecommendationInvestigationPage() {
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-amber-400" : "text-amber-700"}`}>
                   Proposal #{recommendation.id}
                 </span>
                 <span
@@ -352,7 +376,7 @@ function RecommendationInvestigationPage() {
               </h1>
 
               <p className="mt-1 flex items-center gap-1.5 text-xs opacity-70">
-                <MapPin size={13} className="shrink-0 text-amber-400" />
+                <MapPin size={13} className={`shrink-0 ${isDark ? "text-amber-400" : "text-amber-600"}`} />
                 <span>{recommendation.location}</span>
                 {recommendation.landmark && (
                   <span className="opacity-80">• Landmark: {recommendation.landmark}</span>
@@ -365,14 +389,14 @@ function RecommendationInvestigationPage() {
               <span
                 className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold ${
                   isUnderInvestigation
-                    ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-200"
+                    ? (isDark ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-200" : "border-cyan-600/50 bg-cyan-100 text-cyan-800")
                     : isApproved
-                    ? "border-emerald-400/50 bg-emerald-400/20 text-emerald-200"
+                    ? (isDark ? "border-emerald-400/50 bg-emerald-400/20 text-emerald-200" : "border-emerald-600/50 bg-emerald-100 text-emerald-800")
                     : isRejected
-                    ? "border-rose-400/50 bg-rose-400/20 text-rose-200"
+                    ? (isDark ? "border-rose-400/50 bg-rose-400/20 text-rose-200" : "border-rose-600/50 bg-rose-100 text-rose-800")
                     : isInstalled
-                    ? "border-emerald-400/50 bg-emerald-400/25 text-emerald-200"
-                    : "border-amber-400/50 bg-amber-400/15 text-amber-200"
+                    ? (isDark ? "border-emerald-400/50 bg-emerald-400/25 text-emerald-200" : "border-emerald-600/50 bg-emerald-100 text-emerald-800")
+                    : (isDark ? "border-amber-400/50 bg-amber-400/15 text-amber-200" : "border-amber-600/50 bg-amber-100 text-amber-800")
                 }`}
               >
                 <span
@@ -417,7 +441,7 @@ function RecommendationInvestigationPage() {
             }`}
           >
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <FileText size={18} className="text-cyan-300" />
+              <FileText size={18} className={isDark ? "text-cyan-300" : "text-cyan-600"} />
               Citizen Proposal Details
             </h2>
 
@@ -475,11 +499,13 @@ function RecommendationInvestigationPage() {
                   <p className="font-semibold uppercase tracking-wider opacity-60">
                     Citizen Proposer
                   </p>
-                  <span className="text-[11px] text-emerald-400 font-medium">Verified Citizen</span>
+                  <span className={`text-[11px] font-medium ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
+                    Verified Citizen
+                  </span>
                 </div>
 
                 <div className="mt-2 flex items-center gap-2 text-sm font-bold">
-                  <UserRound size={15} className="text-cyan-300" />
+                  <UserRound size={15} className={isDark ? "text-cyan-300" : "text-cyan-600"} />
                   <span>{recommendation.citizen?.name || "Verified Citizen"}</span>
                 </div>
 
@@ -549,7 +575,7 @@ function RecommendationInvestigationPage() {
             }`}
           >
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <ShieldCheck size={18} className="text-emerald-300" />
+              <ShieldCheck size={18} className={isDark ? "text-emerald-300" : "text-emerald-600"} />
               Agency Field Investigation
             </h2>
 
@@ -681,10 +707,6 @@ function RecommendationInvestigationPage() {
                 </div>
               )}
 
-              
-
-             
-
               {/* Two Decision Action Buttons when Under Investigation */}
               {isUnderInvestigation && (
                 <div className="grid gap-3 sm:grid-cols-2 pt-2">
@@ -700,7 +722,11 @@ function RecommendationInvestigationPage() {
                   <button
                     type="button"
                     onClick={() => setIsRejectModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/15 hover:bg-rose-500/25 p-3 text-xs font-bold text-rose-300 transition duration-200 hover:-translate-y-0.5"
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition duration-200 hover:-translate-y-0.5 ${
+                      isDark 
+                        ? "border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
+                        : "border-rose-500/40 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    }`}
                   >
                     <XCircle size={16} />
                     <span>Reject Proposal</span>
@@ -721,7 +747,9 @@ function RecommendationInvestigationPage() {
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-xl border border-rose-400/30 bg-rose-400/15 p-2.5 text-rose-300">
+              <div className={`rounded-xl border p-2.5 ${
+                isDark ? "border-rose-400/30 bg-rose-400/15 text-rose-300" : "border-rose-300 bg-rose-100 text-rose-700"
+              }`}>
                 <AlertCircle size={22} />
               </div>
               <div>
@@ -757,7 +785,9 @@ function RecommendationInvestigationPage() {
               <button
                 type="button"
                 onClick={() => setIsRejectModalOpen(false)}
-                className="rounded-xl border border-white/20 px-4 py-2 font-semibold opacity-70 hover:opacity-100"
+                className={`rounded-xl border px-4 py-2 font-semibold opacity-70 hover:opacity-100 ${
+                  isDark ? "border-white/20" : "border-slate-300"
+                }`}
               >
                 Cancel
               </button>

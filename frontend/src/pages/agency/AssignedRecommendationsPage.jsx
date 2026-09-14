@@ -31,47 +31,69 @@ const FACILITY_ICONS = {
   parking: Car
 };
 
-function getFacilityBadge(type) {
+function getFacilityBadge(type, isDarkMode) {
   switch ((type || "").toLowerCase()) {
     case "dustbin":
       return {
         label: "Dustbin",
-        className: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-        iconClass: "border-amber-400/30 bg-amber-400/15 text-amber-200"
+        className: isDarkMode 
+          ? "border-amber-400/30 bg-amber-400/10 text-amber-300" 
+          : "border-amber-600/30 bg-amber-100 text-amber-800",
+        iconClass: isDarkMode 
+          ? "border-amber-400/30 bg-amber-400/15 text-amber-200"
+          : "border-amber-600/30 bg-amber-200 text-amber-800"
       };
     case "water":
       return {
         label: "Water Dispenser",
-        className: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
-        iconClass: "border-cyan-400/30 bg-cyan-400/15 text-cyan-200"
+        className: isDarkMode 
+          ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+          : "border-cyan-600/30 bg-cyan-100 text-cyan-800",
+        iconClass: isDarkMode 
+          ? "border-cyan-400/30 bg-cyan-400/15 text-cyan-200"
+          : "border-cyan-600/30 bg-cyan-200 text-cyan-800"
       };
     case "toilet":
       return {
         label: "Public Toilet",
-        className: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
-        iconClass: "border-emerald-400/30 bg-emerald-400/15 text-emerald-200"
+        className: isDarkMode 
+          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+          : "border-emerald-600/30 bg-emerald-100 text-emerald-800",
+        iconClass: isDarkMode 
+          ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-200"
+          : "border-emerald-600/30 bg-emerald-200 text-emerald-800"
       };
     case "parking":
       return {
         label: "Parking Spot",
-        className: "border-blue-400/30 bg-blue-400/10 text-blue-200",
-        iconClass: "border-blue-400/30 bg-blue-400/15 text-blue-200"
+        className: isDarkMode 
+          ? "border-blue-400/30 bg-blue-400/10 text-blue-200"
+          : "border-blue-600/30 bg-blue-100 text-blue-800",
+        iconClass: isDarkMode 
+          ? "border-blue-400/30 bg-blue-400/15 text-blue-200"
+          : "border-blue-600/30 bg-blue-200 text-blue-800"
       };
     default:
       return {
         label: "Civic Amenity",
-        className: "border-white/20 bg-white/10 text-white",
-        iconClass: "border-white/20 bg-white/10 text-white"
+        className: isDarkMode 
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-slate-300 bg-slate-100 text-slate-800",
+        iconClass: isDarkMode 
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-slate-300 bg-slate-200 text-slate-800"
       };
   }
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, isDarkMode) {
   const norm = (status || "").toUpperCase();
   if (norm === "UNDER_INVESTIGATION") {
     return {
       label: "Under Investigation",
-      color: "border-cyan-400/50 bg-cyan-400/15 text-cyan-200",
+      color: isDarkMode 
+        ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-200"
+        : "border-cyan-600/50 bg-cyan-100 text-cyan-800",
       dot: "bg-cyan-400 animate-pulse",
       icon: Clock3
     };
@@ -79,7 +101,9 @@ function getStatusBadge(status) {
   if (norm === "APPROVED") {
     return {
       label: "Approved",
-      color: "border-emerald-400/50 bg-emerald-400/15 text-emerald-200",
+      color: isDarkMode 
+        ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
+        : "border-emerald-600/50 bg-emerald-100 text-emerald-800",
       dot: "bg-emerald-400",
       icon: CheckCircle2
     };
@@ -87,7 +111,9 @@ function getStatusBadge(status) {
   if (norm === "REJECTED") {
     return {
       label: "Rejected",
-      color: "border-rose-400/50 bg-rose-400/15 text-rose-200",
+      color: isDarkMode 
+        ? "border-rose-400/50 bg-rose-400/15 text-rose-200"
+        : "border-rose-600/50 bg-rose-100 text-rose-800",
       dot: "bg-rose-400",
       icon: XCircle
     };
@@ -95,14 +121,18 @@ function getStatusBadge(status) {
   if (norm === "INSTALLED") {
     return {
       label: "Installed & Active",
-      color: "border-emerald-400/50 bg-emerald-400/20 text-emerald-200",
+      color: isDarkMode 
+        ? "border-emerald-400/50 bg-emerald-400/20 text-emerald-200"
+        : "border-emerald-600/50 bg-emerald-100 text-emerald-800",
       dot: "bg-emerald-300",
       icon: Sparkles
     };
   }
   return {
     label: "Pending Investigation",
-    color: "border-amber-400/50 bg-amber-400/15 text-amber-200",
+    color: isDarkMode 
+      ? "border-amber-400/50 bg-amber-400/15 text-amber-200"
+      : "border-amber-600/50 bg-amber-100 text-amber-800",
     dot: "bg-amber-400 animate-pulse",
     icon: AlertTriangle
   };
@@ -278,7 +308,9 @@ function AssignedRecommendationsPage() {
         {/* Page Title & Officer Filter */}
         <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan-200">
+            <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+              isDarkMode ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200" : "border-cyan-600/30 bg-cyan-100 text-cyan-800"
+            }`}>
               <ShieldCheck size={13} />
               Civic Infrastructure Proposals
             </div>
@@ -297,8 +329,6 @@ function AssignedRecommendationsPage() {
               Review citizen facility proposals allocated to your agency, conduct on-site feasibility investigations, and sanction new civic installations.
             </p>
           </div>
-
-          
         </div>
 
         {/* 4 Metric KPI Cards - Centrally Aligned */}
@@ -310,7 +340,9 @@ function AssignedRecommendationsPage() {
                 : "border-slate-200 bg-white text-slate-900"
             }`}
           >
-            <div className="rounded-xl border border-white/15 bg-white/10 p-2.5 text-cyan-200">
+            <div className={`rounded-xl border p-2.5 ${
+              isDarkMode ? "border-white/15 bg-white/10 text-cyan-200" : "border-slate-200 bg-slate-100 text-cyan-700"
+            }`}>
               <Building2 size={20} />
             </div>
             <p className="mt-2.5 text-xs font-medium opacity-60">Total Allocated</p>
@@ -324,11 +356,13 @@ function AssignedRecommendationsPage() {
                 : "border-amber-200 bg-amber-50 text-amber-900"
             }`}
           >
-            <div className="rounded-xl border border-amber-300/30 bg-amber-400/20 p-2.5 text-amber-300">
+            <div className={`rounded-xl border p-2.5 ${
+              isDarkMode ? "border-amber-300/30 bg-amber-400/20 text-amber-300" : "border-amber-300 bg-amber-100 text-amber-700"
+            }`}>
               <AlertTriangle size={20} />
             </div>
             <p className="mt-2.5 text-xs font-medium opacity-75">Pending Survey</p>
-            <p className="mt-0.5 text-2xl font-bold text-amber-300">{pendingCount}</p>
+            <p className={`mt-0.5 text-2xl font-bold ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>{pendingCount}</p>
           </div>
 
           <div
@@ -338,11 +372,13 @@ function AssignedRecommendationsPage() {
                 : "border-cyan-200 bg-cyan-50 text-cyan-900"
             }`}
           >
-            <div className="rounded-xl border border-cyan-300/30 bg-cyan-400/20 p-2.5 text-cyan-300">
+            <div className={`rounded-xl border p-2.5 ${
+              isDarkMode ? "border-cyan-300/30 bg-cyan-400/20 text-cyan-300" : "border-cyan-300 bg-cyan-100 text-cyan-700"
+            }`}>
               <Clock3 size={20} />
             </div>
             <p className="mt-2.5 text-xs font-medium opacity-75">Under Investigation</p>
-            <p className="mt-0.5 text-2xl font-bold text-cyan-300">{underInvestigationCount}</p>
+            <p className={`mt-0.5 text-2xl font-bold ${isDarkMode ? "text-cyan-300" : "text-cyan-700"}`}>{underInvestigationCount}</p>
           </div>
 
           <div
@@ -352,11 +388,13 @@ function AssignedRecommendationsPage() {
                 : "border-emerald-200 bg-emerald-50 text-emerald-900"
             }`}
           >
-            <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/20 p-2.5 text-emerald-300">
+            <div className={`rounded-xl border p-2.5 ${
+              isDarkMode ? "border-emerald-300/30 bg-emerald-400/20 text-emerald-300" : "border-emerald-300 bg-emerald-100 text-emerald-700"
+            }`}>
               <CheckCircle2 size={20} />
             </div>
             <p className="mt-2.5 text-xs font-medium opacity-75">Approved / Installed</p>
-            <p className="mt-0.5 text-2xl font-bold text-emerald-300">{approvedCount}</p>
+            <p className={`mt-0.5 text-2xl font-bold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>{approvedCount}</p>
           </div>
         </div>
 
@@ -436,8 +474,8 @@ function AssignedRecommendationsPage() {
         <div className="mt-6 grid gap-4 pb-16">
           {filtered.map((rec) => {
             const FacilityIcon = FACILITY_ICONS[rec.facilityType] || Trash2;
-            const facilityBadge = getFacilityBadge(rec.facilityType);
-            const statusBadge = getStatusBadge(rec.status);
+            const facilityBadge = getFacilityBadge(rec.facilityType, isDarkMode);
+            const statusBadge = getStatusBadge(rec.status, isDarkMode);
             const StatusIcon = statusBadge.icon;
 
             return (
@@ -459,7 +497,7 @@ function AssignedRecommendationsPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                      <span className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
                         #{rec.id}
                       </span>
                       <span
@@ -479,7 +517,7 @@ function AssignedRecommendationsPage() {
                     </h2>
 
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs opacity-70 truncate">
-                      <MapPin size={13} className="shrink-0 text-amber-400" />
+                      <MapPin size={13} className={`shrink-0 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
                       <span className="truncate">{rec.location}</span>
                     </p>
                   </div>
@@ -496,7 +534,7 @@ function AssignedRecommendationsPage() {
                       Assigned Officer
                     </p>
                     <p className="mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold truncate w-full text-center">
-                      <ShieldCheck size={12} className="shrink-0 text-cyan-300" />
+                      <ShieldCheck size={12} className={`shrink-0 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
                       <span className="truncate">{rec.assignedMember?.fullName || "Unassigned"}</span>
                     </p>
                   </div>
@@ -510,7 +548,7 @@ function AssignedRecommendationsPage() {
                       Citizen Proposer
                     </p>
                     <p className="mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold truncate w-full text-center">
-                      <UserRound size={12} className="shrink-0 text-emerald-300" />
+                      <UserRound size={12} className={`shrink-0 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
                       <span className="truncate">{rec.citizen?.name || "Verified Citizen"}</span>
                     </p>
                   </div>
@@ -541,7 +579,9 @@ function AssignedRecommendationsPage() {
                       to="/agency/facilities/add"
                       state={{ recommendation: rec }}
                       title="Carry-forward to Add Facility page"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-2.5 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-400/20 transition"
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition ${
+                        isDarkMode ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20" : "border-cyan-600/40 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                      }`}
                     >
                       <PlusCircle size={12} />
                       <span>Add the Facility</span>
@@ -571,7 +611,9 @@ function AssignedRecommendationsPage() {
                   setSelectedStatus("ALL");
                   setSearchQuery("");
                 }}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/40 bg-cyan-400/15 px-3.5 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-400/25 transition"
+                className={`mt-4 inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
+                  isDarkMode ? "border-cyan-400/40 bg-cyan-400/15 text-cyan-200 hover:bg-cyan-400/25" : "border-cyan-600/40 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                }`}
               >
                 Reset All Filters
               </button>

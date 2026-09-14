@@ -279,7 +279,7 @@ function EditFacilityPage() {
               <Building2 size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? "text-cyan-400" : "text-cyan-700"}`}>
                 Facility ID #{facilityId}
               </p>
               <h1 className="text-2xl font-bold tracking-tight">Edit Facility Details</h1>
@@ -290,13 +290,13 @@ function EditFacilityPage() {
           </div>
 
           {error && (
-            <div className="mt-5 rounded-xl bg-rose-500/15 border border-rose-500/30 p-3.5 text-xs font-semibold text-rose-300">
+            <div className={`mt-5 rounded-xl border p-3.5 text-xs font-semibold ${isDarkMode ? "bg-rose-500/15 border-rose-500/30 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 p-3.5 text-xs font-semibold text-emerald-300">
+            <div className={`mt-5 flex items-center gap-2 rounded-xl border p-3.5 text-xs font-semibold ${isDarkMode ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
               <CheckCircle2 size={16} />
               <span>{success}</span>
             </div>
@@ -350,7 +350,7 @@ function EditFacilityPage() {
             {/* Address */}
             <div>
               <label htmlFor="address" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                <MapPin size={12} className="inline mr-1 text-amber-400" />
+                <MapPin size={12} className={`inline mr-1 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
                 Physical Address & Landmark *
               </label>
               <textarea
@@ -373,7 +373,7 @@ function EditFacilityPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="latitude" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                  <Compass size={12} className="inline mr-1 text-cyan-300" />
+                  <Compass size={12} className={`inline mr-1 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
                   Latitude
                 </label>
                 <input
@@ -394,7 +394,7 @@ function EditFacilityPage() {
 
               <div>
                 <label htmlFor="longitude" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
-                  <Compass size={12} className="inline mr-1 text-cyan-300" />
+                  <Compass size={12} className={`inline mr-1 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
                   Longitude
                 </label>
                 <input
@@ -424,7 +424,7 @@ function EditFacilityPage() {
             >
               <div className="flex items-center justify-between gap-2 mb-3">
                 <label className="block font-bold uppercase tracking-wider opacity-70">
-                  <Camera size={13} className="inline mr-1.5 text-cyan-400" />
+                  <Camera size={13} className={`inline mr-1.5 ${isDarkMode ? "text-cyan-400" : "text-cyan-600"}`} />
                   Facility Image / Site Photo
                 </label>
 
@@ -510,14 +510,14 @@ function EditFacilityPage() {
               )}
 
               {imagePreview && (
-                <div className="mt-3 relative overflow-hidden rounded-xl border border-white/20 bg-black/40 p-2.5 flex items-center gap-3">
+                <div className={`mt-3 relative overflow-hidden rounded-xl border p-2.5 flex items-center gap-3 ${isDarkMode ? "border-white/20 bg-black/40" : "border-slate-200 bg-slate-100"}`}>
                   <img
                     src={imagePreview}
                     alt="Facility preview"
                     className="h-16 w-24 rounded-lg object-cover border border-white/10 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
+                    <div className={`flex items-center gap-1.5 font-semibold text-[11px] ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
                       <ImageIcon size={12} />
                       <span>Photo Attached</span>
                     </div>
@@ -527,7 +527,7 @@ function EditFacilityPage() {
                     type="button"
                     onClick={handleRemoveImage}
                     title="Remove image"
-                    className="rounded-lg p-1.5 text-rose-400 hover:bg-rose-500/20 transition shrink-0"
+                    className={`rounded-lg p-1.5 transition shrink-0 ${isDarkMode ? "text-rose-400 hover:bg-rose-500/20" : "text-rose-600 hover:bg-rose-100"}`}
                   >
                     <X size={16} />
                   </button>
