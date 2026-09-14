@@ -11,11 +11,9 @@ import {
   Droplets,
   Mail,
   MapPin,
-  Moon,
   Phone,
   Search,
   ShieldCheck,
-  Sun,
   Trash2,
   UserCheck,
   UserRound,
@@ -25,6 +23,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
+import AdminHeader from "./AdminHeader";
 import {
   allocateMemberToRecommendation,
   FACILITY_AGENCIES,
@@ -160,7 +159,7 @@ function AllocateRecommendationPage() {
 
   return (
     <main
-      className={`admin-themed-page relative min-h-screen overflow-x-hidden p-6 transition-colors duration-500 ${
+      className={`admin-themed-page admin-allocation-page relative min-h-screen overflow-x-hidden p-6 transition-colors duration-500 ${
         isLightMode ? "admin-light-mode" : "bg-[#100e0b]"
       }`}
     >
@@ -178,49 +177,19 @@ function AllocateRecommendationPage() {
         />
       ))}
 
+      <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : "text-white"}`}>
         {/* Navigation Bar */}
         <div className="flex items-center justify-between gap-4">
           <Link
             to="/admin/recommendations"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+            className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Back to all recommendations
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setIsLightMode((m) => !m)}
-            aria-label={`Switch to ${isLightMode ? "dark" : "light"} mode`}
-            className={`relative inline-flex h-8 w-14 items-center justify-between overflow-hidden rounded-full border px-1.5 shadow-lg backdrop-blur-xl transition-all duration-700 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 ${
-              isLightMode
-                ? "border-amber-300/70 bg-white/70 text-amber-600 shadow-amber-200/50 focus:ring-offset-slate-100"
-                : "border-white/30 bg-white/10 text-white shadow-cyan-950/20 focus:ring-offset-[#100e0b]"
-            }`}
-          >
-            <Sun
-              size={13}
-              className={`transition-all duration-700 ${
-                isLightMode ? "scale-110 opacity-100" : "-rotate-90 scale-75 opacity-50"
-              }`}
-              aria-hidden="true"
-            />
-            <Moon
-              size={13}
-              className={`transition-all duration-700 ${
-                isLightMode ? "rotate-90 scale-75 opacity-50" : "scale-110 opacity-100"
-              }`}
-              aria-hidden="true"
-            />
-            <span
-              className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full transition-all duration-700 ${
-                isLightMode
-                  ? "translate-x-6 bg-amber-300 shadow-lg shadow-amber-300/60"
-                  : "bg-cyan-200 shadow-lg shadow-cyan-200/50"
-              }`}
-            />
-          </button>
         </div>
 
         {/* Page Header */}

@@ -18,6 +18,73 @@
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
+@keyframes admin-page-lift {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-page-lift {
+  animation: admin-page-lift 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-page-lift + section,
+.admin-page-lift + .relative {
+  animation: admin-page-lift 700ms 90ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-navigable-card {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-navigable-card:hover {
+  transform: translateY(-0.25rem);
+}
+
+.admin-back-link {
+  min-height: 2rem;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.admin-back-link:hover {
+  transform: translateX(3px);
+}
+
+.admin-glass-card {
+  backdrop-filter: blur(18px) saturate(115%);
+  -webkit-backdrop-filter: blur(18px) saturate(115%);
+}
+
+.admin-primary-action,
+.admin-outline-button,
+.admin-theme-toggle {
+  min-height: 2.75rem;
+}
+
+.admin-glass-card :is(input, select, textarea):focus-visible,
+.admin-themed-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid rgb(34 211 238 / 65%);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-page-lift,
+  .admin-page-lift + section,
+  .admin-page-lift + .relative,
+  .admin-navigable-card,
+  .admin-back-link {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
 .border-glow-card:has(.border-glow-inner > a:hover) {
   transform: translate3d(0, -0.25rem, 0.01px);
   box-shadow: 0 24px 52px rgb(0 0 0 / 30%);
@@ -101,6 +168,24 @@
   color-scheme: light;
 }
 
+.admin-user-management-page {
+  min-width: 100vw;
+}
+
+.admin-user-management-content {
+  animation: none !important;
+  transform: none !important;
+}
+
+.admin-agency-members-content {
+  animation: none !important;
+  transform: none !important;
+}
+
+.admin-light-mode.admin-user-management-page {
+  background-color: #d9d8d2 !important;
+}
+
 .admin-light-mode .border-glow-card > .edge-light {
   opacity: calc((var(--edge-proximity) - 35) / 160);
   mix-blend-mode: normal;
@@ -115,10 +200,196 @@
 }
 
 .admin-light-mode .admin-glass-card {
-  border-color: rgb(71 85 105 / 24%) !important;
-  background-color: rgb(226 225 218 / 62%) !important;
-  box-shadow: 0 12px 30px rgb(30 41 59 / 14%) !important;
-  --tw-ring-color: rgb(71 85 105 / 12%) !important;
+  border-color: rgb(255 255 255 / 58%) !important;
+  background-color: rgb(255 255 255 / 42%) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%), 0 14px 34px rgb(30 41 59 / 12%) !important;
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
+  --tw-ring-color: rgb(255 255 255 / 35%) !important;
+}
+
+.admin-light-mode .admin-glass-card .admin-glass-card,
+.admin-light-mode .admin-glass-card .admin-secondary-panel,
+.admin-light-mode .admin-glass-card .admin-user-glass-card,
+.admin-light-mode .admin-glass-card .admin-agency-glass-card,
+.admin-light-mode .admin-glass-card .admin-complaint-card,
+.admin-light-mode .admin-glass-card .admin-stat-card,
+.admin-light-mode .admin-glass-card .queue-status-row,
+.admin-light-mode .admin-glass-card .live-feed-row {
+  border-color: rgb(255 255 255 / 46%) !important;
+  background-color: rgb(255 255 255 / 28%) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 58%), 0 8px 20px rgb(30 41 59 / 8%) !important;
+  backdrop-filter: blur(16px) saturate(115%);
+  -webkit-backdrop-filter: blur(16px) saturate(115%);
+}
+
+.admin-removal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  background: rgb(2 6 23 / 28%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.admin-removal-dialog {
+  border: 1px solid rgb(248 113 113 / 30%) !important;
+  background: rgb(15 23 42 / 94%) !important;
+  backdrop-filter: blur(24px);
+}
+
+.admin-confirm-remove {
+  border-color: rgb(248 113 113 / 55%) !important;
+  background: rgb(220 38 38 / 88%) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgb(127 29 29 / 25%);
+}
+
+.admin-danger-action:not(.admin-confirm-remove) {
+  border-color: rgb(248 113 113 / 55%) !important;
+  background: #b91c1c !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgb(127 29 29 / 18%);
+}
+
+.admin-danger-action:not(.admin-confirm-remove):hover {
+  border-color: #fecaca !important;
+  background: #dc2626 !important;
+}
+
+.admin-light-mode .admin-danger-action:not(.admin-confirm-remove) {
+  border-color: #b91c1c !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+.admin-confirm-remove:hover {
+  background: rgb(239 68 68 / 95%) !important;
+}
+
+.admin-light-mode .admin-removal-overlay {
+  background: rgb(15 23 42 / 16%);
+}
+
+.admin-light-mode .admin-removal-dialog {
+  border-color: rgb(71 85 105 / 20%) !important;
+  background: rgb(245 244 238 / 96%) !important;
+  color: #1e293b !important;
+  box-shadow: 0 20px 50px rgb(30 41 59 / 24%) !important;
+}
+
+.admin-light-mode .admin-removal-icon {
+  background: rgb(254 226 226 / 90%);
+  color: #b91c1c;
+}
+
+.admin-light-mode .admin-removal-cancel {
+  border-color: rgb(71 85 105 / 25%);
+  color: #475569;
+}
+
+.admin-light-mode .admin-removal-cancel:hover {
+  background: rgb(71 85 105 / 10%);
+  color: #1e293b;
+}
+
+.admin-agency-select option {
+  background: #102832;
+  color: #d9fbff;
+}
+
+.admin-agency-select {
+  color-scheme: dark;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 8px 18px rgb(0 0 0 / 10%);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.admin-agency-select:hover {
+  border-color: rgb(103 232 249 / 45%);
+  background-color: rgb(255 255 255 / 8%);
+}
+
+.admin-agency-select:focus {
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 14%), inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.admin-agency-select option:checked {
+  background: #0e7490;
+  color: #f0fdff;
+}
+
+.admin-light-mode .admin-agency-select option {
+  background: #e2e1da;
+  color: #1e293b;
+}
+
+.admin-light-mode .admin-agency-select {
+  color-scheme: light;
+  border-color: rgb(71 85 105 / 30%) !important;
+  background-color: rgb(232 231 225 / 88%) !important;
+  color: #1e293b !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 65%), 0 8px 18px rgb(30 41 59 / 8%);
+}
+
+.admin-light-mode .admin-agency-select:hover {
+  border-color: rgb(14 116 144 / 50%) !important;
+  background-color: rgb(238 238 231 / 95%) !important;
+}
+
+.admin-light-mode .admin-agency-select:focus {
+  box-shadow: 0 0 0 3px rgb(14 116 144 / 14%), inset 0 1px 0 rgb(255 255 255 / 75%);
+}
+
+.admin-date-filter {
+  color-scheme: dark;
+  background-color: transparent !important;
+  color: #d9fbff !important;
+}
+
+.admin-date-filter::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(78%) sepia(43%) saturate(620%) hue-rotate(145deg) brightness(1.08) contrast(1.05);
+  height: 1rem;
+  opacity: 1;
+  width: 1rem;
+}
+
+.admin-date-filter::-webkit-datetime-edit,
+.admin-date-filter::-webkit-datetime-edit-text,
+.admin-date-filter::-webkit-datetime-edit-month-field,
+.admin-date-filter::-webkit-datetime-edit-day-field,
+.admin-date-filter::-webkit-datetime-edit-year-field {
+  color: #d9fbff;
+}
+
+.admin-light-mode .admin-date-filter {
+  color-scheme: light;
+  background-color: transparent !important;
+  color: #1e293b !important;
+}
+
+.admin-light-mode .admin-date-filter::-webkit-calendar-picker-indicator {
+  filter: invert(39%) sepia(30%) saturate(870%) hue-rotate(130deg) brightness(86%) contrast(88%);
+  opacity: 0.85;
+}
+
+.admin-light-mode .admin-date-filter::-webkit-datetime-edit,
+.admin-light-mode .admin-date-filter::-webkit-datetime-edit-text,
+.admin-light-mode .admin-date-filter::-webkit-datetime-edit-month-field,
+.admin-light-mode .admin-date-filter::-webkit-datetime-edit-day-field,
+.admin-light-mode .admin-date-filter::-webkit-datetime-edit-year-field {
+  color: #1e293b;
+}
+
+.admin-light-mode .admin-agency-select option:checked {
+  background: #99d5d1;
+  color: #134e4a;
+}
+
+.admin-light-mode.admin-allocation-page .admin-glass-card {
+  border-color: transparent !important;
 }
 
 .admin-light-mode .admin-navigable-card:hover,
@@ -128,12 +399,20 @@
   background-color: rgb(218 219 213 / 92%) !important;
 }
 
+.admin-light-mode [class*="bg-white/"] {
+  background-color: rgb(71 85 105 / 8%) !important;
+}
+
+.admin-light-mode [class*="hover:bg-white/"]:hover {
+  background-color: rgb(71 85 105 / 12%) !important;
+}
+
 .admin-light-mode .text-white {
   color: #0f172a !important;
 }
 
 .admin-light-mode [class*="text-white/"] {
-  color: #334155 !important;
+  color: #1e293b !important;
 }
 
 .admin-light-mode .text-white\/95,
@@ -146,7 +425,10 @@
 .admin-light-mode .text-white\/60,
 .admin-light-mode .text-white\/55,
 .admin-light-mode .text-white\/50,
-.admin-light-mode .text-white\/45,
+.admin-light-mode .text-white\/45 {
+  color: #1e293b !important;
+}
+
 .admin-light-mode .text-white\/40,
 .admin-light-mode .text-white\/35,
 .admin-light-mode .text-white\/30,
@@ -218,15 +500,30 @@
 .admin-light-mode .text-amber-100\/60,
 .admin-light-mode .text-amber-100\/70,
 .admin-light-mode .text-amber-100,
-.admin-light-mode .text-amber-200 {
+.admin-light-mode .text-amber-200,
+.admin-light-mode .text-amber-200\/90,
+.admin-light-mode .text-amber-300 {
   color: #b45309 !important;
+}
+
+.admin-light-mode .text-blue-200,
+.admin-light-mode .text-blue-300,
+.admin-light-mode .text-blue-400 {
+  color: #0369a1 !important;
+}
+
+.admin-light-mode .text-purple-200,
+.admin-light-mode .text-purple-300,
+.admin-light-mode .text-purple-400 {
+  color: #7e22ce !important;
 }
 
 .admin-light-mode .text-emerald-100\/70,
 .admin-light-mode .text-emerald-100,
 .admin-light-mode .text-emerald-200,
 .admin-light-mode .text-emerald-200\/70,
-.admin-light-mode .text-emerald-300 {
+.admin-light-mode .text-emerald-300,
+.admin-light-mode .text-emerald-300\/70 {
   color: #047857 !important;
 }
 
