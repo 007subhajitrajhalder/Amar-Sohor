@@ -76,7 +76,7 @@ function AssignedReportsPage() {
       >
         <div className="mb-6">
           <Link
-            to="/agency"
+            to="/agency/dashboard"
             className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
               isDarkMode ? "text-cyan-400 hover:text-cyan-300" : "text-cyan-700 hover:text-cyan-800"
             }`}
