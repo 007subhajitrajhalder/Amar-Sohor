@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -19,7 +19,30 @@ const auraLayers = [
 ];
 
 function AgencyDashboardPage() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem("agencyTheme") !== "light"
+  );
+
+  useEffect(() => {
+    const syncTheme = () => {
+      setIsDarkMode(localStorage.getItem("agencyTheme") !== "light");
+    };
+
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener("agencyThemeChange", syncTheme);
+
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener("agencyThemeChange", syncTheme);
+    };
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = isDarkMode ? "light" : "dark";
+    localStorage.setItem("agencyTheme", nextTheme);
+    setIsDarkMode(nextTheme === "dark");
+    window.dispatchEvent(new Event("agencyThemeChange"));
+  };
 
   const statistics = [
     {
@@ -133,7 +156,7 @@ function AgencyDashboardPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsDarkMode((current) => !current)}
+              onClick={toggleTheme}
               aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
               className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
                 isDarkMode

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+
+const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
 const auraLayers = [
   {
@@ -20,11 +22,34 @@ function UploadResolutionPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
 
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem("agencyTheme") !== "light"
+  );
 
   const [resolutionDescription, setResolutionDescription] = useState("");
   const [completionDate, setCompletionDate] = useState("");
   const [resolutionPhoto, setResolutionPhoto] = useState(null);
+
+  useEffect(() => {
+    const syncTheme = () => {
+      setIsDarkMode(localStorage.getItem("agencyTheme") !== "light");
+    };
+
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener("agencyThemeChange", syncTheme);
+
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener("agencyThemeChange", syncTheme);
+    };
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = isDarkMode ? "light" : "dark";
+    localStorage.setItem("agencyTheme", nextTheme);
+    setIsDarkMode(nextTheme === "dark");
+    window.dispatchEvent(new Event("agencyThemeChange"));
+  };
 
   const handleSubmitResolution = (event) => {
     event.preventDefault();
@@ -39,16 +64,17 @@ function UploadResolutionPage() {
   };
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden p-6 transition-colors duration-500 ${
+    <div
+      className={`relative min-h-screen transition-colors duration-500 ${
         isDarkMode ? "bg-[#100e0b] text-white" : "bg-slate-100 text-slate-900"
       }`}
     >
+      {/* Fixed Background Layers */}
       {auraLayers.map((layer, index) => (
         <div
           key={`dark-${index}`}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none fixed inset-0"
           style={{
             background: layer.background,
             mixBlendMode: layer.mixBlendMode,
@@ -58,11 +84,59 @@ function UploadResolutionPage() {
         />
       ))}
 
-      <section
-        className={`relative z-10 mx-auto max-w-4xl ${
-          isDarkMode ? "text-white" : "text-slate-900"
+      {/* Sticky Header */}
+      <header
+        className={`sticky top-0 z-50 border-b px-5 py-4 backdrop-blur-2xl md:px-10 ${
+          isDarkMode
+            ? "border-white/10 bg-[#100e0b]/80"
+            : "border-slate-300 bg-white/80"
         }`}
       >
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02]">
+            <img
+              src={logo}
+              alt="Amar Sohor Logo"
+              className={`h-11 w-11 rounded-full border object-cover ${
+                isDarkMode ? "border-lime-300/20 bg-transparent" : "border-slate-300 bg-white"
+              }`}
+            />
+            <h1 className="text-xl font-bold md:text-2xl">
+              <span className={isDarkMode ? "text-white" : "text-slate-900"}>Amar </span>
+              <span className="text-lime-300">Sohor</span>
+            </h1>
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+              className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+                isDarkMode
+                  ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
+              <span className="hidden sm:inline">{isDarkMode ? "Light mode" : "Dark mode"}</span>
+              <span
+                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
+                  isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                    isDarkMode ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-4xl px-5 py-8 md:px-10 md:py-12">
         {/* Back Button */}
         <div className="mb-6">
           <Link
@@ -75,7 +149,7 @@ function UploadResolutionPage() {
           </Link>
         </div>
 
-        {/* Header and Theme Toggle */}
+        {/* Header Title */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-emerald-500">
@@ -94,31 +168,6 @@ function UploadResolutionPage() {
               Submit the completed work information and after-repair evidence.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsDarkMode((current) => !current)}
-            aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-            className={`group inline-flex items-center gap-3 self-start rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-              isDarkMode
-                ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
-            <span>{isDarkMode ? "Light mode" : "Dark mode"}</span>
-            <span
-              className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
-                isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                  isDarkMode ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </span>
-          </button>
         </div>
 
         {/* Form Container */}
@@ -198,8 +247,8 @@ function UploadResolutionPage() {
             </button>
           </form>
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 

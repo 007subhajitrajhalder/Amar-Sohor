@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+const logo = new URL("../../assets/logo.png", import.meta.url).href;
+
 function ReportInvestigationPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
@@ -44,13 +46,13 @@ function ReportInvestigationPage() {
   };
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden p-4 transition-colors duration-500 sm:p-6 ${
+    <div
+      className={`relative min-h-screen transition-colors duration-500 ${
         isDark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-900"
       }`}
     >
       {/* Ambient dashboard-style background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           className={`absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl ${
             isDark ? "bg-cyan-500/10" : "bg-cyan-400/20"
@@ -63,7 +65,59 @@ function ReportInvestigationPage() {
         />
       </div>
 
-      <section className="relative mx-auto max-w-5xl">
+      {/* Sticky Header */}
+      <header
+        className={`sticky top-0 z-50 border-b px-5 py-4 backdrop-blur-2xl md:px-10 ${
+          isDark
+            ? "border-white/10 bg-[#100e0b]/80"
+            : "border-slate-300 bg-white/80"
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02]">
+            <img
+              src={logo}
+              alt="Amar Sohor Logo"
+              className={`h-11 w-11 rounded-full border object-cover ${
+                isDark ? "border-lime-300/20 bg-transparent" : "border-slate-300 bg-white"
+              }`}
+            />
+            <h1 className="text-xl font-bold md:text-2xl">
+              <span className={isDark ? "text-white" : "text-slate-900"}>Amar </span>
+              <span className="text-lime-300">Sohor</span>
+            </h1>
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+              className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+                isDark
+                  ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-base">{isDark ? "☀️" : "🌙"}</span>
+              <span className="hidden sm:inline">{isDark ? "Light mode" : "Dark mode"}</span>
+              <span
+                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
+                  isDark ? "bg-cyan-500/70" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                    isDark ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-5xl px-5 py-8 md:px-10 md:py-12">
         <div className="mb-5 flex items-center justify-between">
           <Link
             to="/agency/reports"
@@ -73,19 +127,6 @@ function ReportInvestigationPage() {
           >
             <span>&larr;</span> Back to Assigned Reports
           </Link>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle dark and light mode"
-            className={`rounded-xl border px-4 py-2 text-sm font-bold shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 ${
-              isDark
-                ? "border-white/10 bg-white/10 text-white hover:bg-white/15"
-                : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-            }`}
-          >
-            {isDark ? "☀ Light Mode" : "🌙 Dark Mode"}
-          </button>
         </div>
 
         <div
@@ -268,8 +309,8 @@ function ReportInvestigationPage() {
             </section>
           </div>
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 
