@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
 function AssignedReportsPage() {
+  const navigate = useNavigate();
+  
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light",
   );
@@ -41,8 +45,8 @@ function AssignedReportsPage() {
   ];
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden p-6 transition-colors duration-500 ${
+    <div
+      className={`relative min-h-screen transition-colors duration-500 ${
         isDarkMode ? "bg-[#100e0b]" : "bg-slate-100"
       }`}
     >
@@ -50,7 +54,7 @@ function AssignedReportsPage() {
         <>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none fixed inset-0"
             style={{
               background:
                 "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
@@ -59,7 +63,7 @@ function AssignedReportsPage() {
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none fixed inset-0"
             style={{
               background:
                 "linear-gradient(to top, rgba(0, 130, 150, 0.25) 0%, rgba(0, 0, 0, 0) 35%)",
@@ -69,20 +73,69 @@ function AssignedReportsPage() {
         </>
       )}
 
-      <section
-        className={`relative z-10 mx-auto max-w-6xl ${
-          isDarkMode ? "text-white" : "text-slate-900"
+      {/* Sticky Header */}
+      <header
+        className={`sticky top-0 z-50 border-b px-5 py-4 backdrop-blur-2xl md:px-10 ${
+          isDarkMode
+            ? "border-white/10 bg-[#100e0b]/80"
+            : "border-slate-300 bg-white/80"
         }`}
       >
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02]">
+            <img
+              src={logo}
+              alt="Amar Sohor Logo"
+              className={`h-11 w-11 rounded-full border object-cover ${
+                isDarkMode ? "border-lime-300/20 bg-transparent" : "border-slate-300 bg-white"
+              }`}
+            />
+            <h1 className="text-xl font-bold md:text-2xl">
+              <span className={isDarkMode ? "text-white" : "text-slate-900"}>Amar </span>
+              <span className="text-lime-300">Sohor</span>
+            </h1>
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+              className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+                isDarkMode
+                  ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
+              <span className="hidden sm:inline">{isDarkMode ? "Light mode" : "Dark mode"}</span>
+              <span
+                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
+                  isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                    isDarkMode ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
         <div className="mb-6">
-          <Link
-            to="/agency/dashboard"
+          <button
+            onClick={() => navigate("/agency/dashboard")}
+            type="button"
             className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
               isDarkMode ? "text-cyan-400 hover:text-cyan-300" : "text-cyan-700 hover:text-cyan-800"
             }`}
           >
             <span>&larr;</span> Back to Dashboard
-          </Link>
+          </button>
         </div>
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -112,31 +165,6 @@ function AssignedReportsPage() {
               them.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-            className={`group inline-flex items-center gap-3 self-start rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-              isDarkMode
-                ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
-            <span>{isDarkMode ? "Light mode" : "Dark mode"}</span>
-            <span
-              className={`relative h-6 w-11 rounded-full p-1 ${
-                isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                  isDarkMode ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </span>
-          </button>
         </div>
 
         <div className="mt-7 grid gap-4">
@@ -196,8 +224,8 @@ function AssignedReportsPage() {
             </article>
           ))}
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 
