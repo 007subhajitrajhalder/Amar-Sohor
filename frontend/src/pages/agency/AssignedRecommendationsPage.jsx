@@ -518,7 +518,7 @@ function AssignedRecommendationsPage() {
             return (
               <article
                 key={rec.id}
-                className={`group relative flex flex-col justify-between gap-4 rounded-2xl border p-5 shadow-lg backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 md:flex-row md:items-center ${
+                className={`group relative flex flex-col justify-between gap-4 rounded-2xl border p-5 shadow-lg backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 lg:flex-row lg:items-center ${
                   isDarkMode
                     ? "border-white/15 bg-white/[0.06] hover:border-cyan-300/40 hover:shadow-cyan-950/40"
                     : "border-slate-200 bg-white hover:border-cyan-600/40 hover:shadow-slate-300/60"
@@ -546,7 +546,7 @@ function AssignedRecommendationsPage() {
                     </div>
 
                     <h2
-                      className={`mt-1 truncate text-base font-bold ${
+                      className={`mt-1 break-words text-base font-bold ${
                         isDarkMode ? "text-white group-hover:text-cyan-100" : "text-slate-900 group-hover:text-cyan-800"
                       }`}
                     >
@@ -561,7 +561,7 @@ function AssignedRecommendationsPage() {
                 </div>
 
                 {/* Middle Info: Officer & Citizen Proposer - Centrally Aligned */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full md:w-[320px] shrink-0">
+                <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:w-[320px] lg:shrink-0">
                   <div
                     className={`rounded-xl border p-2.5 text-center flex flex-col items-center justify-center min-w-0 ${
                       isDarkMode ? "border-white/10 bg-white/5 text-white" : "border-slate-200 bg-slate-50 text-slate-900"
@@ -592,7 +592,7 @@ function AssignedRecommendationsPage() {
                 </div>
 
                 {/* Right Section: Status Badge & Action Button */}
-                <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 w-full md:w-[280px] shrink-0 pt-3 border-t border-white/10 md:border-t-0 md:pt-0">
+                <div className="flex w-full flex-wrap items-center justify-center gap-2.5 border-t border-white/10 pt-3 lg:w-[280px] lg:shrink-0 lg:justify-end lg:border-t-0 lg:pt-0">
                   {/* Status Badge */}
                   <span
                     className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusBadge.color}`}
