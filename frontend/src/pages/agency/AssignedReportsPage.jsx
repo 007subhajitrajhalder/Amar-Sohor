@@ -166,6 +166,108 @@ function AssignedReportsPage() {
             </p>
           </div>
         </div>
+        
+          <section className="mt-4 pb-4">
+            
+
+            <div
+              className={`mt-0 overflow-hidden rounded-3xl border p-6 shadow-xl backdrop-blur-xl transition-colors ${
+                isDarkMode
+                  ? "border-white/20 bg-white/5 shadow-cyan-950/20"
+                  : "border-slate-200 bg-white/80 shadow-slate-300/40"
+              }`}
+            >
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                {[
+                  { title: "Pending", value: 18, icon: "⏳", color: "amber" },
+                  {
+                    title: "Under Investigation",
+                    value: 9,
+                    icon: "🔎",
+                    color: "cyan"
+                  },
+                  { title: "Resolved", value: 126, icon: "✓", color: "emerald" }
+                ].map((status, index, items) => (
+                  <div key={status.title} className="flex flex-1 items-center">
+                    <div
+                      className={`w-full rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 ${
+                        isDarkMode
+                          ? "border-white/10 bg-black/10 hover:bg-white/10"
+                          : "border-slate-200 bg-slate-50 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
+                            status.color === "amber"
+                              ? "bg-amber-300/15 text-amber-500"
+                              : status.color === "cyan"
+                                ? "bg-cyan-300/15 text-cyan-500"
+                                : "bg-emerald-300/15 text-emerald-500"
+                          }`}
+                        >
+                          {status.icon}
+                        </span>
+                        <span
+                          className={`text-3xl font-black ${
+                            isDarkMode ? "text-white" : "text-slate-900"
+                          }`}
+                        >
+                          {status.value}
+                        </span>
+                      </div>
+                      <p
+                        className={`mt-4 text-sm font-bold ${
+                          isDarkMode ? "text-white/80" : "text-slate-700"
+                        }`}
+                      >
+                        {status.title}
+                      </p>
+                    </div>
+
+                    {index < items.length - 1 && (
+                      <div
+                        aria-hidden="true"
+                        className={`mx-3 hidden h-px w-8 shrink-0 md:block ${
+                          isDarkMode ? "bg-white/20" : "bg-slate-300"
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-7">
+                <div
+                  className={`mb-2 flex justify-between text-xs font-semibold ${
+                    isDarkMode ? "text-white/50" : "text-slate-500"
+                  }`}
+                >
+                  <span>Workflow distribution</span>
+                  <span>153 total reports</span>
+                </div>
+                <div
+                  className={`flex h-3 overflow-hidden rounded-full ${
+                    isDarkMode ? "bg-white/10" : "bg-slate-200"
+                  }`}
+                >
+                  <div className="w-[12%] bg-amber-400 transition-all duration-500" />
+                  <div className="w-[6%] bg-cyan-400 transition-all duration-500" />
+                  <div className="w-[82%] bg-emerald-400 transition-all duration-500" />
+                </div>
+                <div
+                  className={`mt-3 flex flex-wrap gap-5 text-xs font-medium ${
+                    isDarkMode ? "text-white/60" : "text-slate-600"
+                  }`}
+                >
+                  <span>● Pending — 12%</span>
+                  <span>● Under Investigation — 6%</span>
+                  <span>● Resolved — 82%</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        
 
         <div className="mt-7 grid gap-4">
           {reports.map((report) => (
