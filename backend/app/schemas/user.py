@@ -9,7 +9,11 @@ class UserCreate(BaseModel):
     phone: str
     password: str
 
-
+class UserUpdate(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone: str
+    
 class UserResponse(BaseModel):
     user_id: int
     full_name: str
