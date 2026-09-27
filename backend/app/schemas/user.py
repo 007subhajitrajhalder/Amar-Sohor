@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 
 class UserCreate(BaseModel):
@@ -8,6 +8,13 @@ class UserCreate(BaseModel):
     email: EmailStr
     phone: str
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def password_must_fit_bcrypt(cls, password: str) -> str:
+        if len(password.encode("utf-8")) > 72:
+            raise ValueError("Password must be at most 72 UTF-8 bytes")
+        return password
 
 class UserUpdate(BaseModel):
     full_name: str

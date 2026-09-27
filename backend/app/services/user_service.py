@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.core.security import hash_password
 from app.models.user import User
 def update_user(db: Session, user_id: int, user_data):
     statement = select(User).where(User.user_id == user_id)
@@ -37,11 +37,13 @@ def delete_user(db: Session, user_id: int):
     return user
     
 def create_user(db: Session, user_data):
+    hashed_password = hash_password(user_data.password)
+
     new_user = User(
         full_name=user_data.full_name,
         email=user_data.email,
         phone=user_data.phone,
-        password_hash=user_data.password
+        password_hash=hashed_password
     )
 
     db.add(new_user)

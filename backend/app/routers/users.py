@@ -1,16 +1,32 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from app.dependencies.auth import get_current_user_id
 from app.database.connection import get_db
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.services import user_service
-
+from app.dependencies.auth import get_current_user
+from app.models.user import User
+from app.dependencies.auth import (
+    get_current_user,
+    require_admin
+)
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
 
+@router.get("/me")
+def get_my_profile(
+    current_user: User = Depends(get_current_user)
+):
+    return {
+        "user_id": current_user.user_id,
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "role": current_user.role
+    }
 @router.delete("/{user_id}")
 def delete_user(
     user_id: int,
@@ -27,7 +43,25 @@ def delete_user(
     return {
         "message": "User deleted successfully"
     }
-    
+@router.get("/admin-test")
+def admin_test(
+    current_user: User = Depends(require_admin)
+):
+    return {
+        "message": "Welcome Admin",
+        "user_id": current_user.user_id,
+        "name": current_user.full_name,
+        "role": current_user.role
+    } 
+@router.get("/agency-test")
+def agency_test(
+    current_user: User = Depends(require_role("AGENCY"))
+):
+    return {
+        "message": "Welcome Agency",
+        "user_id": current_user.user_id,
+        "role": current_user.role
+    }   
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: int,
