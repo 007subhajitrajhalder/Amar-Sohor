@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 
 
@@ -18,6 +19,18 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class AuthUser(BaseModel):
+    user_id: int
+    full_name: str
+    email: str
+    phone: str
+    role: str
+    agency_id: Optional[int] = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = "bearer"
+    user: AuthUser
