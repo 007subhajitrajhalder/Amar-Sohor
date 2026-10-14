@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-
+from app.routers import admin
 from app.routers import users
 from app.routers import auth
-
+app.include_router(admin.router)
 
 app = FastAPI()
 
