@@ -36,6 +36,12 @@ class Report(Base):
         nullable=False,
         index=True
     )
+    assigned_agent = Column(
+        Integer,
+        ForeignKey("agency_members.agent_id", onupdate="CASCADE", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
     created_at = Column(
         TIMESTAMP,
         nullable=False,
@@ -46,4 +52,6 @@ class Report(Base):
     facility = relationship("Facility", back_populates="reports")
     user = relationship("User", back_populates="reports")
     agency = relationship("Agency", back_populates="reports")
+    assigned_member = relationship("AgencyMember", foreign_keys=[assigned_agent])
     resolution_submissions = relationship("ReportResolutionSubmission", back_populates="report", cascade="all, delete-orphan")
+

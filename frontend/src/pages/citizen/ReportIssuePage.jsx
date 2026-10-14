@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { REGISTERED_FACILITIES } from "./reportsData";
+import { submitReportApi, API_BASE_URL } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -39,6 +40,8 @@ function ReportIssuePage() {
   const [description, setDescription] = useState("");
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoName, setPhotoName] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
 
@@ -56,6 +59,7 @@ function ReportIssuePage() {
       return;
     }
 
+    setPhotoFile(file);
     setPhotoName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
@@ -67,9 +71,10 @@ function ReportIssuePage() {
   const handleRemovePhoto = () => {
     setPhotoPreview(null);
     setPhotoName("");
+    setPhotoFile(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -87,24 +92,68 @@ function ReportIssuePage() {
       return;
     }
 
-    const newReport = {
-      id: "REP-" + Date.now().toString().slice(-5),
-      facilityId: facility.id,
-      facility: facility.name,
-      facilityAddress: facility.address,
-      facilityCategory: facility.category,
-      title: title.trim(),
-      description: description.trim(),
-      photoPreview: photoPreview || null,
-      photoName: photoName || null,
-      status: "Pending",
-      stage: 1,
-      createdAt: new Date().toISOString(),
-      assignedAgency: facility.agency,
-      assignedOfficer: "Civic Response Team",
-      agencyNotes:
-        "Your report has been logged and assigned to the local municipal ward inspector for site verification.",
-    };
+    setIsSubmitting(true);
+    let newReport;
+
+    try {
+      // Send grievance report to FastAPI backend
+      const backendData = await submitReportApi({
+        facilityId: facility.id,
+        title: title.trim(),
+        description: description.trim(),
+        photoFile: photoFile,
+        photoUrl: photoPreview,
+      });
+
+      const photoUrlResolved = backendData.photo_url?.startsWith("/uploads")
+        ? `${API_BASE_URL}${backendData.photo_url}`
+        : (backendData.photo_url || photoPreview);
+
+      newReport = {
+        id: "REP-" + String(backendData.report_id).padStart(4, "0"),
+        backendId: backendData.report_id,
+        facilityId: backendData.facility_id,
+        facility: backendData.facility_name || facility.name,
+        facilityAddress: backendData.facility_address || facility.address,
+        facilityCategory: backendData.facility_category || facility.category,
+        title: backendData.title,
+        description: backendData.description,
+        photoPreview: photoPreview || photoUrlResolved,
+        photoUrl: photoUrlResolved,
+        photoName: photoName || "Complaint photograph",
+        status: backendData.status === "PENDING" ? "Pending" : backendData.status,
+        stage: backendData.stage || 1,
+        createdAt: backendData.created_at || new Date().toISOString(),
+        assignedAgency: backendData.agency_name || facility.agency,
+        assignedOfficer: backendData.assigned_officer || "Facility In-Charge",
+        assignedMember: backendData.assigned_member || null,
+        agencyNotes:
+          backendData.agency_notes ||
+          "Your grievance has been lodged and directed to the agency member in charge of this facility for on-site inspection and repairs.",
+      };
+    } catch (apiErr) {
+      console.warn("Backend API unavailable, falling back to local registry:", apiErr);
+      newReport = {
+        id: "REP-" + Date.now().toString().slice(-5),
+        facilityId: facility.id,
+        facility: facility.name,
+        facilityAddress: facility.address,
+        facilityCategory: facility.category,
+        title: title.trim(),
+        description: description.trim(),
+        photoPreview: photoPreview || null,
+        photoName: photoName || null,
+        status: "Pending",
+        stage: 1,
+        createdAt: new Date().toISOString(),
+        assignedAgency: facility.agency,
+        assignedOfficer: "Facility In-Charge",
+        agencyNotes:
+          "Your grievance has been lodged and directed to the agency member in charge of this facility for on-site inspection and repairs.",
+      };
+    } finally {
+      setIsSubmitting(false);
+    }
 
     try {
       const existing = JSON.parse(
@@ -119,6 +168,7 @@ function ReportIssuePage() {
     setSubmittedData(newReport);
     setIsSubmitted(true);
   };
+
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -232,6 +282,30 @@ function ReportIssuePage() {
                   <p className="mt-0.5 text-white/70 leading-relaxed">{submittedData.description}</p>
                 </div>
 
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/40">Facility In-Charge & Responsible Agency</p>
+                  <p className="mt-0.5 text-white/90 font-medium">
+                    {submittedData.assignedAgency}
+                    {submittedData.assignedOfficer && (
+                      <span className="ml-2 text-lime-300 font-semibold">
+                        • {submittedData.assignedOfficer}
+                        {submittedData.assignedMember?.distance_text && !submittedData.assignedMember?.distance_text.includes("km")
+                          ? ` (${submittedData.assignedMember.distance_text})`
+                          : ""}
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                {submittedData.agencyNotes && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-white/40">Routing & Action Plan</p>
+                    <p className="mt-0.5 text-xs text-white/70 leading-relaxed bg-white/[0.03] p-2.5 rounded-lg border border-white/5">
+                      {submittedData.agencyNotes}
+                    </p>
+                  </div>
+                )}
+
                 {submittedData.photoPreview && (
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/40 mb-1.5">Attached Photograph</p>
@@ -243,6 +317,7 @@ function ReportIssuePage() {
                   </div>
                 )}
               </div>
+
 
               {/* Action Buttons */}
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5">
@@ -386,11 +461,13 @@ function ReportIssuePage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01]"
+                disabled={isSubmitting}
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
               >
-                <span>Submit Grievance Report</span>
-                <Send size={16} />
+                <span>{isSubmitting ? "Routing to Municipal Agency..." : "Submit Grievance Report"}</span>
+                <Send size={16} className={isSubmitting ? "animate-pulse" : ""} />
               </button>
+
 
               <div className="flex items-center justify-center gap-2 text-xs text-white/40">
                 <HelpCircle size={13} />

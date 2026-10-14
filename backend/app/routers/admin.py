@@ -29,11 +29,6 @@ def get_user_by_id(
 
     return user
 
-@router.post(
-    "/agency-members",
-    response_model=UserResponse,
-    status_code=201
-)
 @router.get(
     "/users",
     response_model=list[UserResponse]
@@ -45,6 +40,13 @@ def get_all_users(
     db: Session = Depends(get_db)
 ):
     return admin_service.get_all_users(db)
+
+
+@router.post(
+    "/agency-members",
+    response_model=UserResponse,
+    status_code=201
+)
 def create_agency_member(
     user_data: CreateAgencyMemberRequest,
     current_admin: User = Depends(
@@ -69,4 +71,4 @@ def create_agency_member(
             detail="Phone number already registered"
         )
 
-    return result
+    return result
