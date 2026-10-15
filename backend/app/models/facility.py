@@ -37,6 +37,13 @@ class Facility(Base):
         server_default=func.current_timestamp()
     )
     photo_url = Column(String(1000), nullable=True)
+    additional_notes = Column(Text, nullable=True)
+    source_recommendation_id = Column(
+        Integer,
+        ForeignKey("recommendations.recommendation_id", onupdate="CASCADE"),
+        nullable=True,
+        unique=True
+    )
 
     __table_args__ = (
         Index("idx_facilities_coordinates", "latitude", "longitude"),

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
-from app.routers import auth, users
+from app.routers import agencies, auth, facilities, reports, users
 
 load_dotenv()
 
@@ -58,3 +58,6 @@ def health_check():
 # Include Routers
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(agencies.router)
+app.include_router(facilities.router)
+app.include_router(reports.router)

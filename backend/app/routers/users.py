@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.dependencies.auth import get_current_user_id
 from app.database.connection import get_db
+from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.services import user_service
 from app.dependencies.auth import (
     get_current_user,
-    get_current_user_id,
     require_admin,
     require_role
 )

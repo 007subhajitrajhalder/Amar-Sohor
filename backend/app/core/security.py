@@ -1,18 +1,12 @@
 import os
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 from dotenv import load_dotenv
 
 
 load_dotenv()
-
-
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
 
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -30,7 +24,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(
@@ -38,10 +32,15 @@ def verify_password(
     hashed_password: str
 ) -> bool:
 
-    return pwd_context.verify(
-        plain_password,
-        hashed_password
-    )
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+        )
+    except ValueError:
+        # Invalid stored hashes and passwords beyond bcrypt's byte limit
+        # should fail authentication rather than produce a server error.
+        return False
 
 
 def create_access_token(
