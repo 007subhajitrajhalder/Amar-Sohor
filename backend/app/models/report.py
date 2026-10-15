@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, DateTime, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -47,6 +47,10 @@ class Report(Base):
         nullable=False,
         server_default=func.current_timestamp()
     )
+
+    # Set by the resolution approval workflow when the report is completed.
+    # Legacy rows retain NULL rather than using the report's creation date.
+    resolved_at = Column(DateTime, nullable=True)
 
     # Relationships
     facility = relationship("Facility", back_populates="reports")
