@@ -446,18 +446,29 @@ export function getAdminRecommendations() {
     const categoryKey = (rec.facilityType || "dustbin").toLowerCase();
     const defaultAgency = FACILITY_AGENCIES[categoryKey] || FACILITY_AGENCIES.dustbin;
 
-    const assignedMember = override.assignedMember !== undefined ? override.assignedMember : null;
-    const assignedAgency = override.assignedAgency || defaultAgency;
-    const status = override.status || (assignedMember ? "ALLOTTED" : "PENDING_ALLOCATION");
-    const stage = override.stage || (assignedMember ? 2 : 1);
+    const assignedMember = override.assignedMember !== undefined ? override.assignedMember : (rec.assignedMember || null);
+    const assignedAgency = override.assignedAgency || (rec.assignedAgency ? (typeof rec.assignedAgency === "object" ? rec.assignedAgency : { name: rec.assignedAgency }) : defaultAgency);
+    const status = override.status || (assignedMember ? "ALLOTTED" : (rec.status === "Allocated" || rec.status === "ALLOCATED" ? "ALLOTTED" : "PENDING_ALLOCATION"));
+    const stage = override.stage || (assignedMember ? 2 : (rec.stage || 1));
     const inspectionNotes = override.inspectionNotes || rec.reviewNotes || "No review notes entered yet.";
-    const history = override.history || [
+    const history = override.history || (assignedMember ? [
+      {
+        date: rec.date || "Recently",
+        actor: "Citizen Proposer",
+        action: "Proposal submitted"
+      },
+      {
+        date: rec.date || "Recently",
+        actor: "System GIS Auto-Router",
+        action: `Allocated to nearest agency member ${assignedMember.fullName || assignedMember.name || "Field Officer"} (${assignedAgency.name || "Responsible Agency"})${assignedMember.distance_text ? ` - ${assignedMember.distance_text}` : ""}`
+      }
+    ] : [
       {
         date: rec.date || "Recently",
         actor: "Citizen Proposer",
         action: "Proposal submitted"
       }
-    ];
+    ]);
 
     const citizen = {
       ...(rec.citizen || {}),

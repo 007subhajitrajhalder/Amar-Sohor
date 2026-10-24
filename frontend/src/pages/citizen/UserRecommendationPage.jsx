@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { submitRecommendationApi, API_BASE_URL } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -67,6 +68,8 @@ function UserRecommendationPage() {
   const [landmark, setLandmark] = useState("");
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoName, setPhotoName] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
 
@@ -127,6 +130,7 @@ function UserRecommendationPage() {
       return;
     }
 
+    setPhotoFile(file);
     setPhotoName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
@@ -138,10 +142,11 @@ function UserRecommendationPage() {
   const handleRemovePhoto = () => {
     setPhotoPreview(null);
     setPhotoName("");
+    setPhotoFile(null);
   };
 
   // Form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -164,22 +169,75 @@ function UserRecommendationPage() {
       return;
     }
 
+    setIsSubmitting(true);
     const selectedFacilityMeta = FACILITY_OPTIONS.find((f) => f.id === facilityType);
+    let newRecommendation;
 
-    const newRecommendation = {
-      id: "REC-" + Date.now(),
-      title: title.trim(),
-      facilityType,
-      facilityLabel: selectedFacilityMeta?.short || facilityType,
-      location: location.trim(),
-      coordinates: coordinates || null,
-      landmark: landmark.trim(),
-      description: description.trim(),
-      photoPreview: photoPreview || null,
-      photoName: photoName || null,
-      createdAt: new Date().toISOString(),
-      status: "Under Review",
-    };
+    try {
+      const backendData = await submitRecommendationApi({
+        title: title.trim(),
+        description: description.trim(),
+        address: location.trim(),
+        facilityType: facilityType,
+        latitude: coordinates?.lat ? parseFloat(coordinates.lat) : null,
+        longitude: coordinates?.lng ? parseFloat(coordinates.lng) : null,
+        landmark: landmark.trim(),
+        photoFile: photoFile,
+        photoUrl: photoPreview,
+      });
+
+      const photoUrlResolved = backendData.photo_url?.startsWith("/uploads")
+        ? `${API_BASE_URL}${backendData.photo_url}`
+        : (backendData.photo_url || photoPreview);
+
+      newRecommendation = {
+        id: "REC-" + String(backendData.recommendation_id).padStart(4, "0"),
+        backendId: backendData.recommendation_id,
+        title: backendData.title,
+        facilityType: backendData.facility_type || facilityType,
+        facilityLabel: backendData.facility_label || selectedFacilityMeta?.short || facilityType,
+        location: location.trim(),
+        coordinates: coordinates || (backendData.latitude ? { lat: backendData.latitude, lng: backendData.longitude } : null),
+        landmark: landmark.trim(),
+        description: backendData.description,
+        photoPreview: photoPreview || photoUrlResolved,
+        photoName: photoName || "Recommendation photo",
+        photoUrl: photoUrlResolved,
+        createdAt: backendData.created_at || new Date().toISOString(),
+        status: "Pending Admin Review",
+        stage: backendData.stage || 1,
+        assignedAgency: {
+          id: backendData.assigned_agency,
+          name: backendData.agency_name || "Responsible Civic Agency"
+        },
+        assignedMember: null,
+        reviewDepartment: backendData.review_department || backendData.agency_name,
+        reviewNotes: backendData.review_notes || "Allotted to Municipal Admin for review and allocation to designated agency member.",
+      };
+    } catch (apiErr) {
+      console.warn("Backend API unavailable, falling back to local registry:", apiErr);
+      newRecommendation = {
+        id: "REC-" + Date.now(),
+        title: title.trim(),
+        facilityType,
+        facilityLabel: selectedFacilityMeta?.short || facilityType,
+        location: location.trim(),
+        coordinates: coordinates || null,
+        landmark: landmark.trim(),
+        description: description.trim(),
+        photoPreview: photoPreview || null,
+        photoName: photoName || null,
+        createdAt: new Date().toISOString(),
+        status: "Pending Admin Review",
+        stage: 1,
+        assignedAgency: { name: "Municipal Civic Dept" },
+        assignedMember: null,
+        reviewDepartment: "Municipal Civic Dept",
+        reviewNotes: "Allotted to Municipal Admin for review and allocation to designated agency member.",
+      };
+    } finally {
+      setIsSubmitting(false);
+    }
 
     // Store in localStorage for persistence
     try {
@@ -190,6 +248,36 @@ function UserRecommendationPage() {
       localStorage.setItem("citizen_recommendations", JSON.stringify(existing));
     } catch {
       // ignore storage quota error
+    }
+
+    // Synchronize admin overrides: lands in Admin queue as PENDING for admin allocation
+    try {
+      const overrides = JSON.parse(localStorage.getItem("admin_recommendation_overrides") || "{}");
+      overrides[newRecommendation.id] = {
+        assignedMember: null,
+        assignedAgency: newRecommendation.assignedAgency,
+        status: "PENDING",
+        statusLabel: "Pending Allocation",
+        stage: 1,
+        inspectionNotes: newRecommendation.reviewNotes,
+        history: [
+          {
+            date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+            actor: "Citizen Proposer",
+            action: "Proposal submitted with evidence photo"
+          },
+          {
+            date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+            actor: "System Administrator",
+            action: "Allotted to Municipal Admin queue awaiting agency member assignment"
+          }
+        ]
+      };
+      localStorage.setItem("admin_recommendation_overrides", JSON.stringify(overrides));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("recommendationsUpdated"));
+    } catch (e) {
+      console.error("Failed to sync admin overrides:", e);
     }
 
     setSubmittedData(newRecommendation);
@@ -205,9 +293,11 @@ function UserRecommendationPage() {
     setDescription("");
     setPhotoPreview(null);
     setPhotoName("");
+    setPhotoFile(null);
     setIsSubmitted(false);
     setSubmittedData(null);
   };
+
 
   const selectedFacilityMeta =
     FACILITY_OPTIONS.find((f) => f.id === facilityType) || FACILITY_OPTIONS[0];
@@ -301,9 +391,14 @@ function UserRecommendationPage() {
                     <p className="text-xs uppercase tracking-wider text-white/40">Title</p>
                     <p className="mt-0.5 font-semibold text-white">{submittedData.title}</p>
                   </div>
-                  <span className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-lime-300">
-                    {submittedData.facilityLabel}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-lg bg-white/10 px-2.5 py-1 text-xs text-lime-300">
+                      {submittedData.facilityLabel}
+                    </span>
+                    <span className="rounded-lg bg-amber-400/15 border border-amber-400/30 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                      ● Allotted to Municipal Admin
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -318,6 +413,25 @@ function UserRecommendationPage() {
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/40">Landmark</p>
                     <p className="mt-0.5 text-white/70">{submittedData.landmark}</p>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/40">Review Authority & Designated Agency</p>
+                  <p className="mt-0.5 text-white/90 font-medium">
+                    Municipal Administration (Admin Queue)
+                    <span className="ml-2 text-lime-300 font-semibold">
+                      • {submittedData.assignedAgency?.name || "Civic Agency"}
+                    </span>
+                  </p>
+                </div>
+
+                {submittedData.reviewNotes && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-white/40">Status & Allocation Plan</p>
+                    <p className="mt-0.5 text-xs text-white/70 leading-relaxed bg-white/[0.03] p-2.5 rounded-lg border border-white/5">
+                      {submittedData.reviewNotes}
+                    </p>
                   </div>
                 )}
 
@@ -339,6 +453,7 @@ function UserRecommendationPage() {
                   </div>
                 )}
               </div>
+
 
               {/* Actions */}
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5">
@@ -564,11 +679,13 @@ function UserRecommendationPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01]"
+                disabled={isSubmitting}
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
               >
-                <span>Submit Facility Recommendation</span>
-                <Send size={16} />
+                <span>{isSubmitting ? "Routing to Nearest Agency Member..." : "Submit Facility Recommendation"}</span>
+                <Send size={16} className={isSubmitting ? "animate-pulse" : ""} />
               </button>
+
 
               <div className="flex items-center justify-center gap-2 text-xs text-white/40">
                 <HelpCircle size={13} />

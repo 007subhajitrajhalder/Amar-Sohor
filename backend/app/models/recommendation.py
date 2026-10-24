@@ -39,6 +39,12 @@ class Recommendation(Base):
         nullable=True,
         index=True
     )
+    assigned_agent = Column(
+        Integer,
+        ForeignKey("agency_members.agent_id", onupdate="CASCADE", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
     created_at = Column(
         TIMESTAMP,
         nullable=False,
@@ -49,4 +55,6 @@ class Recommendation(Base):
     user = relationship("User", back_populates="recommendations")
     category = relationship("FacilityCategory", back_populates="recommendations")
     agency = relationship("Agency", back_populates="recommendations")
+    assigned_member = relationship("AgencyMember", foreign_keys=[assigned_agent])
     investigations = relationship("RecommendationInvestigation", back_populates="recommendation", cascade="all, delete-orphan")
+

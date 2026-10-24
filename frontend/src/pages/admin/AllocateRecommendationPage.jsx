@@ -30,6 +30,7 @@ import {
   getAgencyMembersForCategory,
   getRecommendationForAdmin
 } from "./adminRecommendationsData";
+import { allocateRecommendationApi } from "../../api/client";
 
 const auraLayers = [
   {
@@ -132,11 +133,26 @@ function AllocateRecommendationPage() {
 
   const FacilityIcon = FACILITY_ICONS[category] || Trash2;
 
-  const handleAllocate = (e) => {
+  const handleAllocate = async (e) => {
     e.preventDefault();
     if (!selectedMember) return;
 
     setIsSubmitting(true);
+
+    // Call backend API if recommendation backend ID or ID is available
+    try {
+      const recIdNumber = parseInt(String(recommendation.id).replace(/\D/g, ""), 10);
+      if (recIdNumber) {
+        await allocateRecommendationApi(recIdNumber, {
+          agentId: selectedMember.id,
+          agentEmail: selectedMember.email,
+          notes: assignmentNote,
+        });
+      }
+    } catch (err) {
+      console.warn("Backend allocation API notice (updating local state):", err);
+    }
+
     const updated = allocateMemberToRecommendation(
       recommendation.id,
       selectedMember,
