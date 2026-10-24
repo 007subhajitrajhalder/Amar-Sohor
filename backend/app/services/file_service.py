@@ -1,11 +1,14 @@
-<<<<<<< HEAD
+import os
+import uuid
+import base64
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 from starlette.concurrency import run_in_threadpool
 
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+UPLOAD_ROOT = os.path.join(BASE_DIR, "uploads")
 FACILITY_UPLOAD_DIR = Path(__file__).resolve().parents[2] / "uploads" / "facilities"
 MAX_FACILITY_PHOTO_SIZE = 10 * 1024 * 1024
 
@@ -58,14 +61,6 @@ async def save_facility_photo(photo: UploadFile, agency_id: int) -> str:
         return f"/uploads/facilities/{agency_id}/{filename}"
     finally:
         await photo.close()
-=======
-import os
-import uuid
-import base64
-from fastapi import UploadFile, HTTPException
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPLOAD_ROOT = os.path.join(BASE_DIR, "uploads")
 
 
 def save_upload_file(file: UploadFile, subfolder: str) -> str:
@@ -120,5 +115,3 @@ def save_base64_or_url_photo(photo_str: str, subfolder: str) -> str:
             return photo_str
 
     return photo_str
-
->>>>>>> 74700b15a57f5763c5243736473a086a64df34a8

@@ -24,17 +24,22 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    encoded = password.encode("utf-8")
+    if len(encoded) > 72:
+        raise ValueError("Password exceeds bcrypt 72 byte limit")
+    return bcrypt.hashpw(encoded, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(
     plain_password: str,
     hashed_password: str
 ) -> bool:
-
     try:
+        encoded = plain_password.encode("utf-8")
+        if len(encoded) > 72:
+            return False
         return bcrypt.checkpw(
-            plain_password.encode("utf-8"),
+            encoded,
             hashed_password.encode("utf-8")
         )
     except ValueError:
