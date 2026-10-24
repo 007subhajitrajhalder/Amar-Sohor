@@ -14,7 +14,9 @@ import {
   X,
   Image as ImageIcon
 } from "lucide-react";
-import { updateRecommendationByAgency } from "../admin/adminRecommendationsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -55,7 +57,7 @@ function AddFacilityPage() {
     carryForwarded ? carryForwarded.title : ""
   );
   const [facilityCategory, setFacilityCategory] = useState(
-    carryForwarded ? carryForwarded.facilityType || "dustbin" : "dustbin"
+    carryForwarded?.category_id ? String(carryForwarded.category_id) : ""
   );
   const [facilityAddress, setFacilityAddress] = useState(
     carryForwarded
@@ -64,8 +66,8 @@ function AddFacilityPage() {
         }`
       : ""
   );
-  const [latitude, setLatitude] = useState("22.5726");
-  const [longitude, setLongitude] = useState("88.3639");
+  const [latitude, setLatitude] = useState(carryForwarded?.latitude ?? "");
+  const [longitude, setLongitude] = useState(carryForwarded?.longitude ?? "");
   const [status, setStatus] = useState("Open");
   const [additionalNotes, setAdditionalNotes] = useState(
     carryForwarded?.description || ""
@@ -82,12 +84,16 @@ function AddFacilityPage() {
   const [customImageUrl, setCustomImageUrl] = useState("");
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const categories = useApi("/agencies/facilities/categories", { poll: 0 });
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
       alert("Please select a valid image file (PNG, JPG, JPEG, WEBP).");
       return;
     }
@@ -97,6 +103,7 @@ function AddFacilityPage() {
       return;
     }
 
+    setPhotoFile(file);
     setImageName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
@@ -108,64 +115,37 @@ function AddFacilityPage() {
   const handleApplyImageUrl = (e) => {
     e?.preventDefault?.();
     if (!customImageUrl.trim()) return;
+    setPhotoFile(null);
     setImagePreview(customImageUrl.trim());
     setImageName("Web Image URL");
   };
 
   const handleRemoveImage = () => {
+    setPhotoFile(null);
     setImagePreview("");
     setImageName("");
     setCustomImageUrl("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!facilityName.trim() || !facilityAddress.trim()) {
-      alert("Please fill in both the facility name and address.");
-      return;
-    }
-
-    const newFacility = {
-      id: Date.now(),
-      name: facilityName.trim(),
-      category: facilityCategory,
-      address: facilityAddress.trim(),
-      latitude: parseFloat(latitude) || 22.5726,
-      longitude: parseFloat(longitude) || 88.3639,
-      status,
-      imageUrl: imagePreview || "",
-      image: imagePreview || "",
-      additionalNotes: additionalNotes.trim(),
-      createdAt: new Date().toISOString(),
-      sourceRecommendationId: carryForwarded ? carryForwarded.id : null
-    };
-
-    // Save to localStorage
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (submitting || isSubmitted) return;
+    setSubmitting(true);
+    setError("");
     try {
-      const existing = JSON.parse(localStorage.getItem("agency_facilities") || "[]");
-      existing.push(newFacility);
-      localStorage.setItem("agency_facilities", JSON.stringify(existing));
-      window.dispatchEvent(new Event("storage"));
-    } catch (err) {
-      console.error("Failed to save facility:", err);
-    }
-
-    // If carry-forwarded, transition recommendation to INSTALLED (Stage 5)
-    if (carryForwarded?.id) {
-      updateRecommendationByAgency(carryForwarded.id, {
-        status: "INSTALLED",
-        stage: 5,
-        notes: `Civic amenity officially commissioned and added to municipal facility index as '${facilityName.trim()}'.`,
-        actorName: carryForwarded.assignedMember?.fullName
-      });
-    }
-
-    setIsSubmitted(true);
-
-    setTimeout(() => {
-      navigate("/agency/facilities");
-    }, 1200);
+      const payload = facilityPayload({ name: facilityName, category: facilityCategory, address: facilityAddress,
+        latitude, longitude, status, photo: photoFile ? null : imagePreview, notes: additionalNotes });
+      if (photoFile) {
+        payload.photo_url = await uploadFacilityPhoto(photoFile);
+        setImagePreview(payload.photo_url);
+        setPhotoFile(null);
+      }
+      if (carryForwarded) payload.source_recommendation_id = Number(carryForwarded.recommendation_id || carryForwarded.id);
+      const created = await apiRequest("/agencies/facilities", { method: "POST", body: payload });
+      setIsSubmitted(true);
+      navigate("/agency/facilities", { state: { message: 'Facility "' + created.facility_name + '" added successfully.' } });
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
   };
 
   return (
@@ -325,6 +305,9 @@ function AddFacilityPage() {
             </div>
           </div>
 
+          <ApiState {...categories} />
+          <ApiState error={error} />
+          {categories.data?.length === 0 && <p role="status">Your agency has no facility categories. Contact an administrator.</p>}
           <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-xs">
             {/* Facility Name */}
             <div>
@@ -333,6 +316,7 @@ function AddFacilityPage() {
               </label>
               <input
                 id="facilityName"
+                maxLength={150}
                 type="text"
                 required
                 value={facilityName}
@@ -353,6 +337,7 @@ function AddFacilityPage() {
               </label>
               <select
                 id="facilityCategory"
+                required
                 value={facilityCategory}
                 onChange={(e) => setFacilityCategory(e.target.value)}
                 className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
@@ -361,10 +346,8 @@ function AddFacilityPage() {
                     : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
                 }`}
               >
-                <option value="dustbin">Dustbin (Solid Waste Management)</option>
-                <option value="water">Drinking Water Dispenser (Water Supply)</option>
-                <option value="toilet">Public Toilet Complex (Sanitation)</option>
-                <option value="parking">Civic Parking Spot (Traffic & Parking)</option>
+                <option value="">Select a category</option>
+                {(categories.data || []).map(category => <option key={category.category_id} value={category.category_id}>{category.category_name}</option>)}
               </select>
             </div>
 
@@ -398,8 +381,10 @@ function AddFacilityPage() {
                 </label>
                 <input
                   id="latitudeInput"
+                  min={-90} max={90}
                   type="number"
-                  step="any"
+                  step="0.0000001"
+                  required
                   value={latitude}
                   onChange={(e) => setLatitude(e.target.value)}
                   placeholder="22.5726"
@@ -418,8 +403,10 @@ function AddFacilityPage() {
                 </label>
                 <input
                   id="longitudeInput"
+                  min={-180} max={180}
                   type="number"
-                  step="any"
+                  step="0.0000001"
+                  required
                   value={longitude}
                   onChange={(e) => setLongitude(e.target.value)}
                   placeholder="88.3639"
@@ -501,7 +488,7 @@ function AddFacilityPage() {
                     <input
                       id="facilityPhotoUpload"
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handlePhotoUpload}
                       className="hidden"
                     />
@@ -542,7 +529,7 @@ function AddFacilityPage() {
               {imagePreview && (
                 <div className="mt-3 relative overflow-hidden rounded-xl border border-white/20 bg-black/40 p-2.5 flex items-center gap-3">
                   <img
-                    src={imagePreview}
+                    src={mediaUrl(imagePreview)}
                     alt="Facility preview"
                     className="h-16 w-24 rounded-lg object-cover border border-white/10 shrink-0"
                   />
@@ -625,6 +612,7 @@ function AddFacilityPage() {
               </Link>
               <button
                 type="submit"
+                disabled={submitting || isSubmitted || !categories.data?.length}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 px-6 py-2.5 font-bold text-white shadow-lg transition hover:-translate-y-0.5"
               >
                 <CheckCircle2 size={15} />

@@ -38,18 +38,10 @@ def get_facility_in_charge(
     if not agent_member and facility.added_by:
         agent_member = db.query(AgencyMember).filter(AgencyMember.agent_id == facility.added_by).first()
 
-    agency = None
-    if agent_member and agent_member.agency:
-        agency = agent_member.agency
-    elif facility.category and facility.category.agency:
-        agency = facility.category.agency
-    elif facility.category and facility.category.handling_agency:
-        agency = db.query(Agency).filter(Agency.agency_id == facility.category.handling_agency).first()
-    else:
-        agency = db.query(Agency).first()
-
+    agency = facility.category.agency if facility.category else None
+    if agent_member and agency and agent_member.agency_id != agency.agency_id:
+        agent_member = None
     return agency, agent_member
-
 
 def get_handling_agency_for_category(
     db: Session,
@@ -69,7 +61,7 @@ def get_handling_agency_for_category(
     elif category and category.handling_agency:
         return db.query(Agency).filter(Agency.agency_id == category.handling_agency).first()
 
-    return db.query(Agency).first()
+    return None
 
 
 def get_agency_members_by_category(

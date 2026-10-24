@@ -1,3 +1,8 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { displayDate } from "../../api/client";
+import Pagination from "../../components/Pagination";
+import ResolvedReportDetails from "../../components/ResolvedReportDetails";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -46,14 +51,14 @@ function PreviouslyResolvedPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const resolvedReports = [
-    {
-      id: "#1001",
-      facility: "Gariahat Dustbin",
-      date: "15 August 2026",
-      status: "Resolved"
-    }
-  ];
+  const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const resource = useApi("/agencies/reports/resolved?" + new URLSearchParams({ search, offset: String(offset), limit: "50" }));
+  const resolvedReports = (resource.data?.items || []).map(report => ({
+    id: report.report_id, title: report.title, facility: report.facility_name,
+    date: displayDate(report.resolved_at), status: "Resolved"
+  }));
 
   return (
     <div
@@ -129,6 +134,11 @@ function PreviouslyResolvedPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
+        <ApiState {...resource} />
+        <input aria-label="Search resolved reports" maxLength={150} value={search}
+          onChange={event => { setSearch(event.target.value); setOffset(0); }} placeholder="Search resolved complaints..."
+          className="mb-5 w-full rounded-xl border bg-transparent p-3" />
+        {selectedReport && <ResolvedReportDetails id={selectedReport} onClose={() => setSelectedReport(null)} />}
         <div className="mb-6">
           <button
             onClick={() => navigate("/agency/dashboard")}
@@ -215,6 +225,8 @@ function PreviouslyResolvedPage() {
             </thead>
 
             <tbody>
+              {!resource.loading && !resource.error && resolvedReports.length === 0 &&
+                <tr><td colSpan={4} className="p-8 text-center">No resolved complaints found.</td></tr>}
               {resolvedReports.map((report) => (
                 <tr
                   key={report.id}
@@ -229,7 +241,7 @@ function PreviouslyResolvedPage() {
                       isDarkMode ? "text-white" : "text-slate-900"
                     }`}
                   >
-                    {report.id}
+                    <button className="underline" onClick={() => setSelectedReport(report.id)}>#{report.id}: {report.title}</button>
                   </td>
                   <td
                     className={`p-5 ${
@@ -261,6 +273,7 @@ function PreviouslyResolvedPage() {
             </tbody>
           </table>
         </div>
+        <Pagination total={resource.data?.total} offset={offset} onChange={setOffset} disabled={resource.loading || Boolean(resource.error)} />
       </main>
     </div>
   );

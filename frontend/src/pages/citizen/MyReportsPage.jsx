@@ -18,7 +18,9 @@ import {
   Car,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getStoredReports } from "./reportsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { reportView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -38,7 +40,8 @@ const facilityIcons = {
 
 function MyReportsPage() {
   const navigate = useNavigate();
-  const [reports] = useState(getStoredReports);
+  const resource = useApi("/reports");
+  const reports = (resource.data || []).map(reportView);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -133,6 +136,7 @@ function MyReportsPage() {
 
       {/* Main Content */}
       <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
+        <ApiState {...resource} />
         <section className="mx-auto max-w-7xl">
           {/* Header titles */}
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">

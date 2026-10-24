@@ -31,9 +31,12 @@ class ReportResponse(BaseModel):
     assigned_member: Optional[Dict[str, Any]] = None
     agency_notes: Optional[str] = None
     stage: int = 1
-    ai_validated: bool = True
-    ai_status: str = "APPROVED"
+    ai_validated: bool | None = None
+    ai_status: str | None = None
     created_at: datetime
+    resolved_at: datetime | None = None
+    citizen_name: str | None = None
+    resolution: Dict[str, Any] | None = None
 
 
 class ResolvedReportResponse(BaseModel):
@@ -62,3 +65,10 @@ class ResolvedReportListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class ReportWorkflowUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    status: Literal["PENDING", "UNDER_INVESTIGATION", "RESOLVED"] | None = None
+    notes: str | None = Field(default=None, max_length=5000)
+    assigned_agent: int | None = Field(default=None, gt=0)

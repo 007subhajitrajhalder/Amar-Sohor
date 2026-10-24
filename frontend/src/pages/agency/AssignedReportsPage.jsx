@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { reportView } from "../../api/client";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -31,18 +34,11 @@ function AssignedReportsPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const reports = [
-    {
-      id: 1,
-      title: "Public Toilet Needs Cleaning",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      title: "Water Supply Unavailable",
-      status: "Under Investigation",
-    },
-  ];
+  const resource = useApi("/reports");
+  const dashboardResource = useApi("/agencies/dashboard");
+  const dashboard = dashboardResource.data;
+  const percent = index => dashboard?.status_distribution[index]?.percentage ?? 0;
+  const reports = (resource.data || []).filter(r => r.status !== "RESOLVED").map(reportView);
 
   return (
     <div
@@ -126,6 +122,7 @@ function AssignedReportsPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
+        <ApiState {...resource} /><ApiState {...dashboardResource} />
         <div className="mb-6">
           <button
             onClick={() => navigate("/agency/dashboard")}
@@ -179,14 +176,14 @@ function AssignedReportsPage() {
             >
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 {[
-                  { title: "Pending", value: 18, icon: "⏳", color: "amber" },
+                  { title: "Pending", value: dashboard?.statistics.pending ?? "?", icon: "⏳", color: "amber" },
                   {
                     title: "Under Investigation",
-                    value: 9,
+                    value: dashboard?.statistics.under_investigation ?? "?",
                     icon: "🔎",
                     color: "cyan"
                   },
-                  { title: "Resolved", value: 126, icon: "✓", color: "emerald" }
+                  { title: "Resolved", value: dashboard?.statistics.resolved ?? "?", icon: "✓", color: "emerald" }
                 ].map((status, index, items) => (
                   <div key={status.title} className="flex flex-1 items-center">
                     <div
@@ -244,25 +241,25 @@ function AssignedReportsPage() {
                   }`}
                 >
                   <span>Workflow distribution</span>
-                  <span>153 total reports</span>
+                  <span>{dashboard?.total_reports ?? "?"} total reports</span>
                 </div>
                 <div
                   className={`flex h-3 overflow-hidden rounded-full ${
                     isDarkMode ? "bg-white/10" : "bg-slate-200"
                   }`}
                 >
-                  <div className="w-[12%] bg-amber-400 transition-all duration-500" />
-                  <div className="w-[6%] bg-cyan-400 transition-all duration-500" />
-                  <div className="w-[82%] bg-emerald-400 transition-all duration-500" />
+                  <div style={{ width: percent(0) + "%" }} className="bg-amber-400 transition-all duration-500" />
+                  <div style={{ width: percent(1) + "%" }} className="bg-cyan-400 transition-all duration-500" />
+                  <div style={{ width: percent(2) + "%" }} className="bg-emerald-400 transition-all duration-500" />
                 </div>
                 <div
                   className={`mt-3 flex flex-wrap gap-5 text-xs font-medium ${
                     isDarkMode ? "text-white/60" : "text-slate-600"
                   }`}
                 >
-                  <span>● Pending — 12%</span>
-                  <span>● Under Investigation — 6%</span>
-                  <span>● Resolved — 82%</span>
+                  <span>● Pending — {percent(0)}%</span>
+                  <span>● Under Investigation — {percent(1)}%</span>
+                  <span>● Resolved — {percent(2)}%</span>
                 </div>
               </div>
             </div>

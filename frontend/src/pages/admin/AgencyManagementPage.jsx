@@ -1,4 +1,6 @@
-import { Activity, ArrowLeft, ArrowUpDown, ArrowUpRight, Building2, CarFront, Droplets, Search, Toilet, Trash2, Users, X } from "lucide-react";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { Activity, ArrowLeft, ArrowUpDown, ArrowUpRight, Building2, Search, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
@@ -10,40 +12,9 @@ function AgencyManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("name");
 
-  const agencies = [
-    {
-      id: 1,
-      name: "KMC SWM Department",
-      department:
-        "Solid Waste Management",
-      memberCount: 18,
-      icon: Trash2
-    },
-    {
-      id: 2,
-      name: "KMC Sanitation Department",
-      department:
-        "Public Sanitation",
-      memberCount: 12,
-      icon: Toilet
-    },
-    {
-      id: 3,
-      name: "KMC Water Department",
-      department:
-        "Water Services",
-      memberCount: 15,
-      icon: Droplets
-    },
-    {
-      id: 4,
-      name: "Kolkata Police",
-      department:
-        "Parking Management",
-      memberCount: 21,
-      icon: CarFront
-    }
-  ];
+  const resource = useApi("/admin/agencies");
+  const agencies = (resource.data || []).map(a => ({ id: a.agency_id, name: a.agency_name,
+    department: a.department_type, memberCount: a.member_count, icon: Building2 }));
 
   const totalMembers = agencies.reduce((total, agency) => total + agency.memberCount, 0);
   const connectedAgencies = agencies.length;
@@ -84,6 +55,7 @@ function AgencyManagementPage() {
       />
       <div className="relative z-[1]">
         <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} />
         <section className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <Link to="/admin/dashboard" className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white">

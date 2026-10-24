@@ -1,4 +1,8 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from app.models.agency import Agency
+from app.models.agency_member import AgencyMember
 
 from app.models.user import User
 from app.schemas.admin import CreateAgencyMemberRequest
@@ -9,6 +13,8 @@ def create_agency_member(
     db: Session,
     user_data: CreateAgencyMemberRequest
 ):
+    if db.get(Agency, user_data.agency_id) is None:
+        raise HTTPException(404, "Agency not found")
     existing_email = db.query(User).filter(
         User.email == user_data.email
     ).first()
@@ -28,11 +34,17 @@ def create_agency_member(
         email=user_data.email,
         phone=user_data.phone,
         password_hash=hash_password(user_data.password),
-        role="AGENCY"
+        role="AGENT"
     )
 
-    db.add(user)
-    db.commit()
+    try:
+        db.add(user)
+        db.flush()
+        db.add(AgencyMember(user_id=user.user_id, agency_id=user_data.agency_id))
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Email or phone already registered") from exc
     db.refresh(user)
 
     return user

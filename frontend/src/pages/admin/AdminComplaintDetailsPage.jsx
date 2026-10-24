@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
+import { displayDate, mediaUrl } from "../../api/client";
+import { useState } from "react";
 import {
   Link,
-  useNavigate,
   useParams
 } from "react-router-dom";
 import {
@@ -13,200 +16,32 @@ import {
   Mail,
   MapPin,
   Phone,
-  Save,
 } from "lucide-react";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
 
-const complaintOverrides = {
-  "101": {
-    title: "Dustbin Overflowing",
-    status: "PENDING",
-    submittedDate: "21 August 2026",
-    citizen: {
-      name: "Ananya Sen",
-      email: "ananya@example.com",
-      phone: "9876543210"
-    },
-    facility: {
-      id: 1,
-      name: "Gariahat Community Dustbin",
-      category: "Waste Management",
-      address: "Gariahat, Kolkata"
-    },
-    agency: {
-      id: 1,
-      name: "KMC SWM Department",
-      assignedMember: "Amit Kumar"
-    }
-  },
-  "102": {
-    title: "Water Not Available",
-    description: "The drinking-water dispenser is not supplying water.",
-    status: "UNDER_INVESTIGATION",
-    submittedDate: "20 August 2026",
-    citizen: {
-      name: "Rahul Das",
-      email: "rahul@example.com",
-      phone: "9876543210"
-    },
-    facility: {
-      id: 3,
-      name: "Salt Lake Water Point",
-      category: "Drinking Water",
-      address: "Sector V, Salt Lake, Kolkata"
-    },
-    agency: {
-      id: 3,
-      name: "KMC Water Department",
-      assignedMember: "Amit Kumar"
-    }
-  },
-  "103": {
-    title: "Parking Area Closed",
-    status: "RESOLVED",
-    submittedDate: "18 August 2026",
-    citizen: {
-      name: "Priya Ghosh",
-      email: "priya@example.com",
-      phone: "9123456780"
-    },
-    facility: {
-      id: 5,
-      name: "New Market Parking",
-      category: "Traffic Management",
-      address: "New Market, Kolkata"
-    },
-    agency: {
-      id: 8,
-      name: "Kolkata Police",
-      assignedMember: "Neha Sharma"
-    },
-    resolutionDescription: "The parking gate was reopened and operations resumed.",
-    completionDate: "25 August 2026"
-  },
-  "104": {
-    title: "Public Toilet Is Dirty",
-    status: "PENDING",
-    submittedDate: "17 August 2026",
-    citizen: {
-      name: "Arjun Roy",
-      email: "arjun@example.com",
-      phone: "9988776655"
-    },
-    facility: {
-      id: 7,
-      name: "College Street Public Toilet",
-      category: "Sanitation",
-      address: "College Street, Kolkata"
-    },
-    agency: {
-      id: 12,
-      name: "KMC Sanitation Department",
-      assignedMember: "Sourav Das"
-    }
-  }
-};
-
 function AdminComplaintDetailsPage() {
   const { reportId } = useParams();
-  const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
 
-  /*
-    Temporary complaint data.
-
-    Later, the page will request the selected
-    report from the backend using reportId.
-  */
-  const complaintData = {
-    id: reportId,
-    title: "Water Not Available",
-    description:
-      "The drinking-water dispenser is not supplying water.",
-    status: "UNDER_INVESTIGATION",
-    submittedDate: "20 August 2026",
-    citizen: {
-      name: "Rahul Das",
-      email: "rahul@example.com",
-      phone: "9876543210"
-    },
-    facility: {
-      id: 3,
-      name: "Salt Lake Water Point",
-      category: "Drinking Water",
-      address: "Sector V, Salt Lake, Kolkata"
-    },
-    agency: {
-      id: 3,
-      name: "KMC Water Department",
-      assignedMember: "Amit Kumar"
-    },
-    complaintPhoto: null,
-    resolutionDescription: null,
-    resolutionPhoto: null,
-    completionDate: null
-  };
-
-  const complaint = {
-    ...complaintData,
-    ...(complaintOverrides[String(reportId)] || {}),
-    id: reportId,
-    status: complaintOverrides[String(reportId)]?.status || complaintData.status,
-    agency: {
-      ...complaintData.agency,
-      ...((complaintOverrides[String(reportId)] || {}).agency || {}),
-      assignedMember: ((complaintOverrides[String(reportId)] || {}).agency || {}).assignedMember || complaintData.agency.assignedMember
-    },
-    facility: {
-      ...complaintData.facility,
-      ...((complaintOverrides[String(reportId)] || {}).facility || {})
-    },
-    citizen: {
-      ...complaintData.citizen,
-      ...((complaintOverrides[String(reportId)] || {}).citizen || {})
-    }
-  };
-
-  const [currentStatus, setCurrentStatus] = useState(complaint.status);
-  const [selectedMember, setSelectedMember] = useState(complaint.agency.assignedMember);
-  const [draftStatus, setDraftStatus] = useState(complaint.status);
-  const [draftMember, setDraftMember] = useState(complaint.agency.assignedMember);
+  const resource = useApi("/reports/" + reportId);
+  const record = resource.data;
+  const complaint = record ? {
+    id: record.report_id, title: record.title, description: record.description, status: record.status,
+    submittedDate: displayDate(record.created_at), citizen: { name: record.citizen_name, email: "Not recorded", phone: "Not recorded" },
+    facility: { id: record.facility_id, name: record.facility_name, category: record.facility_category, address: record.facility_address },
+    agency: { id: record.assigned_agency, name: record.agency_name, assignedMember: record.assigned_officer || "Unassigned" },
+    complaintPhoto: mediaUrl(record.photo_url), resolutionDescription: record.resolution?.description,
+    resolutionPhoto: mediaUrl(record.resolution?.photo_url), completionDate: displayDate(record.resolved_at)
+  } : null;
+  const currentStatus = record?.status || "";
+  const selectedMember = record?.assigned_officer || "Unassigned";
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState(null);
   const [actionMessage, setActionMessage] = useState("");
-  const [isReportIdCopied, setIsReportIdCopied] = useState(false);
-
-  useEffect(() => {
-    setCurrentStatus(complaint.status);
-    setSelectedMember(complaint.agency.assignedMember);
-    setDraftStatus(complaint.status);
-    setDraftMember(complaint.agency.assignedMember);
-  }, [reportId, complaint.status, complaint.agency.assignedMember]);
-
-  const hasWorkflowChanges = draftStatus !== currentStatus || draftMember !== selectedMember;
-
-  const isKnownComplaint = ["101", "102", "103", "104"].includes(String(reportId));
-
-  if (!isKnownComplaint) {
-    return (
-      <main className={`min-h-screen bg-[#100e0b] p-6 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
-        <section className="admin-glass-card mx-auto mt-16 max-w-xl rounded-2xl border border-white/30 p-8 text-center text-white shadow-xl shadow-cyan-950/25">
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-200/70">Report unavailable</p>
-          <h1 className="mt-3 text-2xl font-bold">Complaint not found</h1>
-          <p className="mt-2 text-sm text-white/60">No complaint matches report #{reportId}.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/complaints")}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-cyan-200/40 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-white/10"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-            Back to complaints
-          </button>
-        </section>
-      </main>
-    );
-  }
+  if (!record) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/admin/complaints">Back to complaints</Link></main>;
 
   const formatStatus = (status) => {
     return status
@@ -233,25 +68,15 @@ function AdminComplaintDetailsPage() {
     return "border-white/20 bg-white/10 text-white/70";
   };
 
-  const confirmAction = () => {
-    if (!pendingAction) return;
-
-    if (pendingAction.type === "workflow") {
-      setCurrentStatus(pendingAction.status);
-      setSelectedMember(pendingAction.member);
-      setDraftStatus(pendingAction.status);
-      setDraftMember(pendingAction.member);
-      setActionMessage("Complaint workflow updated successfully.");
-    } else if (pendingAction.type === "status") {
-      setCurrentStatus(pendingAction.value);
-      setActionMessage(`Status updated to ${formatStatus(pendingAction.value)}.`);
-    } else {
-      setSelectedMember(pendingAction.value);
-      setActionMessage(`Complaint reassigned to ${pendingAction.value}.`);
-    }
-
-    setPendingAction(null);
-    window.setTimeout(() => setActionMessage(""), 3000);
+  const confirmAction = async () => {
+    if (!pendingAction || saving) return;
+    setSaving(true); setError("");
+    try {
+      await apiRequest("/reports/" + reportId, { method: "PATCH", body: { status: pendingAction.value } });
+      setActionMessage("Resolution approved. Report is now resolved.");
+      setPendingAction(null); resource.refresh();
+    } catch (error) { setError(error.message); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -261,6 +86,7 @@ function AdminComplaintDetailsPage() {
       }`}
     >
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} /><ApiState error={error} />
       <section className="relative z-[1] mx-auto max-w-6xl text-white">
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -457,6 +283,9 @@ function AdminComplaintDetailsPage() {
           </div>
         </section>
 
+        {record.resolution?.verification_status === "PENDING" && record.status !== "RESOLVED" &&
+          <button type="button" className="my-5 rounded-xl border bg-emerald-700 px-5 py-3 text-white"
+            onClick={() => setPendingAction({ type: "status", value: "RESOLVED" })}>Approve resolution</button>}
         {/* Resolution information */}
         <section className="admin-glass-card mt-6 rounded-2xl border border-white/20 p-7 shadow-xl backdrop-blur-xl">
           <h2 className="text-xl font-bold">
@@ -520,7 +349,7 @@ function AdminComplaintDetailsPage() {
               <button type="button" onClick={() => setPendingAction(null)} className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10">
                 Cancel
               </button>
-              <button type="button" onClick={confirmAction} className="rounded-xl border border-cyan-200/40 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25">
+              <button type="button" disabled={saving} onClick={confirmAction} className="rounded-xl border border-cyan-200/40 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25">
                 Confirm change
               </button>
             </div>

@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
 import { ArrowLeft, ArrowUpDown, Mail, Phone, Search, ShieldAlert, ShieldCheck, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useState } from "react";
 
@@ -78,102 +81,11 @@ function AgencyMembersPage() {
     Later, this information will come
     from the backend.
   */
-  const agencies = [
-    {
-      id: 1,
-      name: "KMC SWM Department",
-      department: "Solid Waste Management"
-    },
-    {
-      id: 2,
-      name: "KMC Sanitation Department",
-      department: "Public Sanitation"
-    },
-    {
-      id: 3,
-      name: "KMC Water Department",
-      department: "Water Services"
-    },
-    {
-      id: 4,
-      name: "Kolkata Police",
-      department: "Parking Management"
-    }
-  ];
-
-  /*
-    Temporary agency-member information.
-
-    Every member contains an agencyId,
-    which connects the member to an agency.
-  */
-  const initialMembers = [
-    {
-      id: 1,
-      fullName: "Amit Kumar",
-      email: "amit@kmc.example.com",
-      phone: "9876543210",
-      role: "AGENCY_MEMBER",
-      agencyId: 1
-    },
-    {
-      id: 2,
-      fullName: "Rohit Das",
-      email: "rohit@kmc.example.com",
-      phone: "9876543211",
-      role: "AGENCY_ADMIN",
-      agencyId: 1
-    },
-    {
-      id: 3,
-      fullName: "Priya Sen",
-      email: "priya@kmc.example.com",
-      phone: "9876543212",
-      role: "AGENCY_MEMBER",
-      agencyId: 2
-    },
-    {
-      id: 4,
-      fullName: "Arjun Roy",
-      email: "arjun@kmc.example.com",
-      phone: "9876543213",
-      role: "AGENCY_MEMBER",
-      agencyId: 2
-    },
-    {
-      id: 5,
-      fullName: "Suman Ghosh",
-      email: "suman@water.example.com",
-      phone: "9876543214",
-      role: "AGENCY_ADMIN",
-      agencyId: 3
-    },
-    {
-      id: 6,
-      fullName: "Ananya Paul",
-      email: "ananya@water.example.com",
-      phone: "9876543215",
-      role: "AGENCY_MEMBER",
-      agencyId: 3
-    },
-    {
-      id: 7,
-      fullName: "Rajib Dutta",
-      email: "rajib@police.example.com",
-      phone: "9876543216",
-      role: "AGENCY_MEMBER",
-      agencyId: 4
-    }
-  ];
-
-  /*
-    The members are stored in state because
-    the displayed list must change after
-    a member is deleted.
-  */
-  const [members, setMembers] =
-    useState(initialMembers);
-
+  const resource = useApi("/admin/agencies");
+  const memberResource = useApi("/admin/agency-members?agency_id=" + agencyId);
+  const agencies = (resource.data || []).map(a => ({ id: a.agency_id, name: a.agency_name, department: a.department_type }));
+  const members = (memberResource.data || []).map(m => ({ ...m, id: m.agent_id, fullName: m.full_name, agencyId: m.agency_id }));
+  const [removing, setRemoving] = useState(false);
   const selectedAgency = agencies.find(
     (agency) => agency.id === Number(agencyId)
   );
@@ -235,40 +147,22 @@ function AgencyMembersPage() {
     Deletes the selected member from
     the frontend member list.
   */
-  const handleConfirmDelete = () => {
-    if (!selectedMember) {
-      return;
-    }
-
-    /*
-      Later, an Axios DELETE request will
-      be added here.
-
-      Example:
-
-      await api.delete(
-        `/admin/agency-members/${selectedMember.id}`
-      );
-    */
-
-    setMembers((previousMembers) =>
-      previousMembers.filter(
-        (member) =>
-          member.id !== selectedMember.id
-      )
-    );
-
-    setSuccess(
-      `${selectedMember.fullName} was removed successfully.`
-    );
-
-    setSelectedMember(null);
+  const handleConfirmDelete = async () => {
+    if (!selectedMember || removing) return;
+    setRemoving(true); setError("");
+    try {
+      await apiRequest("/admin/agency-members/" + selectedMember.id, { method: "DELETE" });
+      setSuccess(selectedMember.fullName + " was removed successfully.");
+      setSelectedMember(null); memberResource.refresh();
+    } catch (error) { setError(error.message); }
+    finally { setRemoving(false); }
   };
 
   /*
     If an incorrect agency ID is entered
     in the URL, show this message.
   */
+  if (resource.loading || resource.error) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
   if (!selectedAgency) {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#100e0b] px-5">
@@ -329,6 +223,7 @@ function AgencyMembersPage() {
         />
       ))}
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} /><ApiState {...memberResource} />
       <section className="admin-agency-members-content admin-dashboard-welcome relative z-[1] mx-auto w-full max-w-6xl">
         {/* Back button */}
         <div className="admin-dashboard-reveal flex items-center justify-between gap-4" style={{ "--dashboard-delay": "80ms" }}>
@@ -451,7 +346,7 @@ function AgencyMembersPage() {
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-white/45">Filter role</span>
-            {[["all", "All members"], ["AGENCY_MEMBER", "Agency members"], ["AGENCY_ADMIN", "Agency admins"]].map(([value, label]) => (
+            {[["all", "All members"], ["AGENT", "Agency members"], ["AGENCY_ADMIN", "Agency admins"]].map(([value, label]) => (
               <button key={value} type="button" onClick={() => setRoleFilter(value)} aria-pressed={roleFilter === value} className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${roleFilter === value ? "border-cyan-200/60 bg-cyan-300/15 text-cyan-100" : "border-white/15 bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"}`}>
                 {label}
               </button>
@@ -572,7 +467,7 @@ function AgencyMembersPage() {
 
               <button
                 type="button"
-                onClick={handleConfirmDelete}
+                disabled={removing} onClick={handleConfirmDelete}
                 className="admin-danger-action admin-confirm-remove inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white"
               >
                 <UserMinus size={16} aria-hidden="true" />

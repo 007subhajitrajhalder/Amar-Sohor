@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sqlalchemy import String, cast, func, or_, select
+from sqlalchemy import delete, String, cast, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -9,6 +9,8 @@ from app.models.agency_member import AgencyMember
 from app.models.facility import Facility
 from app.models.facility_category import FacilityCategory
 from app.models.recommendation import Recommendation
+from app.models.report import Report
+from app.models.rating import Rating
 from app.schemas.facility import (
     FacilityCreate, FacilityUpdate, FacilityResponse,
     FacilityListResponse, FacilityStatistics
@@ -187,3 +189,25 @@ def update_facility(
         raise
     db.refresh(facility)
     return facility_response(facility)
+
+
+def delete_facility(db: Session, facility: Facility) -> None:
+    """Keep historical reports, ratings, and recommendation links intact."""
+    try:
+        if facility.source_recommendation_id is not None or any(
+            db.scalar(select(model).where(model.facility_id == facility.facility_id).limit(1))
+            for model in (Report, Rating)
+        ):
+            raise FacilityConflict(
+                "This facility has linked complaints, ratings, or a recommendation. "
+                "Set its status to Suspended to preserve the history."
+            )
+        # Bulk SQL deliberately avoids ORM cascades into historical records.
+        db.execute(delete(Facility).where(Facility.facility_id == facility.facility_id))
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise FacilityConflict("Facility has linked records and cannot be deleted") from exc
+    except Exception:
+        db.rollback()
+        raise

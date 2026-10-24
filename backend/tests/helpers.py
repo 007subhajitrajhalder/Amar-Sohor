@@ -145,5 +145,5 @@ class ApiTestCase(unittest.TestCase):
         body = b"".join(
             m.get("body", b"") for m in messages if m["type"] == "http.response.body"
         )
-        return response["status"], json.loads(body)
+        return response["status"], json.loads(body) if body else None
 

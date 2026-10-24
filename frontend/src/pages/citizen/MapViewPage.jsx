@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { facilityView } from "../../api/client";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -20,62 +23,6 @@ import {
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
-const facilityList = [
-  {
-    id: 1,
-    name: "College Street Public Toilet",
-    category: "toilet",
-    distance: "1.2 km away",
-    address: "College Street, Kolkata",
-    status: "Available",
-    rating: "4.5",
-  },
-  {
-    id: 2,
-    name: "Gariahat Community Dustbin",
-    category: "dustbin",
-    distance: "2.4 km away",
-    address: "Gariahat, Kolkata",
-    status: "Available",
-    rating: "4.2",
-  },
-  {
-    id: 3,
-    name: "Sealdah Drinking Water Point",
-    category: "water",
-    distance: "3.1 km away",
-    address: "Sealdah, Kolkata",
-    status: "Available",
-    rating: "4.4",
-  },
-  {
-    id: 4,
-    name: "New Market Parking Area",
-    category: "parking",
-    distance: "1.8 km away",
-    address: "New Market, Kolkata",
-    status: "Available",
-    rating: "4.1",
-  },
-  {
-    id: 5,
-    name: "Park Street Dustbin",
-    category: "dustbin",
-    distance: "0.8 km away",
-    address: "Park Street, Kolkata",
-    status: "Available",
-    rating: "4.5",
-  },
-  {
-    id: 6,
-    name: "Howrah Parking Zone",
-    category: "parking",
-    distance: "5.1 km away",
-    address: "Howrah Station Area",
-    status: "Under Repair",
-    rating: "3.9",
-  },
-];
 
 function getFacilityIcon(category) {
   const icons = {
@@ -95,6 +42,8 @@ function facilityIcon(category, props) {
 }
 
 function MapViewPage() {
+  const resource = useApi("/facilities");
+  const facilityList = (resource.data || []).map(facilityView);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -113,12 +62,8 @@ function MapViewPage() {
   const currentCategoryLabel =
     categoryLabel[selectedCategory] || "Facilities";
 
-  const filteredFacilities =
-    selectedCategory === "all"
-      ? facilityList
-      : facilityList.filter(
-          (facility) => facility.category === selectedCategory
-        );
+  const filteredFacilities = facilityList.filter(f => (selectedCategory === "all" || f.category === selectedCategory) &&
+    (!location.trim() || (f.name + " " + f.address).toLowerCase().includes(location.toLowerCase()) || /^-?[0-9.]+,/.test(location)));
 
   const mapQuery =
     selectedCategory === "all"
@@ -218,6 +163,7 @@ function MapViewPage() {
       ====================================================== */}
 
       <main className="relative z-30">
+        <ApiState {...resource} />
 
         {/* =====================================================
             SEARCH / HERO
@@ -505,7 +451,7 @@ function MapViewPage() {
                           size={13}
                           className="text-lime-300"
                         />
-                        {facility.distance}
+                        {facility.distance || ""}
                       </div>
 
                       <div className="flex items-center gap-1.5 text-white/50">
@@ -513,7 +459,7 @@ function MapViewPage() {
                           size={13}
                           className="text-lime-300"
                         />
-                        {facility.rating}
+                        {facility.rating ?? "Not rated"}
                       </div>
 
                       <div className="flex items-center gap-1.5 text-white/40">

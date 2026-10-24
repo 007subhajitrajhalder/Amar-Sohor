@@ -48,6 +48,8 @@ class Report(Base):
         server_default=func.current_timestamp()
     )
 
+    investigation_notes = Column(Text, nullable=True)
+
     # Set by the resolution approval workflow when the report is completed.
     # Legacy rows retain NULL rather than using the report's creation date.
     resolved_at = Column(DateTime, nullable=True)

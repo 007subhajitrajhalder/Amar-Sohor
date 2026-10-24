@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, TIMESTAMP, Date, Text, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -22,6 +22,8 @@ class ReportResolutionSubmission(Base):
         index=True
     )
     resolution_photo = Column(String(1000), nullable=False)
+    description = Column(Text, nullable=True)
+    completion_date = Column(Date, nullable=True)
     submitted_at = Column(
         TIMESTAMP,
         nullable=False,

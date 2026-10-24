@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+
 import {
   AlertTriangle,
   ArrowLeft,
@@ -17,7 +17,9 @@ import {
   Car,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getReportById } from "./reportsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { reportView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -39,7 +41,9 @@ function ReportStatusPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
 
-  const data = useMemo(() => getReportById(reportId), [reportId]);
+  const resource = useApi("/reports/" + reportId.replace(/^REP-0*/, ""));
+  if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/citizen/my-reports">My Reports</Link></main>;
+  const data = reportView(resource.data);
   const currentStage = data.stage || (data.status === "Resolved" ? 4 : data.status === "Under Investigation" ? 2 : 1);
   const FacilityIcon = facilityIcons[data.facilityCategory] || MapPin;
 
@@ -65,12 +69,12 @@ function ReportStatusPage() {
     },
     {
       step: 3,
-      title: "Remedial Action Dispatched",
-      date: currentStage >= 3 ? "In Progress" : "Awaiting team dispatch",
+      title: "Resolution Submitted",
+      date: currentStage >= 3 ? "In Progress" : "Awaiting resolution evidence",
       description:
         currentStage >= 3
-          ? "Maintenance or repair personnel on site."
-          : "Work order to be issued following inspection.",
+          ? "Resolution evidence is awaiting administrative approval."
+          : "The agency can submit repair evidence after investigation.",
     },
     {
       step: 4,
@@ -78,7 +82,7 @@ function ReportStatusPage() {
       date: currentStage >= 4 ? (data.resolvedDate || "Work Completed") : "Pending resolution",
       description:
         currentStage >= 4
-          ? "Site cleaned, repaired, and signed off by civic inspector."
+          ? "The administrator approved the submitted resolution."
           : "Final clearance awaiting repair completion.",
     },
   ];
@@ -338,7 +342,7 @@ function ReportStatusPage() {
                         />
                         <div className="flex items-center justify-between p-2 text-xs text-lime-300">
                           <span className="flex items-center gap-1">
-                            <CheckCircle2 size={13} /> Work verified on site
+                            <CheckCircle2 size={13} /> Resolution approved
                           </span>
                           <span className="text-white/40">{data.resolvedDate}</span>
                         </div>

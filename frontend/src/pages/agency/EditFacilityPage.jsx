@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,13 +13,14 @@ import {
   Image as ImageIcon,
   AlertTriangle
 } from "lucide-react";
-import { findFacilityById, saveFacilityUpdate } from "./facilitiesData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
-function EditFacilityPage() {
+function FacilityEditor({ facilityId }) {
   const navigate = useNavigate();
-  const { facilityId } = useParams();
 
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light"
@@ -46,33 +47,29 @@ function EditFacilityPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const initialFacility = useMemo(
-    () => findFacilityById(facilityId),
-    [facilityId]
-  );
-
-  const [formData, setFormData] = useState(() => {
-    const f = findFacilityById(facilityId);
-    return {
-      facilityName: f?.name || f?.facilityName || "",
-      category: f?.category
-        ? f.category.toUpperCase().replace("-", "_")
-        : "DUSTBIN",
-      address: f?.address || "",
-      latitude: f?.latitude ? String(f.latitude) : "22.5726",
-      longitude: f?.longitude ? String(f.longitude) : "88.3639",
-      status: (f?.status || "Open").toUpperCase().replace(" ", "_")
-    };
-  });
-
-  const [imagePreview, setImagePreview] = useState(() => {
-    const f = findFacilityById(facilityId);
-    return f?.imageUrl || f?.image || "";
-  });
-  const [imageName, setImageName] = useState(() => {
-    const f = findFacilityById(facilityId);
-    return f?.imageUrl || f?.image ? "Current Facility Image" : "";
-  });
+  const [initialFacility, setInitialFacility] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadVersion, setLoadVersion] = useState(0);
+  const categories = useApi("/agencies/facilities/categories", { poll: 0 });
+  const [formData, setFormData] = useState({ facilityName: "", category: "", address: "", latitude: "", longitude: "", status: "OPEN", notes: "" });
+  const [imagePreview, setImagePreview] = useState("");
+  const [imageName, setImageName] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    apiRequest("/agencies/facilities/" + facilityId, { signal: controller.signal }).then(f => {
+      if (controller.signal.aborted) return;
+      setInitialFacility(f);
+      setFormData({ facilityName: f.facility_name, category: String(f.category_id), address: f.address,
+        latitude: String(f.latitude), longitude: String(f.longitude), status: f.status, notes: f.additional_notes || "" });
+      setImagePreview(f.photo_url || "");
+      setImageName(f.photo_url ? "Current Facility Image" : "");
+      setLoadError("");
+      setLoading(false);
+    }).catch(error => { if (!controller.signal.aborted) { setLoadError(error.message); setLoading(false); } });
+    return () => controller.abort();
+  }, [facilityId, loadVersion]);
   const [imageInputMode, setImageInputMode] = useState("upload");
   const [customImageUrl, setCustomImageUrl] = useState("");
 
@@ -84,7 +81,7 @@ function EditFacilityPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
       alert("Please select a valid image file (PNG, JPG, JPEG, WEBP).");
       return;
     }
@@ -94,6 +91,7 @@ function EditFacilityPage() {
       return;
     }
 
+    setPhotoFile(file);
     setImageName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
@@ -105,11 +103,13 @@ function EditFacilityPage() {
   const handleApplyImageUrl = (e) => {
     e?.preventDefault?.();
     if (!customImageUrl.trim()) return;
+    setPhotoFile(null);
     setImagePreview(customImageUrl.trim());
     setImageName("Web Image URL");
   };
 
   const handleRemoveImage = () => {
+    setPhotoFile(null);
     setImagePreview("");
     setImageName("");
     setCustomImageUrl("");
@@ -123,53 +123,32 @@ function EditFacilityPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async event => {
     event.preventDefault();
+    if (isSubmitting || success) return;
     setError("");
     setSuccess("");
-
-    if (
-      !formData.facilityName.trim() ||
-      !formData.category ||
-      !formData.address.trim() ||
-      !formData.latitude ||
-      !formData.longitude ||
-      !formData.status
-    ) {
-      setError("Please complete every facility field.");
-      return;
-    }
-
     setIsSubmitting(true);
-
-    const updated = saveFacilityUpdate(facilityId, {
-      name: formData.facilityName.trim(),
-      facilityName: formData.facilityName.trim(),
-      category: formData.category.toLowerCase(),
-      address: formData.address.trim(),
-      latitude: parseFloat(formData.latitude) || 22.5726,
-      longitude: parseFloat(formData.longitude) || 88.3639,
-      status:
-        formData.status === "OPEN"
-          ? "Open"
-          : formData.status === "UNDER_REPAIR"
-          ? "Under Repair"
-          : "Suspended",
-      imageUrl: imagePreview || "",
-      image: imagePreview || ""
-    });
-
-    if (!updated) {
-      setError("Failed to save facility changes. Please try again.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    setSuccess("Facility updated successfully! Redirecting to facility registry...");
-    setTimeout(() => {
-      navigate("/agency/facilities");
-    }, 1200);
+    try {
+      const payload = facilityPayload({ name: formData.facilityName, category: formData.category,
+        address: formData.address, latitude: formData.latitude, longitude: formData.longitude,
+        status: formData.status, photo: photoFile ? null : imagePreview, notes: formData.notes });
+      if (photoFile) {
+        payload.photo_url = await uploadFacilityPhoto(photoFile);
+        setImagePreview(payload.photo_url);
+        setPhotoFile(null);
+      }
+      const updated = await apiRequest("/agencies/facilities/" + facilityId, { method: "PUT", body: payload });
+      setSuccess("Facility updated successfully.");
+      navigate("/agency/facilities", { state: { message: 'Facility "' + updated.facility_name + '" updated successfully.' } });
+    } catch (error) { setError(error.message); }
+    finally { setIsSubmitting(false); }
   };
+
+  if (loading || loadError) return <main className="min-h-screen bg-slate-950 p-8 text-white">
+    <ApiState loading={loading} error={loadError} refresh={() => setLoadVersion(v => v + 1)} />
+    <Link to="/agency/facilities">Return to Facilities</Link>
+  </main>;
 
   if (!initialFacility) {
     return (
@@ -343,6 +322,7 @@ function EditFacilityPage() {
             </div>
           )}
 
+          <ApiState {...categories} />
           <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-xs">
             {/* Facility Name */}
             <div>
@@ -351,6 +331,7 @@ function EditFacilityPage() {
               </label>
               <input
                 id="facilityName"
+                maxLength={150}
                 type="text"
                 name="facilityName"
                 required
@@ -372,6 +353,7 @@ function EditFacilityPage() {
               </label>
               <select
                 id="category"
+                required disabled={initialFacility.source_recommendation_id !== null}
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
@@ -381,10 +363,7 @@ function EditFacilityPage() {
                     : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
                 }`}
               >
-                <option value="DUSTBIN">Dustbin (Solid Waste Management)</option>
-                <option value="DRINKING_WATER">Drinking Water (Water Supply)</option>
-                <option value="PUBLIC_TOILET">Public Toilet (Sanitation)</option>
-                <option value="PARKING">Parking Area (Traffic & Parking)</option>
+                {(categories.data || []).map(category => <option key={category.category_id} value={category.category_id}>{category.category_name}</option>)}
               </select>
             </div>
 
@@ -419,8 +398,10 @@ function EditFacilityPage() {
                 </label>
                 <input
                   id="latitude"
+                  min={-90} max={90}
                   type="number"
-                  step="any"
+                  step="0.0000001"
+                  required
                   name="latitude"
                   value={formData.latitude}
                   onChange={handleChange}
@@ -440,8 +421,10 @@ function EditFacilityPage() {
                 </label>
                 <input
                   id="longitude"
+                  min={-180} max={180}
                   type="number"
-                  step="any"
+                  step="0.0000001"
+                  required
                   name="longitude"
                   value={formData.longitude}
                   onChange={handleChange}
@@ -518,7 +501,7 @@ function EditFacilityPage() {
                   <input
                     id="editFacilityPhoto"
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/webp"
                     onChange={handlePhotoUpload}
                     className="hidden"
                   />
@@ -553,7 +536,7 @@ function EditFacilityPage() {
               {imagePreview && (
                 <div className={`mt-3 relative overflow-hidden rounded-xl border p-2.5 flex items-center gap-3 ${isDarkMode ? "border-white/20 bg-black/40" : "border-slate-200 bg-slate-100"}`}>
                   <img
-                    src={imagePreview}
+                    src={mediaUrl(imagePreview)}
                     alt="Facility preview"
                     className="h-16 w-24 rounded-lg object-cover border border-white/10 shrink-0"
                   />
@@ -598,6 +581,10 @@ function EditFacilityPage() {
               </select>
             </div>
 
+            <label className="grid gap-2">Additional notes
+              <textarea name="notes" value={formData.notes} maxLength={5000} onChange={handleChange}
+                className="rounded-xl border bg-transparent p-3" />
+            </label>
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-3 pt-3">
               <Link
@@ -612,7 +599,7 @@ function EditFacilityPage() {
               </Link>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || Boolean(success) || !categories.data?.length}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 px-6 py-2.5 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
               >
                 <CheckCircle2 size={15} />
@@ -626,4 +613,7 @@ function EditFacilityPage() {
   );
 }
 
-export default EditFacilityPage;
+export default function EditFacilityPage() {
+  const { facilityId } = useParams();
+  return <FacilityEditor key={facilityId} facilityId={facilityId} />;
+}
