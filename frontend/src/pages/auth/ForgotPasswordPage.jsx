@@ -35,14 +35,14 @@ function ForgotPasswordPage() {
           <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">Account recovery</span>
         </div>
         <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Reset your password</h1>
-        <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-white/50 sm:text-sm">Enter the email connected to your account and we will send you a secure reset link.</p>
-        <form className="mt-5 grid gap-3.5 text-left">
+        <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-white/50 sm:text-sm">Password reset email delivery is not configured. Contact your administrator for account recovery.</p>
+        <form onSubmit={event => event.preventDefault()} className="mt-5 grid gap-3.5 text-left">
           <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/75">Email address
             <span className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
               <Mail size={17} className="shrink-0 text-lime-300" /><input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
             </span>
           </label>
-          <button type="submit" className="min-h-[46px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Send reset link</button>
+          <button disabled type="submit" className="min-h-[46px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Email recovery unavailable</button>
         </form>
         <Link to="/login" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-lime-300 hover:text-lime-200 sm:text-sm"><ArrowLeft size={15} />Back to sign in</Link>
       </section>

@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 import {
   Activity,
   ArrowUpRight,
@@ -16,7 +19,6 @@ import {
 import { Link } from "react-router-dom";
 
 import AdminHeader from "./AdminHeader";
-import { getAdminRecommendations } from "./adminRecommendationsData";
 import { useAdminTheme } from "./useAdminTheme";
 
 const FACILITY_ICONS = {
@@ -27,7 +29,7 @@ const FACILITY_ICONS = {
 };
 
 function getRecommendationStatus(recommendation) {
-  if (!recommendation.assignedMember) return "Pending allocation";
+  if (recommendation.statusLabel) return recommendation.statusLabel;
   if (recommendation.status === "INSTALLED") return "Installed";
   if (recommendation.status === "APPROVED") return "Approved";
   return "Under investigation";
@@ -64,11 +66,19 @@ const lightAuraLayers = [
 ];
 
 function AdminDashboardPage() {
+  const usersResource = useApi("/admin/users");
+  const agenciesResource = useApi("/admin/agencies");
+  const membersResource = useApi("/admin/agency-members");
+  const health = useApi("/health");
+  const reportsResource = useApi("/reports");
+  const reportCount = status => reportsResource.data?.filter(r => r.status === status).length ?? "?";
+  const reportPercent = status => reportsResource.data?.length ? reportCount(status) / reportsResource.data.length * 100 : 0;
   const [isLightMode, setIsLightMode] = useAdminTheme();
-  const recommendations = getAdminRecommendations();
+  const resource = useApi("/recommendations");
+  const recommendations = (resource.data || []).map(r => recommendationView(r));
   const pendingRecommendations = recommendations.filter((item) => !item.assignedMember).length;
   const activeRecommendations = recommendations.filter(
-    (item) => item.assignedMember && item.status !== "INSTALLED"
+    (item) => ["ALLOTTED", "UNDER_INVESTIGATION", "APPROVED"].includes(item.status)
   ).length;
   const completedRecommendations = recommendations.filter(
     (item) => item.status === "INSTALLED"
@@ -79,6 +89,7 @@ function AdminDashboardPage() {
 
   return (
     <main className={`relative min-h-screen overflow-hidden bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+        <ApiState {...resource} />
       {auraLayers.map((layer, index) => (
         <div
           key={`dark-${index}`}
@@ -110,6 +121,7 @@ function AdminDashboardPage() {
       ))}
 
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState error={usersResource.error || agenciesResource.error || membersResource.error || health.error || reportsResource.error} />
 
       <section className={`admin-dashboard-welcome relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
         <div className="admin-dashboard-reveal" style={{ "--dashboard-delay": "80ms" }}>
@@ -125,18 +137,18 @@ function AdminDashboardPage() {
               <span className="relative h-2.5 w-2.5 rounded-full bg-emerald-300" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">All systems operational</p>
-              <p className="mt-1 text-xs text-white/55">Your city platform is running smoothly.</p>
+              <p className="text-sm font-semibold text-white">{health.data ? "API and database connected" : "Checking API and database"}</p>
+              <p className="mt-1 text-xs text-white/55">{health.error || "Database connection checked by the API."}</p>
             </div>
           </div>
           <div className="flex items-center gap-5 text-xs font-medium text-white/60">
             <span className="inline-flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-300" aria-hidden="true" />
-              99.9% uptime
+              {health.data ? "Connected" : "Unavailable"}
             </span>
             <span className="hidden items-center gap-2 sm:inline-flex">
               <Clock3 size={16} className="text-cyan-200" aria-hidden="true" />
-              Updated just now
+              Refreshes automatically
             </span>
           </div>
         </div>
@@ -152,7 +164,7 @@ function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-6 text-sm font-medium text-white/70">Registered Users</p>
-            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">2480</h2>
+            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">{usersResource.data?.length ?? "?"}</h2>
             <p className="mt-2 text-xs font-medium text-white/50">Total active accounts</p>
             <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-cyan-200/70">
               <Activity size={14} aria-hidden="true" />
@@ -170,7 +182,7 @@ function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-6 text-sm font-medium text-white/70">Agency Members</p>
-            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">128</h2>
+            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">{membersResource.data?.length ?? "?"}</h2>
             <p className="mt-2 text-xs font-medium text-white/50">Across all agencies</p>
             <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-emerald-200/70">
               <Activity size={14} aria-hidden="true" />
@@ -188,7 +200,7 @@ function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-6 text-sm font-medium text-white/70">Agencies</p>
-            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">4</h2>
+            <h2 className="mt-1 text-4xl font-bold tracking-tight text-white">{agenciesResource.data?.length ?? "?"}</h2>
             <p className="mt-2 text-xs font-medium text-white/50">Registered service agencies</p>
             <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-amber-200">
               <Activity size={14} aria-hidden="true" />
@@ -344,30 +356,30 @@ function AdminDashboardPage() {
               <div className="admin-glass-card queue-status-row pending-request-card rounded-xl border border-white/10 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Pending</span>
-                  <span className="rounded-full bg-amber-300/15 px-3 py-1 text-sm font-bold text-amber-200">18</span>
+                  <span className="rounded-full bg-amber-300/15 px-3 py-1 text-sm font-bold text-amber-200">{reportCount("PENDING")}</span>
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-[49%] rounded-full bg-amber-300" />
+                  <div style={{ width: reportPercent("PENDING") + "%" }} className="h-full rounded-full bg-amber-300" />
                 </div>
               </div>
 
               <div className="admin-glass-card queue-status-row rounded-xl border border-white/10 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Under investigation</span>
-                  <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-sm font-bold text-cyan-200">9</span>
+                  <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-sm font-bold text-cyan-200">{reportCount("UNDER_INVESTIGATION")}</span>
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-[25%] rounded-full bg-cyan-300" />
+                  <div style={{ width: reportPercent("UNDER_INVESTIGATION") + "%" }} className="h-full rounded-full bg-cyan-300" />
                 </div>
               </div>
 
               <div className="admin-glass-card queue-status-row rounded-xl border border-white/10 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/70">Resolved</span>
-                  <span className="rounded-full bg-emerald-300/15 px-3 py-1 text-sm font-bold text-emerald-200">10</span>
+                  <span className="rounded-full bg-emerald-300/15 px-3 py-1 text-sm font-bold text-emerald-200">{reportCount("RESOLVED")}</span>
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-[28%] rounded-full bg-emerald-300" />
+                  <div style={{ width: reportPercent("RESOLVED") + "%" }} className="h-full rounded-full bg-emerald-300" />
                 </div>
               </div>
             </div>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole, Mail, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { loginApi, roleHome } from "../../api/client";
+import ApiState from "../../components/ApiState";
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
@@ -24,6 +26,26 @@ const ABOUT_SLIDES = [
 ];
 
 function LoginPage() {
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (submitting) return;
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    setSubmitting(true);
+    setError("");
+    try {
+      const user = await loginApi(values.email.trim(), values.password);
+      const home = roleHome(user.role);
+      const from = location.state?.from;
+      navigate(from?.startsWith(home.split("/").slice(0, 2).join("/") + "/") ? from : home, { replace: true });
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
+  };
+
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -107,19 +129,21 @@ function LoginPage() {
           <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">Welcome back</span>
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Sign in to your account</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">Access your reports, saved facilities, and civic activity in one place.</p>
-          <form className="mt-5 grid gap-3.5">
+          <ApiState error={error} />
+          {location.state?.message && <p role="status">{location.state.message}</p>}
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-3.5">
             <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/75">Email address
               <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                <Mail size={17} className="text-lime-300 shrink-0" /><input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+                <Mail size={17} className="text-lime-300 shrink-0" /><input required id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
               </span>
             </label>
             <label htmlFor="password" className="grid gap-1.5 text-xs font-medium text-white/75">Password
               <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                <LockKeyhole size={17} className="text-lime-300 shrink-0" /><input id="password" name="password" type="password" placeholder="Enter your password" autoComplete="current-password" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+                <LockKeyhole size={17} className="text-lime-300 shrink-0" /><input required id="password" name="password" type="password" placeholder="Enter your password" autoComplete="current-password" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
               </span>
             </label>
             <div className="text-right"><Link to="/forgot-password" className="text-xs font-medium text-lime-300 hover:text-lime-200">Forgot password?</Link></div>
-            <button type="submit" className="min-h-[48px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Login</button>
+            <button disabled={submitting} type="submit" className="min-h-[48px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Login</button>
           </form>
           <p className="mt-4 text-center text-xs text-white/45">New to Amar Sohor? <Link to="/register" className="font-bold text-lime-300 hover:text-lime-200">Create an account</Link></p>
         </div>

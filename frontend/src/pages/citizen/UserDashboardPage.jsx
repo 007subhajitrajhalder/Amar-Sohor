@@ -1,3 +1,7 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
+import { useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -17,6 +21,22 @@ const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function UserDashboardPage() {
   const navigate = useNavigate();
+  const profile = useApi("/users/me");
+  const reports = useApi("/reports");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (saving) return;
+    const body = Object.fromEntries(new FormData(event.currentTarget));
+    setSaving(true); setError(""); setMessage("");
+    try { await apiRequest("/users/me", { method: "PUT", body }); setMessage("Profile updated."); profile.refresh(); }
+    catch (error) { setError(error.message); }
+    finally { setSaving(false); }
+  };
+  if (!profile.data) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...profile} /></main>;
+
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
       <div
@@ -101,9 +121,9 @@ function UserDashboardPage() {
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              ["Reports Submitted", 6, ClipboardList, "text-white"],
-              ["Reports Resolved", 4, CheckCircle2, "text-lime-300"],
-              ["Active Reports", 2, UserRound, "text-blue-300"],
+              ["Reports Submitted", reports.data?.length ?? "?", ClipboardList, "text-white"],
+              ["Reports Resolved", reports.data?.filter(r => r.status === "RESOLVED").length ?? "?", CheckCircle2, "text-lime-300"],
+              ["Active Reports", reports.data?.filter(r => r.status !== "RESOLVED").length ?? "?", UserRound, "text-blue-300"],
             ].map(([label, value, Icon, color]) => (
               <article
                 key={label}
@@ -122,23 +142,24 @@ function UserDashboardPage() {
             <p className="mt-1 text-xs text-white/40">
               Keep your contact information current.
             </p>
-            <form className="mt-5 grid gap-4 md:grid-cols-2">
+            <ApiState error={error || reports.error} />{message && <p role="status">{message}</p>}
+            <form onSubmit={handleSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
               {[
-                ["Full name", "text", "Sample Citizen"],
-                ["Email address", "email", "citizen@example.com"],
-                ["Phone number", "tel", "9876543210"],
-              ].map(([label, type, value]) => (
+                ["Full name", "text", profile.data.full_name, "full_name"],
+                ["Email address", "email", profile.data.email, "email"],
+                ["Phone number", "tel", profile.data.phone, "phone"],
+              ].map(([label, type, value, name]) => (
                 <label key={label} className="text-xs font-medium text-white/50">
                   {label}
                   <input
                     type={type}
-                    defaultValue={value}
+                    defaultValue={value} name={name} required
                     className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.05] p-2.5 text-sm text-white outline-none focus:border-lime-300/40"
                   />
                 </label>
               ))}
               <button
-                type="submit"
+                type="submit" disabled={saving}
                 className="flex self-end items-center justify-center gap-2 rounded-xl bg-lime-300 p-2.5 text-sm font-bold text-black hover:bg-lime-200"
               >
                 <Save size={17} />

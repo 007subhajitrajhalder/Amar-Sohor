@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { apiRequest } from "../../api/client";
+import ApiState from "../../components/ApiState";
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
@@ -32,6 +34,26 @@ const fields = [
 ];
 
 function RegisterPage() {
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (submitting) return;
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (values.password !== values["confirm-password"]) { setError("Passwords do not match."); return; }
+    setSubmitting(true);
+    setError("");
+    try {
+      await apiRequest("/auth/register", { method: "POST", auth: false,
+        body: { full_name: values.name.trim(), email: values.email.trim(), phone: values.phone.trim(), password: values.password } });
+      navigate("/login", { state: { message: "Account created. Sign in to continue." }, replace: true });
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
+  };
+
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -115,15 +137,17 @@ function RegisterPage() {
           <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">Create an account</span>
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Join Amar Sohor</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">One account for facilities, reports, and civic updates.</p>
-          <form className="mt-5 grid gap-3 sm:grid-cols-2">
+          <ApiState error={error} />
+          {location.state?.message && <p role="status">{location.state.message}</p>}
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-3 sm:grid-cols-2">
             {fields.map(([id, label, type, placeholder, autoComplete, Icon], index) => (
               <label key={id} htmlFor={id} className={`grid gap-1.5 text-xs font-medium text-white/75 ${index < 2 ? "sm:col-span-1" : "sm:col-span-2"}`}>{label}
                 <span className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                  <Icon size={16} className="shrink-0 text-lime-300" /><input id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+                  <Icon size={16} className="shrink-0 text-lime-300" /><input required id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
                 </span>
               </label>
             ))}
-            <button type="submit" className="min-h-[46px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200 sm:col-span-2">Register</button>
+            <button disabled={submitting} type="submit" className="min-h-[46px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200 sm:col-span-2">Register</button>
           </form>
           <p className="mt-4 text-center text-xs text-white/45">Already have an account? <Link to="/login" className="font-bold text-lime-300 hover:text-lime-200">Sign in</Link></p>
         </div>

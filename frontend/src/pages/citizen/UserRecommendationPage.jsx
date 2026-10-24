@@ -1,3 +1,4 @@
+import ApiState from "../../components/ApiState";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -146,6 +147,7 @@ function UserRecommendationPage() {
   };
 
   // Form submission
+  const [error, setError] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -169,6 +171,8 @@ function UserRecommendationPage() {
       return;
     }
 
+    if (isSubmitting) return;
+    setError("");
     setIsSubmitting(true);
     const selectedFacilityMeta = FACILITY_OPTIONS.find((f) => f.id === facilityType);
     let newRecommendation;
@@ -179,8 +183,8 @@ function UserRecommendationPage() {
         description: description.trim(),
         address: location.trim(),
         facilityType: facilityType,
-        latitude: coordinates?.lat ? parseFloat(coordinates.lat) : null,
-        longitude: coordinates?.lng ? parseFloat(coordinates.lng) : null,
+        latitude: coordinates?.lat !== undefined ? Number(coordinates.lat) : null,
+        longitude: coordinates?.lng !== undefined ? Number(coordinates.lng) : null,
         landmark: landmark.trim(),
         photoFile: photoFile,
         photoUrl: photoPreview,
@@ -191,7 +195,7 @@ function UserRecommendationPage() {
         : (backendData.photo_url || photoPreview);
 
       newRecommendation = {
-        id: "REC-" + String(backendData.recommendation_id).padStart(4, "0"),
+        id: backendData.recommendation_id,
         backendId: backendData.recommendation_id,
         title: backendData.title,
         facilityType: backendData.facility_type || facilityType,
@@ -215,71 +219,11 @@ function UserRecommendationPage() {
         reviewNotes: backendData.review_notes || "Allotted to Municipal Admin for review and allocation to designated agency member.",
       };
     } catch (apiErr) {
-      console.warn("Backend API unavailable, falling back to local registry:", apiErr);
-      newRecommendation = {
-        id: "REC-" + Date.now(),
-        title: title.trim(),
-        facilityType,
-        facilityLabel: selectedFacilityMeta?.short || facilityType,
-        location: location.trim(),
-        coordinates: coordinates || null,
-        landmark: landmark.trim(),
-        description: description.trim(),
-        photoPreview: photoPreview || null,
-        photoName: photoName || null,
-        createdAt: new Date().toISOString(),
-        status: "Pending Admin Review",
-        stage: 1,
-        assignedAgency: { name: "Municipal Civic Dept" },
-        assignedMember: null,
-        reviewDepartment: "Municipal Civic Dept",
-        reviewNotes: "Allotted to Municipal Admin for review and allocation to designated agency member.",
-      };
+      setError(apiErr.message);
+      return;
     } finally {
       setIsSubmitting(false);
     }
-
-    // Store in localStorage for persistence
-    try {
-      const existing = JSON.parse(
-        localStorage.getItem("citizen_recommendations") || "[]"
-      );
-      existing.unshift(newRecommendation);
-      localStorage.setItem("citizen_recommendations", JSON.stringify(existing));
-    } catch {
-      // ignore storage quota error
-    }
-
-    // Synchronize admin overrides: lands in Admin queue as PENDING for admin allocation
-    try {
-      const overrides = JSON.parse(localStorage.getItem("admin_recommendation_overrides") || "{}");
-      overrides[newRecommendation.id] = {
-        assignedMember: null,
-        assignedAgency: newRecommendation.assignedAgency,
-        status: "PENDING",
-        statusLabel: "Pending Allocation",
-        stage: 1,
-        inspectionNotes: newRecommendation.reviewNotes,
-        history: [
-          {
-            date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-            actor: "Citizen Proposer",
-            action: "Proposal submitted with evidence photo"
-          },
-          {
-            date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-            actor: "System Administrator",
-            action: "Allotted to Municipal Admin queue awaiting agency member assignment"
-          }
-        ]
-      };
-      localStorage.setItem("admin_recommendation_overrides", JSON.stringify(overrides));
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new Event("recommendationsUpdated"));
-    } catch (e) {
-      console.error("Failed to sync admin overrides:", e);
-    }
-
     setSubmittedData(newRecommendation);
     setIsSubmitted(true);
   };
@@ -346,6 +290,7 @@ function UserRecommendationPage() {
 
       {/* Main Content */}
       <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
+        <ApiState error={error} />
         <section className="mx-auto max-w-3xl">
           {/* Header titles */}
           <div className="text-center sm:text-left">

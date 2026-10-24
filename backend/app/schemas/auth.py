@@ -1,12 +1,13 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
 class RegisterRequest(BaseModel):
-    full_name: str
+    model_config = ConfigDict(extra="forbid")
+    full_name: str = Field(min_length=1, max_length=100)
     email: EmailStr
-    phone: str
-    password: str
+    phone: str = Field(min_length=1, max_length=20)
+    password: str = Field(min_length=8)
 
     @field_validator("password")
     @classmethod

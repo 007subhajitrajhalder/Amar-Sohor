@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,7 +16,6 @@ import {
   MapPin,
   Phone,
   Search,
-  ShieldCheck,
   Trash2,
   UserCheck,
   UserRound,
@@ -24,12 +26,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
-import {
-  allocateMemberToRecommendation,
-  FACILITY_AGENCIES,
-  getAgencyMembersForCategory,
-  getRecommendationForAdmin
-} from "./adminRecommendationsData";
 import { allocateRecommendationApi } from "../../api/client";
 
 const auraLayers = [
@@ -74,21 +70,15 @@ function AllocateRecommendationPage() {
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
 
-  const [recommendation, setRecommendation] = useState(() =>
-    getRecommendationForAdmin(recommendationId)
-  );
-
-  const category = (recommendation?.facilityType || "dustbin").toLowerCase();
-  const agency = FACILITY_AGENCIES[category] || FACILITY_AGENCIES.dustbin;
-  const members = useMemo(() => getAgencyMembersForCategory(category), [category]);
-
-  const [selectedMember, setSelectedMember] = useState(() => {
-    if (recommendation?.assignedMember) {
-      return members.find((m) => m.id === recommendation.assignedMember.id) || null;
-    }
-    return null;
-  });
-
+  const resource = useApi("/recommendations/" + recommendationId);
+  const recommendation = resource.data ? recommendationView(resource.data) : null;
+  const memberResource = useApi(recommendation?.assigned_agency ? "/admin/agency-members?agency_id=" + recommendation.assigned_agency : null);
+  const category = recommendation?.facilityType || "";
+  const agency = recommendation?.assignedAgency || {};
+  const members = (memberResource.data || []).map(m => ({ ...m, id: m.agent_id, fullName: m.full_name,
+    designation: m.role, activeCases: "Not recorded", completedCases: "Not recorded" }));
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [error, setError] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [assignmentNote, setAssignmentNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,6 +96,7 @@ function AllocateRecommendationPage() {
     );
   }, [members, memberSearch]);
 
+  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
   if (!recommendation) {
     return (
       <main
@@ -133,44 +124,16 @@ function AllocateRecommendationPage() {
 
   const FacilityIcon = FACILITY_ICONS[category] || Trash2;
 
-  const handleAllocate = async (e) => {
-    e.preventDefault();
-    if (!selectedMember) return;
-
-    setIsSubmitting(true);
-
-    // Call backend API if recommendation backend ID or ID is available
+  const handleAllocate = async event => {
+    event.preventDefault();
+    if (isSubmitting || !selectedMember) return;
+    setIsSubmitting(true); setError("");
     try {
-      const recIdNumber = parseInt(String(recommendation.id).replace(/\D/g, ""), 10);
-      if (recIdNumber) {
-        await allocateRecommendationApi(recIdNumber, {
-          agentId: selectedMember.id,
-          agentEmail: selectedMember.email,
-          notes: assignmentNote,
-        });
-      }
-    } catch (err) {
-      console.warn("Backend allocation API notice (updating local state):", err);
-    }
-
-    const updated = allocateMemberToRecommendation(
-      recommendation.id,
-      selectedMember,
-      assignmentNote
-    );
-
-    setRecommendation((prev) => ({
-      ...prev,
-      ...updated
-    }));
-
-    setSuccessMessage(
-      `Responsibility successfully allocated to ${selectedMember.fullName} (${agency.name}). Redirecting to progress tracker...`
-    );
-
-    setTimeout(() => {
-      navigate(`/admin/recommendations/${recommendation.id}/progress`);
-    }, 1200);
+      await allocateRecommendationApi(Number(recommendation.id), { agentId: selectedMember.id, notes: assignmentNote });
+      setSuccessMessage("Recommendation allocated successfully.");
+      navigate("/admin/recommendations/" + recommendation.id + "/progress");
+    } catch (error) { setError(error.message); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
@@ -194,6 +157,7 @@ function AllocateRecommendationPage() {
       ))}
 
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState error={error || memberResource.error} />
 
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : "text-white"}`}>
         {/* Navigation Bar */}
@@ -288,7 +252,7 @@ function AllocateRecommendationPage() {
                   <div>
                     <p className="text-xs text-white/50">Citizen Proposer</p>
                     <p className="font-semibold text-white">
-                      {recommendation.citizen?.name || "Verified Citizen"}
+                      {recommendation.citizen?.name || "Not recorded"}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-white/60">
                       {recommendation.citizen?.phone && (

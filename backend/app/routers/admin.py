@@ -71,4 +71,42 @@ def create_agency_member(
             detail="Phone number already registered"
         )
 
-    return result
+    return result
+
+
+@router.get("/agencies")
+def list_agencies(current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    from app.models.agency import Agency
+    return [{"agency_id": a.agency_id, "agency_name": a.agency_name,
+        "department_type": a.department_type, "member_count": len(a.members)} for a in db.query(Agency).all()]
+
+@router.get("/agency-members")
+def list_members(agency_id: int | None = None, current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    from app.models.agency_member import AgencyMember
+    from app.services.agency_service import format_agent_details
+    query = db.query(AgencyMember)
+    if agency_id is not None:
+        query = query.filter(AgencyMember.agency_id == agency_id)
+    return [format_agent_details(m) for m in query.all()]
+
+
+@router.delete("/agency-members/{agent_id}", status_code=204)
+def remove_member(agent_id: int, current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    from sqlalchemy import delete
+    from sqlalchemy.exc import IntegrityError
+    from app.models.agency_member import AgencyMember
+    from app.models.report import Report
+    from app.models.recommendation import Recommendation
+    member = db.get(AgencyMember, agent_id)
+    if member is None:
+        raise HTTPException(404, "Agency member not found")
+    if db.query(Report).filter_by(assigned_agent=agent_id).first() or db.query(Recommendation).filter_by(assigned_agent=agent_id).first():
+        raise HTTPException(409, "Member has assigned records; preserve their account")
+    user_id = member.user_id
+    try:
+        db.execute(delete(AgencyMember).where(AgencyMember.agent_id == agent_id))
+        db.execute(delete(User).where(User.user_id == user_id))
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Member has linked records and cannot be deleted") from exc

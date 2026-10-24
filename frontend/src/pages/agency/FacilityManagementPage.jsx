@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
@@ -16,7 +16,10 @@ import {
   AlertTriangle,
   ExternalLink
 } from "lucide-react";
-import { getStoredFacilities } from "./facilitiesData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, facilityView } from "../../api/client";
+import Pagination from "../../components/Pagination";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -44,17 +47,37 @@ const categoryConfig = {
 };
 
 function FacilityManagementPage() {
-  const [facilities, setFacilities] = useState(getStoredFacilities);
+  const location = useLocation();
+  const [offset, setOffset] = useState(0);
+  const [mutationError, setMutationError] = useState("");
+  const [deleting, setDeleting] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light"
   );
 
+  const categories = useApi("/agencies/facilities/categories", { poll: 0 });
+  const query = new URLSearchParams({ limit: "50", offset: String(offset) });
+  if (searchQuery.trim()) query.set("search", searchQuery.trim());
+  if (selectedCategory !== "all") query.set("category_id", selectedCategory);
+  const resource = useApi("/agencies/facilities?" + query);
+  const facilities = (resource.data?.items || []).map(facilityView);
+  const remove = async facility => {
+    if (deleting !== null || !window.confirm('Delete "' + facility.name + '"? This cannot be undone.')) return;
+    setDeleting(facility.id);
+    setMutationError("");
+    try {
+      await apiRequest("/agencies/facilities/" + facility.id, { method: "DELETE" });
+      if (facilities.length === 1 && offset > 0) setOffset(Math.max(0, offset - 50));
+      resource.refresh();
+    } catch (error) { setMutationError(error.message); }
+    finally { setDeleting(null); }
+  };
   useEffect(() => {
     const syncThemeAndFacilities = () => {
       setIsDarkMode(localStorage.getItem("agencyTheme") !== "light");
-      setFacilities(getStoredFacilities());
+
     };
 
     window.addEventListener("storage", syncThemeAndFacilities);
@@ -73,30 +96,10 @@ function FacilityManagementPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const filtered = facilities.filter((facility) => {
-    const matchesCategory =
-      selectedCategory === "all" ||
-      facility.category?.toLowerCase() === selectedCategory.toLowerCase();
-
-    const matchesSearch =
-      !searchQuery.trim() ||
-      facility.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      facility.facilityName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      facility.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(facility.id).includes(searchQuery.trim());
-
-    return matchesCategory && matchesSearch;
-  });
-
-  const totalCount = facilities.length;
-  const openCount = facilities.filter(
-    (f) => (f.status || "").toLowerCase() === "open"
-  ).length;
-  const repairCount = facilities.filter(
-    (f) =>
-      (f.status || "").toLowerCase().includes("repair") ||
-      (f.status || "").toLowerCase().includes("suspend")
-  ).length;
+  const filtered = facilities;
+  const totalCount = resource.data?.statistics.total ?? "?";
+  const openCount = resource.data?.statistics.open ?? "?";
+  const repairCount = resource.data?.statistics.needs_attention ?? "?";
 
   return (
     <div
@@ -181,6 +184,9 @@ function FacilityManagementPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
+        <ApiState {...resource} />
+        <ApiState error={categories.error || mutationError} refresh={categories.error ? categories.refresh : undefined} />
+        {location.state?.message && <p role="status">{location.state.message}</p>}
         {/* Navigation & Header Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -265,17 +271,11 @@ function FacilityManagementPage() {
         {/* Filter and Search Bar */}
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            {[
-              { id: "all", label: "All Facilities" },
-              { id: "dustbin", label: "Dustbins" },
-              { id: "toilet", label: "Public Toilets" },
-              { id: "water", label: "Drinking Water" },
-              { id: "parking", label: "Civic Parking" }
-            ].map((tab) => (
+            {[{ id: "all", label: "All Facilities" }, ...(categories.data || []).map(c => ({ id: String(c.category_id), label: c.category_name }))].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setSelectedCategory(tab.id)}
+                onClick={() => { setSelectedCategory(tab.id); setOffset(0); }}
                 className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
                   selectedCategory === tab.id
                     ? isDarkMode
@@ -299,7 +299,7 @@ function FacilityManagementPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
               placeholder="Search facility name or location..."
               className={`w-full rounded-xl border py-2 pl-9 pr-4 text-xs outline-none transition focus:ring-2 ${
                 isDarkMode
@@ -312,7 +312,7 @@ function FacilityManagementPage() {
 
         {/* Facilities List Grid */}
         <div className="mt-6 grid gap-4">
-          {filtered.length === 0 ? (
+          {resource.loading || resource.error ? null : filtered.length === 0 ? (
             <div
               className={`rounded-3xl border p-12 text-center shadow-md backdrop-blur-xl ${
                 isDarkMode
@@ -337,7 +337,7 @@ function FacilityManagementPage() {
           ) : (
             filtered.map((facility) => {
               const catKey = (facility.category || "dustbin").toLowerCase();
-              const catInfo = categoryConfig[catKey] || categoryConfig.dustbin;
+              const catInfo = categoryConfig[catKey] || { label: facility.category_name, icon: Building2, color: "text-cyan-400" };
               const CatIcon = catInfo.icon;
               const photo = facility.imageUrl || facility.image;
               const statusLower = (facility.status || "").toLowerCase();
@@ -424,6 +424,10 @@ function FacilityManagementPage() {
 
                     {/* Right: Direct Link to Edit Facility Page */}
                     <div className="flex shrink-0 items-center justify-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-white/10">
+                      <button type="button" aria-label={"Delete " + facility.name} disabled={deleting !== null}
+                        onClick={() => remove(facility)} className="rounded-xl border border-rose-400/40 px-3 py-2 text-xs text-rose-400 disabled:opacity-40">
+                        <Trash2 size={14} /> {deleting === facility.id ? "Deleting..." : "Delete"}
+                      </button>
                       <Link
                         to={`/agency/facilities/${facility.id}/edit`}
                         className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition duration-200 ${
@@ -437,8 +441,8 @@ function FacilityManagementPage() {
                       </Link>
 
                       <Link
-                        to={`/citizen/map?category=${catKey}`}
-                        title="View on Map"
+                        to={"/facilities/" + facility.id}
+                        title="View Facility"
                         className={`rounded-xl border p-2 text-xs transition ${
                           isDarkMode
                             ? "border-white/10 hover:bg-white/10 text-white/70"
@@ -454,6 +458,7 @@ function FacilityManagementPage() {
             })
           )}
         </div>
+        <Pagination total={resource.data?.total} offset={offset} onChange={setOffset} disabled={resource.loading || Boolean(resource.error)} />
       </main>
     </div>
   );

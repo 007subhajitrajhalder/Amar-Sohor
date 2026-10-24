@@ -1,3 +1,5 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
 import {
   Activity,
   ArrowLeft,
@@ -63,7 +65,7 @@ function AllComplaintsPage() {
   const [isLightMode, setIsLightMode] = useAdminTheme();
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
-  const [sortKey, setSortKey] = useState("submittedDate");
+  const [sortKey] = useState("submittedDate");
   const [sortDirection, setSortDirection] = useState("desc");
   const searchInputRef = useRef(null);
 
@@ -85,45 +87,9 @@ function AllComplaintsPage() {
 
   // Temporary complaint data.
   // Later, it will come from the backend.
-  const complaints = [
-    {
-      id: 101,
-      title: "Dustbin Overflowing",
-      facility: "Gariahat Community Dustbin",
-      citizen: "Ananya Sen",
-      agency: "KMC SWM Department",
-      status: "PENDING",
-      submittedDate: "21 August 2026"
-    },
-    {
-      id: 102,
-      title: "Water Not Available",
-      facility: "Salt Lake Water Point",
-      citizen: "Rahul Das",
-      agency: "KMC Water Department",
-      status: "UNDER_INVESTIGATION",
-      submittedDate: "20 August 2026"
-    },
-    {
-      id: 103,
-      title: "Parking Area Closed",
-      facility: "New Market Parking",
-      citizen: "Priya Ghosh",
-      agency: "Kolkata Police",
-      status: "RESOLVED",
-      submittedDate: "18 August 2026"
-    },
-    {
-      id: 104,
-      title: "Public Toilet Is Dirty",
-      facility: "College Street Public Toilet",
-      citizen: "Arjun Roy",
-      agency: "KMC Sanitation Department",
-      status: "PENDING",
-      submittedDate: "17 August 2026"
-    }
-  ];
-
+  const resource = useApi("/reports");
+  const complaints = (resource.data || []).map(r => ({ id: r.report_id, title: r.title, facility: r.facility_name,
+    citizen: r.citizen_name, agency: r.agency_name, status: r.status, submittedDate: r.created_at }));
   const filteredComplaints = complaints.filter((complaint) => {
     const searchValue = searchText.toLowerCase();
 
@@ -244,6 +210,7 @@ function AllComplaintsPage() {
       ))}
 
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} />
 
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : ""}`}>
         <div className="flex items-center justify-between gap-4">

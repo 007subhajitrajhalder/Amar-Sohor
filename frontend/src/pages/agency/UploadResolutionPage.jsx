@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -51,16 +54,22 @@ function UploadResolutionPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const handleSubmitResolution = (event) => {
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const resource = useApi("/reports/" + reportId);
+  const handleSubmitResolution = async event => {
     event.preventDefault();
-
-    if (!resolutionDescription || !completionDate || !resolutionPhoto) {
-      alert("Please complete every resolution field.");
-      return;
-    }
-
-    alert("Resolution uploaded. Report status changed to Resolved.");
-    navigate("/agency/resolved");
+    if (submitting) return;
+    setSubmitting(true); setError("");
+    try {
+      const body = new FormData();
+      body.append("description", resolutionDescription);
+      body.append("completion_date", completionDate);
+      body.append("photo", resolutionPhoto);
+      await apiRequest("/reports/" + reportId + "/resolutions", { method: "POST", body });
+      navigate("/agency/reports", { state: { message: "Resolution submitted for administrator approval." } });
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
   };
 
   return (
@@ -137,6 +146,7 @@ function UploadResolutionPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-4xl px-5 py-8 md:px-10 md:py-12">
+        <ApiState {...resource} /><ApiState error={error} />
         {/* Back Button */}
         <div className="mb-6">
           <Link
@@ -208,7 +218,7 @@ function UploadResolutionPage() {
               >
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={(event) => setResolutionPhoto(event.target.files[0])}
                   className={`block w-full max-w-sm text-sm file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold transition-all ${
                     isDarkMode
@@ -236,14 +246,14 @@ function UploadResolutionPage() {
             </label>
 
             <button
-              type="submit"
+              type="submit" disabled={submitting || resource.data?.status !== "UNDER_INVESTIGATION"}
               className={`mt-4 rounded-xl border px-5 py-4 text-center text-sm font-bold shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 ${
                 isDarkMode
                   ? "border-emerald-200/30 bg-emerald-500/20 text-emerald-100 shadow-emerald-950/20 hover:bg-emerald-500/30 hover:text-white"
                   : "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-200/40 hover:bg-emerald-100 hover:text-emerald-800"
               }`}
             >
-              Submit Resolution and Mark Resolved
+              Submit Resolution for Approval
             </button>
           </form>
         </div>

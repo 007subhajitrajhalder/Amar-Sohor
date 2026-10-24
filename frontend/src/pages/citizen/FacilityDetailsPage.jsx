@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, facilityView, displayDate } from "../../api/client";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -12,53 +15,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
-const facilities = {
-  1: [
-    "College Street Public Toilet",
-    "College Street, Kolkata",
-    "Public Toilet",
-    4.5,
-  ],
-  2: [
-    "Gariahat Community Dustbin",
-    "Gariahat, Kolkata",
-    "Waste Management",
-    4.2,
-  ],
-  3: [
-    "Sealdah Drinking Water Point",
-    "Sealdah, Kolkata",
-    "Drinking Water",
-    4.4,
-  ],
-  4: ["New Market Parking Area", "New Market, Kolkata", "Parking", 4.1],
-  5: ["Park Street Dustbin", "Park Street, Kolkata", "Waste Management", 4.5],
-  6: ["Howrah Parking Zone", "Howrah Station Area", "Parking", 3.9],
-};
-const seedReviews = [
-  {
-    id: 1,
-    name: "Ananya S.",
-    rating: 5,
-    date: "18 Aug 2026",
-    text: "Clean, easy to find, and the caretaker was helpful.",
-  },
-  {
-    id: 2,
-    name: "Rahul D.",
-    rating: 4,
-    date: "11 Aug 2026",
-    text: "Useful and well located. It can get busy in the evening.",
-  },
-  {
-    id: 3,
-    name: "Moumita P.",
-    rating: 4,
-    date: "02 Aug 2026",
-    text: "The area was maintained well during my visit.",
-  },
-];
-
 const Stars = ({ value }) => (
   <span className="flex gap-0.5">
     {[1, 2, 3, 4, 5].map((n) => (
@@ -74,29 +30,28 @@ const Stars = ({ value }) => (
 function FacilityDetailsPage() {
   const { facilityId } = useParams();
   const navigate = useNavigate();
-  const [name, address, category, rating] =
-    facilities[facilityId] || facilities[1];
-  const [reviews, setReviews] = useState(seedReviews);
+  const resource = useApi("/facilities/" + facilityId);
+  const ratings = useApi("/facilities/" + facilityId + "/ratings");
+  const facility = resource.data ? facilityView(resource.data) : null;
+  const name = facility?.name, address = facility?.address, category = facility?.categoryLabel;
+  const reviews = (ratings.data || []).map(item => ({ ...item, date: displayDate(item.date) }));
+  const rating = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : "Not rated";
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [review, setReview] = useState("");
   const [userRating, setUserRating] = useState(0);
-  const submitReview = (event) => {
-  event.preventDefault();
-  if (!review.trim() || userRating === 0) return;
-
-  setReviews([
-    {
-      id: Date.now(),
-      name: "You",
-      rating: userRating,
-      date: "Just now",
-      text: review.trim(),
-    },
-    ...reviews,
-  ]);
-
-  setReview("");
-  setUserRating(0);
-};
+  const submitReview = async event => {
+    event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await apiRequest("/facilities/" + facilityId + "/ratings", { method: "POST", body: { title: review.trim(), rating: userRating } });
+      setReview(""); setUserRating(0); ratings.refresh();
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
+  };
+  if (!facility) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/map">Return to Map</Link></main>;
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -189,6 +144,7 @@ function FacilityDetailsPage() {
                 COMMUNITY
               </p>
               <h2 className="mt-1.5 text-xl font-bold">User reviews</h2>
+              <ApiState {...ratings} /><ApiState error={error} />
               <form
                 onSubmit={submitReview}
                 className="mt-4 border-b border-white/10 pb-4"
@@ -212,13 +168,13 @@ function FacilityDetailsPage() {
     </button>
   ))}
 </div>
-                <textarea
+                <textarea maxLength={200} required
                   value={review}
                   onChange={(e) => setReview(e.target.value)}
                   placeholder="Share your experience..."
                   className="mt-2.5 min-h-20 w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] p-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-lime-300/40"
                 />
-                <button className="mt-2.5 w-full rounded-xl border border-lime-300/30 py-2.5 text-sm font-bold text-lime-300 hover:bg-lime-300 hover:text-black">
+                <button disabled={submitting} className="mt-2.5 w-full rounded-xl border border-lime-300/30 py-2.5 text-sm font-bold text-lime-300 hover:bg-lime-300 hover:text-black">
                   Submit Review
                 </button>
               </form>

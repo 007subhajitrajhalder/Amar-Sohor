@@ -26,10 +26,15 @@ def get_my_profile(
         "phone": current_user.phone,
         "role": current_user.role
     }
+@router.put("/me", response_model=UserResponse)
+def update_my_profile(data: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return user_service.update_user(db, current_user.user_id, data)
+
 @router.delete("/{user_id}")
 def delete_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin)
 ):
     user = user_service.delete_user(db, user_id)
 
@@ -65,7 +70,8 @@ def agency_test(
 def update_user(
     user_id: int,
     user_data: UserUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin)
 ):
     user = user_service.update_user(
         db,
@@ -82,7 +88,7 @@ def update_user(
     return user
 
 @router.get("/", response_model=list[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(db: Session = Depends(get_db), current_admin: User = Depends(require_admin)):
     users = user_service.get_all_users(db)
 
     return users
@@ -91,7 +97,8 @@ def get_users(db: Session = Depends(get_db)):
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin)
 ):
     user = user_service.get_user_by_id(db, user_id)
 
@@ -107,6 +114,7 @@ def get_user(
 @router.post("/", response_model=UserResponse, status_code=201)
 def create_user(
     user_data: UserCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin)
 ):
     return user_service.create_user(db, user_data)
