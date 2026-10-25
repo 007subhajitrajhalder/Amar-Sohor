@@ -13,7 +13,7 @@ from sqlalchemy.pool import StaticPool
 from app.database.base import Base
 from app.database.connection import get_db
 from app.models import Agency, AgencyMember, Facility, FacilityCategory, Report, User
-from app.routers import auth, facilities, reports
+from app.routers import auth, facilities, reports, users
 from app.routers.agencies import router
 
 
@@ -41,6 +41,7 @@ class ApiTestCase(unittest.TestCase):
         self.app.include_router(auth.router)
         self.app.include_router(facilities.router)
         self.app.include_router(reports.router)
+        self.app.include_router(users.router)
 
         def override_db():
             yield self.db
@@ -135,15 +136,22 @@ class ApiTestCase(unittest.TestCase):
         messages = []
 
         async def receive():
-            return {"type": "http.request", "body": request_body, "more_body": False}
+            return {
+                "type": "http.request",
+                "body": request_body,
+                "more_body": False
+            }
 
         async def send(message):
             messages.append(message)
 
         asyncio.run(self.app(scope, receive, send))
-        response = next(m for m in messages if m["type"] == "http.response.start")
-        body = b"".join(
-            m.get("body", b"") for m in messages if m["type"] == "http.response.body"
-        )
-        return response["status"], json.loads(body)
 
+        start = next(msg for msg in messages if msg["type"] == "http.response.start")
+        body_parts = [
+            msg.get("body", b"")
+            for msg in messages if msg["type"] == "http.response.body"
+        ]
+        response_body = b"".join(body_parts).decode()
+        parsed_body = json.loads(response_body) if response_body else None
+        return start["status"], parsed_body

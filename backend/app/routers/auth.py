@@ -5,12 +5,15 @@ from app.database.connection import get_db
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
-    TokenResponse
+    TokenResponse,
+    AuthUser
 )
 from app.schemas.user import UserResponse
 from app.services import auth_service
 from app.core.security import create_access_token
+from app.models.user import User
 from app.models.agency_member import AgencyMember
+from app.dependencies.auth import get_current_user
 
 router = APIRouter(
     prefix="/auth",
@@ -90,4 +93,30 @@ def login(
             "role": user.role,
             "agency_id": agency_id
         }
+    }
+
+
+@router.get(
+    "/me",
+    response_model=AuthUser
+)
+def get_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    agency_id = None
+    if current_user.role in ["AGENT", "AGENCY"]:
+        agent = db.query(AgencyMember).filter(
+            AgencyMember.user_id == current_user.user_id
+        ).first()
+        if agent:
+            agency_id = agent.agency_id
+
+    return {
+        "user_id": current_user.user_id,
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "role": current_user.role,
+        "agency_id": agency_id
     }

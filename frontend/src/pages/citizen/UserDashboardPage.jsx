@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -10,13 +11,109 @@ import {
   Save,
   Sparkles,
   UserRound,
+  ShieldAlert,
+  Building2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { fetchReportsApi } from "../../api/client";
+
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function UserDashboardPage() {
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
+
+  const [fullName, setFullName] = useState(user?.full_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: string }
+
+  const [stats, setStats] = useState({
+    submitted: 0,
+    resolved: 0,
+    active: 0,
+  });
+
+  // Sync state whenever authenticated user data refreshes
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || "");
+      setEmail(user.email || "");
+      setPhone(user.phone || "");
+    }
+  }, [user]);
+
+  // Fetch citizen reports statistics from backend
+  useEffect(() => {
+    async function loadCitizenStats() {
+      if (!user?.user_id) return;
+      try {
+        const reports = await fetchReportsApi(user.user_id);
+        if (Array.isArray(reports)) {
+          const total = reports.length;
+          const resolvedCount = reports.filter(
+            (r) => r.status === "RESOLVED"
+          ).length;
+          const activeCount = total - resolvedCount;
+          setStats({
+            submitted: total,
+            resolved: resolvedCount,
+            active: activeCount,
+          });
+        }
+      } catch (err) {
+        console.warn("Could not load report statistics:", err);
+      }
+    }
+
+    loadCitizenStats();
+  }, [user?.user_id]);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setFeedback(null);
+
+    if (!fullName.trim()) {
+      setFeedback({ type: "error", message: "Full name cannot be blank." });
+      return;
+    }
+
+    if (!email.trim()) {
+      setFeedback({ type: "error", message: "Email address cannot be blank." });
+      return;
+    }
+
+    if (!phone.trim()) {
+      setFeedback({ type: "error", message: "Phone number cannot be blank." });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateProfile({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
+      setFeedback({
+        type: "success",
+        message: "Profile updated successfully!",
+      });
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        message: err.message || "Failed to update profile. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
       <div
@@ -47,6 +144,7 @@ function UserDashboardPage() {
           </button>
         </div>
       </header>
+
       <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
         <section className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -57,36 +155,43 @@ function UserDashboardPage() {
               <h1 className="mt-2 text-2xl font-bold md:text-4xl">
                 Citizen Dashboard
               </h1>
-              <p className="mt-1.5 text-xs text-white/50 md:text-sm max-w-2xl">
-                Manage your profile and stay up to date with your civic reports and recommendations.
+              <p className="mt-1.5 max-w-2xl text-xs text-white/50 md:text-sm">
+                Manage your profile details and monitor your civic contributions across Amar Sohor.
               </p>
             </div>
+            {user?.role && (
+              <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-lime-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
+                Role: {user.role}
+              </div>
+            )}
           </div>
+
           <div className="mt-5 flex flex-wrap gap-2.5">
             <Link
-              to="/map"
-              className="flex items-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/10"
+              to="/citizen/report-issue"
+              className="flex items-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition hover:bg-lime-200"
             >
               <AlertTriangle size={17} />
               Report an Issue
             </Link>
             <Link
               to="/citizen/recommendation"
-              className="flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/10 px-4 py-2.5 text-sm font-bold text-lime-300 hover:bg-lime-300 hover:text-black transition"
+              className="flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/10 px-4 py-2.5 text-sm font-bold text-lime-300 transition hover:bg-lime-300 hover:text-black"
             >
               <Sparkles size={17} />
               Recommend Facility
             </Link>
             <Link
               to="/citizen/my-recommendations"
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-bold text-white/70 hover:border-lime-300/30 hover:text-white transition"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-bold text-white/70 transition hover:border-lime-300/30 hover:text-white"
             >
               <Lightbulb size={17} />
               My Recommendations
             </Link>
             <Link
               to="/citizen/my-reports"
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-bold text-white/70 hover:border-lime-300/30 hover:text-white transition"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-bold text-white/70 transition hover:border-lime-300/30 hover:text-white"
             >
               <ClipboardList size={17} />
               View My Reports
@@ -99,15 +204,17 @@ function UserDashboardPage() {
               Explore Map
             </Link>
           </div>
+
+          {/* Real Citizen Metrics */}
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              ["Reports Submitted", 6, ClipboardList, "text-white"],
-              ["Reports Resolved", 4, CheckCircle2, "text-lime-300"],
-              ["Active Reports", 2, UserRound, "text-blue-300"],
+              ["Reports Submitted", stats.submitted, ClipboardList, "text-white"],
+              ["Reports Resolved", stats.resolved, CheckCircle2, "text-lime-300"],
+              ["Active Reports", stats.active, UserRound, "text-blue-300"],
             ].map(([label, value, Icon, color]) => (
               <article
                 key={label}
-                className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5 backdrop-blur-2xl"
+                className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-2xl sm:p-5"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-white/40">{label}</p>
@@ -117,37 +224,132 @@ function UserDashboardPage() {
               </article>
             ))}
           </div>
+
+          {/* Profile Details Section */}
           <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6">
             <h2 className="text-xl font-bold">Profile Details</h2>
             <p className="mt-1 text-xs text-white/40">
-              Keep your contact information current.
+              Keep your contact information current. All changes are saved directly to your account.
             </p>
-            <form className="mt-5 grid gap-4 md:grid-cols-2">
-              {[
-                ["Full name", "text", "Sample Citizen"],
-                ["Email address", "email", "citizen@example.com"],
-                ["Phone number", "tel", "9876543210"],
-              ].map(([label, type, value]) => (
-                <label key={label} className="text-xs font-medium text-white/50">
-                  {label}
-                  <input
-                    type={type}
-                    defaultValue={value}
-                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-white/[0.05] p-2.5 text-sm text-white outline-none focus:border-lime-300/40"
-                  />
-                </label>
-              ))}
-              <button
-                type="submit"
-                className="flex self-end items-center justify-center gap-2 rounded-xl bg-lime-300 p-2.5 text-sm font-bold text-black hover:bg-lime-200"
+
+            {feedback && (
+              <div
+                className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-xs ${
+                  feedback.type === "success"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                }`}
               >
-                <Save size={17} />
-                Update Profile
-              </button>
+                {feedback.type === "success" ? (
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertCircle size={16} className="shrink-0 text-rose-400" />
+                )}
+                <span>{feedback.message}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateProfile} className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="text-xs font-medium text-white/50">
+                Full name
+                <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
+                  <UserRound size={16} className="text-lime-300 shrink-0" />
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    placeholder="Your Full Name"
+                    className="w-full bg-transparent text-sm text-white outline-none"
+                  />
+                </div>
+              </label>
+
+              <label className="text-xs font-medium text-white/50">
+                Email address
+                <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
+                  <Mail size={16} className="text-lime-300 shrink-0" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    className="w-full bg-transparent text-sm text-white outline-none"
+                  />
+                </div>
+              </label>
+
+              <label className="text-xs font-medium text-white/50">
+                Phone number
+                <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
+                  <Phone size={16} className="text-lime-300 shrink-0" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    placeholder="Your Phone Number"
+                    className="w-full bg-transparent text-sm text-white outline-none"
+                  />
+                </div>
+              </label>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-lime-300 py-3 text-sm font-bold text-black transition hover:bg-lime-200 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={17} />
+                      <span>Update Profile</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
+
+            {/* Role-Specific Portal Button (Centered below Phone Number & Update Profile Button) */}
+            {user?.role === "ADMIN" && (
+              <div className="mt-8 flex flex-col items-center justify-center border-t border-white/10 pt-6 text-center">
+                <p className="mb-3 text-xs text-white/50">
+                  You are signed in with Municipal Administrator privileges.
+                </p>
+                <Link
+                  to="/admin/dashboard"
+                  className="inline-flex items-center gap-2.5 rounded-xl bg-lime-300 px-7 py-3 text-sm font-bold text-black shadow-lg shadow-lime-300/20 transition duration-300 hover:bg-lime-200 hover:scale-[1.02]"
+                >
+                  <ShieldAlert size={18} />
+                  <span>Go to Admin Dashboard</span>
+                </Link>
+              </div>
+            )}
+
+            {(user?.role === "AGENT" || user?.role === "AGENCY") && (
+              <div className="mt-8 flex flex-col items-center justify-center border-t border-white/10 pt-6 text-center">
+                <p className="mb-3 text-xs text-white/50">
+                  You are signed in as an Agency Field Member.
+                </p>
+                <Link
+                  to="/agency/dashboard"
+                  className="inline-flex items-center gap-2.5 rounded-xl bg-lime-300 px-7 py-3 text-sm font-bold text-black shadow-lg shadow-lime-300/20 transition duration-300 hover:bg-lime-200 hover:scale-[1.02]"
+                >
+                  <Building2 size={18} />
+                  <span>Go to Agency Dashboard</span>
+                </Link>
+              </div>
+            )}
           </section>
         </section>
       </main>
+
       <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
@@ -180,115 +382,12 @@ function UserDashboardPage() {
               <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
                 A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
               </p>
-
-              <div className="mt-3 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                <span className="h-px w-12 bg-lime-300/40" />
-                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
-                  Smart City Platform
-                </span>
-              </div>
             </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Contact Us
-              </h4>
-
-              <div className="mt-4 flex flex-col gap-4">
-                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Mail size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amersohor@gmail.com
-                    </p>
-                  </div>
-                </a>
-
-                <a href="tel:+919876543210" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Phone size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      +91 98765 43210
-                    </p>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Follow Us
-              </h4>
-
-              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
-                Stay connected with Amar Sohor and follow our latest updates across social platforms.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Facebook"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">f</span>
-                </a>
-
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Instagram"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">◎</span>
-                </a>
-
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-xs font-bold">▶</span>
-                </a>
-
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="X / Twitter"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-sm font-bold">𝕏</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/35">
-              © 2026 Amar Sohor. All rights reserved.
-            </p>
-
-            <p className="text-xs text-white/35">
-              Making cities smarter, cleaner and more connected.
-            </p>
           </div>
         </div>
       </footer>
     </div>
   );
 }
+
 export default UserDashboardPage;

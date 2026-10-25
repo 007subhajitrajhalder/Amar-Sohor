@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { LockKeyhole, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
@@ -25,6 +27,20 @@ const ABOUT_SLIDES = [
 
 function LoginPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // If already logged in, redirect to HomePage immediately
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,6 +48,28 @@ function LoginPage() {
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Calls FastAPI backend /auth/login, receives JWT, saves to localStorage & context
+      await login(email.trim(), password);
+      // Redirect to homepage upon successful login
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError(err.message || "Invalid email or password. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -107,21 +145,73 @@ function LoginPage() {
           <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">Welcome back</span>
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Sign in to your account</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">Access your reports, saved facilities, and civic activity in one place.</p>
-          <form className="mt-5 grid gap-3.5">
+
+          {error && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+              <AlertCircle size={16} className="shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-3.5">
             <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/75">Email address
               <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                <Mail size={17} className="text-lime-300 shrink-0" /><input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+                <Mail size={17} className="text-lime-300 shrink-0" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                  className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
+                />
               </span>
             </label>
             <label htmlFor="password" className="grid gap-1.5 text-xs font-medium text-white/75">Password
               <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                <LockKeyhole size={17} className="text-lime-300 shrink-0" /><input id="password" name="password" type="password" placeholder="Enter your password" autoComplete="current-password" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+                <LockKeyhole size={17} className="text-lime-300 shrink-0" />
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
+                />
               </span>
             </label>
-            <div className="text-right"><Link to="/forgot-password" className="text-xs font-medium text-lime-300 hover:text-lime-200">Forgot password?</Link></div>
-            <button type="submit" className="min-h-[48px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Login</button>
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-xs font-medium text-lime-300 hover:text-lime-200">
+                Forgot password?
+              </Link>
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                "Login"
+              )}
+            </button>
           </form>
-          <p className="mt-4 text-center text-xs text-white/45">New to Amar Sohor? <Link to="/register" className="font-bold text-lime-300 hover:text-lime-200">Create an account</Link></p>
+          <p className="mt-4 text-center text-xs text-white/45">
+            New to Amar Sohor?{" "}
+            <Link to="/register" className="font-bold text-lime-300 hover:text-lime-200">
+              Create an account
+            </Link>
+          </p>
         </div>
       </section>
       </main>
@@ -158,111 +248,7 @@ function LoginPage() {
               <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
                 A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
               </p>
-
-              <div className="mt-3 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                <span className="h-px w-12 bg-lime-300/40" />
-                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
-                  Smart City Platform
-                </span>
-              </div>
             </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Contact Us
-              </h4>
-
-              <div className="mt-4 flex flex-col gap-4">
-                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Mail size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amersohor@gmail.com
-                    </p>
-                  </div>
-                </a>
-
-                <a href="tel:+919876543210" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Phone size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      +91 98765 43210
-                    </p>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Follow Us
-              </h4>
-
-              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
-                Stay connected with Amar Sohor and follow our latest updates across social platforms.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Facebook"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">f</span>
-                </a>
-
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Instagram"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">◎</span>
-                </a>
-
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-xs font-bold">▶</span>
-                </a>
-
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="X / Twitter"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-sm font-bold">𝕏</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/35">
-              © 2026 Amar Sohor. All rights reserved.
-            </p>
-
-            <p className="text-xs text-white/35">
-              Making cities smarter, cleaner and more connected.
-            </p>
           </div>
         </div>
       </footer>

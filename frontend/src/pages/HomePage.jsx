@@ -15,7 +15,10 @@ import {
   Phone,
   Sparkles,
   ArrowRight,
+  LayoutDashboard,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -41,6 +44,13 @@ const ABOUT_SLIDES = [
 
 function HomePage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const getDashboardPath = () => {
+    if (user?.role === "ADMIN") return "/admin/dashboard";
+    if (user?.role === "AGENT" || user?.role === "AGENCY") return "/agency/dashboard";
+    return "/citizen/dashboard";
+  };
   const [showFacilityMenu, setShowFacilityMenu] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState("");
   const [location, setLocation] = useState("");
@@ -222,21 +232,41 @@ function HomePage() {
               
             </nav>
 
-            <div className="hidden items-center gap-3 md:flex">
-              <Link
-                to="/login"
-                className="rounded-xl border border-white/25 px-5 py-2.5 text-sm font-medium transition duration-300 hover:bg-white/10"
-              >
-                Login
-              </Link>
-
-              <Link
-                to="/register"
-                className="rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black transition duration-300 hover:bg-lime-200 hover:shadow-lg hover:shadow-lime-300/20"
-              >
-                Register
-              </Link>
-            </div>
+            {isAuthenticated ? (
+              <div className="hidden items-center gap-3 md:flex">
+                <Link
+                  to={getDashboardPath()}
+                  className="flex items-center gap-2 rounded-xl bg-lime-300 px-4 py-2 text-sm font-bold text-black transition duration-300 hover:bg-lime-200"
+                >
+                  <LayoutDashboard size={16} />
+                  <span>{user?.full_name?.split(" ")[0] || "Citizen"}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex items-center gap-1.5 rounded-xl border border-white/20 px-3 py-2 text-xs font-medium text-white/70 transition duration-300 hover:bg-white/10 hover:text-white"
+                  title="Sign Out"
+                >
+                  <LogOut size={14} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div className="hidden items-center gap-3 md:flex">
+                <Link
+                  to="/login"
+                  className="rounded-xl border border-white/25 px-5 py-2.5 text-sm font-medium transition duration-300 hover:bg-white/10"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black transition duration-300 hover:bg-lime-200 hover:shadow-lg hover:shadow-lime-300/20"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
 
             <button
               type="button"
@@ -274,15 +304,38 @@ function HomePage() {
                 </a>
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link to="/login" onClick={() => setMobileMenu(false)} className="rounded-xl border border-white/20 py-3 text-center text-sm">
-                  Login
-                </Link>
-
-                <Link to="/register" onClick={() => setMobileMenu(false)} className="rounded-xl bg-lime-300 py-3 text-center text-sm font-bold text-black">
-                  Register
-                </Link>
-              </div>
+              {isAuthenticated ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  <Link
+                    to={getDashboardPath()}
+                    onClick={() => setMobileMenu(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-lime-300 py-3 text-center text-sm font-bold text-black"
+                  >
+                    <LayoutDashboard size={16} />
+                    <span>{user?.full_name?.split(" ")[0] || "Citizen"}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenu(false);
+                      logout();
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-white/20 py-2.5 text-center text-sm text-white/75 hover:bg-white/10"
+                  >
+                    <LogOut size={15} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link to="/login" onClick={() => setMobileMenu(false)} className="rounded-xl border border-white/20 py-3 text-center text-sm">
+                    Login
+                  </Link>
+                  <Link to="/register" onClick={() => setMobileMenu(false)} className="rounded-xl bg-lime-300 py-3 text-center text-sm font-bold text-black">
+                    Register
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>

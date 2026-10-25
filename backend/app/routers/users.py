@@ -15,6 +15,7 @@ router = APIRouter(
     tags=["Users"]
 )
 
+
 @router.get("/me")
 def get_my_profile(
     current_user: User = Depends(get_current_user)
@@ -26,6 +27,29 @@ def get_my_profile(
         "phone": current_user.phone,
         "role": current_user.role
     }
+
+
+@router.put("/me", response_model=UserResponse)
+def update_my_profile(
+    user_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = user_service.update_user(
+        db,
+        current_user.user_id,
+        user_data
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return user
+
+
 @router.delete("/{user_id}")
 def delete_user(
     user_id: int,
@@ -42,6 +66,8 @@ def delete_user(
     return {
         "message": "User deleted successfully"
     }
+
+
 @router.get("/admin-test")
 def admin_test(
     current_user: User = Depends(require_admin)
@@ -51,7 +77,9 @@ def admin_test(
         "user_id": current_user.user_id,
         "name": current_user.full_name,
         "role": current_user.role
-    } 
+    }
+
+
 @router.get("/agency-test")
 def agency_test(
     current_user: User = Depends(require_role("AGENCY"))
@@ -60,7 +88,9 @@ def agency_test(
         "message": "Welcome Agency",
         "user_id": current_user.user_id,
         "role": current_user.role
-    }   
+    }
+
+
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: int,
@@ -80,6 +110,7 @@ def update_user(
         )
 
     return user
+
 
 @router.get("/", response_model=list[UserResponse])
 def get_users(db: Session = Depends(get_db)):
