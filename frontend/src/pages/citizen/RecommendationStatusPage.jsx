@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+
 import {
   ArrowLeft,
   Camera,
@@ -15,7 +15,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { SEED_RECOMMENDATIONS } from "./recommendationsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -27,98 +29,12 @@ const facilityIcons = {
   parking: Car,
 };
 
-function getRecommendationById(recommendationId) {
-  try {
-    const stored = JSON.parse(
-      localStorage.getItem("citizen_recommendations") || "[]"
-    );
-    const foundInStored = stored.find(
-      (item) => String(item.id).toLowerCase() === String(recommendationId).toLowerCase()
-    );
-
-    if (foundInStored) {
-      return {
-        ...foundInStored,
-        date: foundInStored.createdAt
-          ? new Date(foundInStored.createdAt).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : "Recently",
-        stage: foundInStored.stage || 1,
-        reviewDepartment:
-          foundInStored.reviewDepartment ||
-          "Kolkata Municipal Corporation - Civic Infrastructure Wing",
-        reviewNotes:
-          foundInStored.reviewNotes ||
-          "Proposal received. Municipal field surveyor has been assigned to inspect site accessibility and pedestrian flow within 7 business days.",
-      };
-    }
-  } catch {
-    // ignore
-  }
-
-  // Check seed recommendations
-  const foundInSeed = SEED_RECOMMENDATIONS.find(
-    (item) => String(item.id).toLowerCase() === String(recommendationId).toLowerCase()
-  );
-
-  let base = foundInSeed || {
-    id: recommendationId,
-    title: "Proposed Civic Facility Spot",
-    facilityType: "dustbin",
-    facilityLabel: "Civic Amenity",
-    location: "Civic Location, Kolkata",
-    landmark: "Nearby Main Road",
-    description:
-      "Public facility proposed by citizen to enhance local sanitation and convenience.",
-    status: "Under Review",
-    date: "Recently",
-    reviewDepartment:
-      "Kolkata Municipal Corporation - Civic Works Division",
-    reviewNotes:
-      "Your proposal has been registered in the municipal portal. A civic inspector will assess the location shortly.",
-    stage: 1,
-  };
-
-  try {
-    const rawOverrides = localStorage.getItem("admin_recommendation_overrides");
-    if (rawOverrides) {
-      const overrides = JSON.parse(rawOverrides);
-      const match = overrides[base.id] || overrides[String(base.id).toUpperCase()];
-      if (match) {
-        return {
-          ...base,
-          stage: match.stage || base.stage,
-          status: match.status === "INSTALLED" ? "Installed" : match.status === "APPROVED" ? "Approved" : match.assignedMember ? "Site Survey Scheduled" : base.status,
-          reviewDepartment: match.assignedAgency?.name || base.reviewDepartment,
-          reviewNotes: match.inspectionNotes || base.reviewNotes
-        };
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  return base;
-}
-
 function RecommendationStatusPage() {
   const { recommendationId } = useParams();
   const navigate = useNavigate();
-  const data = useMemo(
-    () => getRecommendationById(recommendationId),
-    [recommendationId]
-  );
-
-  if (!data) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#070b18] text-white">
-        <CircleDashed className="animate-spin text-lime-300" size={32} />
-      </div>
-    );
-  }
+  const resource = useApi("/recommendations/" + recommendationId.replace(/^REC-0*/, ""));
+  if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/citizen/my-recommendations">My Recommendations</Link></main>;
+  const data = recommendationView(resource.data, true);
 
   const FacilityIcon = facilityIcons[data.facilityType] || Sparkles;
   const currentStage = data.stage || 1;
@@ -135,11 +51,11 @@ function RecommendationStatusPage() {
       title: "Site Feasibility & Survey",
       date:
         currentStage >= 2
-          ? "Inspection Done"
+          ? (currentStage >= 3 ? "Investigation completed" : "Under investigation")
           : "Pending site inspection",
       description:
         currentStage >= 2
-          ? "Field officer verified pedestrian traffic and underground utilities."
+          ? "See the recorded inspection notes for details."
           : "Awaiting field officer inspection.",
     },
     {
@@ -147,11 +63,11 @@ function RecommendationStatusPage() {
       title: "Municipal Approval",
       date:
         currentStage >= 3
-          ? "Approved & Budget Allocated"
+          ? "Approved"
           : "Awaiting civic board sanction",
       description:
         currentStage >= 3
-          ? "Work order authorized by the zonal engineering department."
+          ? "The recommendation has been approved."
           : "Pending administrative and financial sanction.",
     },
     {
@@ -163,8 +79,8 @@ function RecommendationStatusPage() {
           : "Installation to follow",
       description:
         currentStage >= 4
-          ? "Facility is installed, maintained, and live on public city map."
-          : "Civil works and installation scheduled upon tender award.",
+          ? "Facility is installed, live on public city map."
+          : "Installation follows approval by the responsible agency.",
     },
   ];
 

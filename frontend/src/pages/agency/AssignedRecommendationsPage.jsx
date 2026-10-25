@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -19,10 +22,6 @@ import {
   X,
   PlusCircle
 } from "lucide-react";
-import {
-  getAdminRecommendations,
-  AGENCY_MEMBERS
-} from "../admin/adminRecommendationsData";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -144,9 +143,8 @@ function AssignedRecommendationsPage() {
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light"
   );
-  const [recommendations, setRecommendations] = useState(() => {
-    return getAdminRecommendations().filter((item) => Boolean(item.assignedMember));
-  });
+  const resource = useApi("/recommendations");
+  const recommendations = useMemo(() => (resource.data || []).map(r => recommendationView(r)).filter(r => r.assignedMember), [resource.data]);
   const [selectedOfficer, setSelectedOfficer] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,19 +171,7 @@ function AssignedRecommendationsPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  useEffect(() => {
-    const handleStorage = () => {
-      const all = getAdminRecommendations();
-      setRecommendations(all.filter((item) => Boolean(item.assignedMember)));
-    };
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("recommendationsUpdated", handleStorage);
 
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("recommendationsUpdated", handleStorage);
-    };
-  }, []);
 
   // Filter recommendations
   const filtered = useMemo(() => {
@@ -215,7 +201,7 @@ function AssignedRecommendationsPage() {
         const matchesLocation = (item.location || "").toLowerCase().includes(q);
         const matchesCitizen = (item.citizen?.name || "").toLowerCase().includes(q);
         const matchesOfficer = (item.assignedMember?.fullName || "").toLowerCase().includes(q);
-        const matchesId = (item.id || "").toLowerCase().includes(q);
+        const matchesId = String(item.id || "").toLowerCase().includes(q);
 
         if (!matchesTitle && !matchesLocation && !matchesCitizen && !matchesOfficer && !matchesId) {
           return false;
@@ -320,6 +306,7 @@ function AssignedRecommendationsPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
+        <ApiState {...resource} />
         {/* Navigation & Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -586,7 +573,7 @@ function AssignedRecommendationsPage() {
                     </p>
                     <p className={`mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold truncate w-full text-center ${isDarkMode ? "text-white" : "text-slate-900"}`}>
                       <UserRound size={12} className={`shrink-0 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
-                      <span className="truncate">{rec.citizen?.name || "Verified Citizen"}</span>
+                      <span className="truncate">{rec.citizen?.name || "Not recorded"}</span>
                     </p>
                   </div>
                 </div>

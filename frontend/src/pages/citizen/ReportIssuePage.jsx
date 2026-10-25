@@ -16,7 +16,9 @@ import {
   X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { REGISTERED_FACILITIES } from "./reportsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { facilityView } from "../../api/client";
 import { submitReportApi, API_BASE_URL } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -26,16 +28,9 @@ function ReportIssuePage() {
   const { facilityId } = useParams();
   const navigate = useNavigate();
 
-  const facility =
-    REGISTERED_FACILITIES[facilityId] || {
-      id: facilityId || 1,
-      name: `Facility #${facilityId || 1}`,
-      address: "Civic Public Location, Kolkata",
-      category: "dustbin",
-      categoryLabel: "Civic Facility",
-      agency: "Kolkata Municipal Corporation",
-    };
-
+  const resource = useApi(facilityId ? "/facilities/" + facilityId : null);
+  const facility = resource.data ? facilityView(resource.data) : null;
+  const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -92,6 +87,8 @@ function ReportIssuePage() {
       return;
     }
 
+    if (isSubmitting) return;
+    setError("");
     setIsSubmitting(true);
     let newReport;
 
@@ -110,7 +107,7 @@ function ReportIssuePage() {
         : (backendData.photo_url || photoPreview);
 
       newReport = {
-        id: "REP-" + String(backendData.report_id).padStart(4, "0"),
+        id: backendData.report_id,
         backendId: backendData.report_id,
         facilityId: backendData.facility_id,
         facility: backendData.facility_name || facility.name,
@@ -132,37 +129,10 @@ function ReportIssuePage() {
           "Your grievance has been lodged and directed to the agency member in charge of this facility for on-site inspection and repairs.",
       };
     } catch (apiErr) {
-      console.warn("Backend API unavailable, falling back to local registry:", apiErr);
-      newReport = {
-        id: "REP-" + Date.now().toString().slice(-5),
-        facilityId: facility.id,
-        facility: facility.name,
-        facilityAddress: facility.address,
-        facilityCategory: facility.category,
-        title: title.trim(),
-        description: description.trim(),
-        photoPreview: photoPreview || null,
-        photoName: photoName || null,
-        status: "Pending",
-        stage: 1,
-        createdAt: new Date().toISOString(),
-        assignedAgency: facility.agency,
-        assignedOfficer: "Facility In-Charge",
-        agencyNotes:
-          "Your grievance has been lodged and directed to the agency member in charge of this facility for on-site inspection and repairs.",
-      };
+      setError(apiErr.message);
+      return;
     } finally {
       setIsSubmitting(false);
-    }
-
-    try {
-      const existing = JSON.parse(
-        localStorage.getItem("citizen_reports") || "[]"
-      );
-      existing.unshift(newReport);
-      localStorage.setItem("citizen_reports", JSON.stringify(existing));
-    } catch {
-      // ignore storage error
     }
 
     setSubmittedData(newReport);
@@ -170,6 +140,10 @@ function ReportIssuePage() {
   };
 
 
+  if (!facility) return <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState {...resource} />
+    <ApiState {...resource} /><Link to="/map">Select a facility on the map to report an issue.</Link>
+  </main>;
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
       <div
@@ -219,6 +193,7 @@ function ReportIssuePage() {
 
       {/* Main Form Content */}
       <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
+        <ApiState error={error} />
         <section className="mx-auto max-w-3xl">
           {/* Top Title */}
           <div>
@@ -254,7 +229,7 @@ function ReportIssuePage() {
                 <strong className="text-white font-semibold">
                   {submittedData.facility}
                 </strong>{" "}
-                has been logged. The municipal agency has been dispatched to investigate and initiate repairs.
+                has been logged. The report is awaiting investigation by the assigned agency.
               </p>
 
               {/* Summary card */}

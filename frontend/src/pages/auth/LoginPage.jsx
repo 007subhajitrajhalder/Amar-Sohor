@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole, Mail, AlertCircle, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -34,6 +34,7 @@ function LoginPage() {
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // If already logged in, redirect to HomePage immediately
   useEffect(() => {
@@ -60,10 +61,13 @@ function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      // Calls FastAPI backend /auth/login, receives JWT, saves to localStorage & context
       await login(email.trim(), password);
-      // Redirect to homepage upon successful login
-      navigate("/", { replace: true });
+      const from = location.state?.from;
+      if (from && from !== "/login" && from !== "/register") {
+        navigate(from, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err) {
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {

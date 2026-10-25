@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, recommendationView } from "../../api/client";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -20,10 +23,6 @@ import {
   ArrowRight,
   AlertCircle
 } from "lucide-react";
-import {
-  getAdminRecommendations,
-  updateRecommendationByAgency
-} from "../admin/adminRecommendationsData";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -97,31 +96,14 @@ function RecommendationInvestigationPage() {
     localStorage.getItem("agencyTheme") !== "light"
   );
 
-  const [recommendation, setRecommendation] = useState(() => {
-    const all = getAdminRecommendations();
-    return (
-      all.find(
-        (r) => String(r.id).toLowerCase() === String(recommendationId).toLowerCase()
-      ) || null
-    );
-  });
-  const [investigationNotes, setInvestigationNotes] = useState(() => {
-    const all = getAdminRecommendations();
-    const found = all.find(
-      (r) => String(r.id).toLowerCase() === String(recommendationId).toLowerCase()
-    );
-    return found?.inspectionNotes || "";
-  });
+  const resource = useApi("/recommendations/" + recommendationId);
+  const recommendation = resource.data ? recommendationView(resource.data) : null;
+  const [investigationNotes, setInvestigationNotes] = useState("");
   const [actionNotification, setActionNotification] = useState("");
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState(() => {
-    const all = getAdminRecommendations();
-    const found = all.find(
-      (r) => String(r.id).toLowerCase() === String(recommendationId).toLowerCase()
-    );
-    return found?.rejectionReason || "";
-  });
-
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   // Sync theme
   useEffect(() => {
     const syncTheme = () => {
@@ -144,32 +126,10 @@ function RecommendationInvestigationPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  useEffect(() => {
-    const handleStorage = () => {
-      const all = getAdminRecommendations();
-      const found = all.find(
-        (r) => String(r.id).toLowerCase() === String(recommendationId).toLowerCase()
-      );
-      if (found) {
-        setRecommendation(found);
-        if (found.inspectionNotes !== undefined) {
-          setInvestigationNotes(found.inspectionNotes);
-        }
-        if (found.rejectionReason) {
-          setRejectionReason(found.rejectionReason);
-        }
-      }
-    };
 
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("recommendationsUpdated", handleStorage);
 
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("recommendationsUpdated", handleStorage);
-    };
-  }, [recommendationId]);
-
+  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState error={error} /><ApiState {...resource} /></main>;
   if (!recommendation) {
     return (
       <div
@@ -202,70 +162,23 @@ function RecommendationInvestigationPage() {
   const isRejected = currentStatus === "REJECTED";
   const isInstalled = currentStatus === "INSTALLED";
 
-  // Action 1: Put under investigation
-  const handleStartInvestigation = () => {
-    const updatedNotes =
-      investigationNotes.trim() ||
-      `On-site investigation initiated by ${recommendation.assignedMember?.fullName || "Agency Staff"}.`;
-
-    const updated = updateRecommendationByAgency(recommendation.id, {
-      status: "UNDER_INVESTIGATION",
-      stage: 2,
-      notes: updatedNotes,
-      actorName: recommendation.assignedMember?.fullName
-    });
-
-    setRecommendation((prev) => ({ ...prev, ...updated, status: "UNDER_INVESTIGATION", stage: 2 }));
-    setActionNotification("Recommendation status successfully updated to Under Investigation.");
-    setTimeout(() => setActionNotification(""), 4000);
+  const update = async (status, notes) => {
+    if (saving) return null;
+    setSaving(true); setError("");
+    try {
+      const result = await apiRequest("/recommendations/" + recommendation.id, { method: "PATCH", body: { status, notes } });
+      resource.refresh(); setActionNotification("Recommendation updated successfully."); return recommendationView(result);
+    } catch (error) { setError(error.message); return null; }
+    finally { setSaving(false); }
   };
-
-  // Action 2: Approve & Carry Forward to Add Facility Page
-  const handleApproveAndAddFacility = () => {
-    const finalNotes =
-      investigationNotes.trim() ||
-      "On-site feasibility verified and approved for civic facility commissioning.";
-
-    const updated = updateRecommendationByAgency(recommendation.id, {
-      status: "APPROVED",
-      stage: 3,
-      notes: finalNotes,
-      actorName: recommendation.assignedMember?.fullName
-    });
-
-    const fullRecommendation = {
-      ...recommendation,
-      ...updated,
-      status: "APPROVED",
-      stage: 3,
-      inspectionNotes: finalNotes
-    };
-
-    // Carry forward details to Add Facility page
-    navigate("/agency/facilities/add", {
-      state: { recommendation: fullRecommendation }
-    });
+  const handleStartInvestigation = () => update("UNDER_INVESTIGATION", investigationNotes.trim() || "Investigation started.");
+  const handleApproveAndAddFacility = async () => {
+    const result = isApproved ? recommendation : await update("APPROVED", investigationNotes.trim() || "Site feasibility approved.");
+    if (result) navigate("/agency/facilities/add", { state: { recommendation: result } });
   };
-
-  // Action 3: Reject Recommendation
-  const handleConfirmReject = () => {
-    if (!rejectionReason.trim()) {
-      alert("Please provide a reason for rejecting this facility proposal.");
-      return;
-    }
-
-    const updated = updateRecommendationByAgency(recommendation.id, {
-      status: "REJECTED",
-      stage: 2,
-      notes: investigationNotes,
-      rejectionReason: rejectionReason.trim(),
-      actorName: recommendation.assignedMember?.fullName
-    });
-
-    setRecommendation((prev) => ({ ...prev, ...updated, status: "REJECTED", rejectionReason: rejectionReason.trim() }));
-    setIsRejectModalOpen(false);
-    setActionNotification("Recommendation has been marked as Rejected with recorded rationale.");
-    setTimeout(() => setActionNotification(""), 4500);
+  const handleConfirmReject = async () => {
+    if (!rejectionReason.trim()) { setError("Please provide a rejection reason."); return; }
+    if (await update("REJECTED", rejectionReason.trim())) setIsRejectModalOpen(false);
   };
 
   return (
@@ -533,13 +446,13 @@ function RecommendationInvestigationPage() {
                     Citizen Proposer
                   </p>
                   <span className={`text-[11px] font-medium ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
-                    Verified Citizen
+                    Citizen
                   </span>
                 </div>
 
                 <div className="mt-2 flex items-center gap-2 text-sm font-bold">
                   <UserRound size={15} className={isDark ? "text-cyan-300" : "text-cyan-600"} />
-                  <span>{recommendation.citizen?.name || "Verified Citizen"}</span>
+                  <span>{recommendation.citizen?.name || "Not recorded"}</span>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -635,7 +548,7 @@ function RecommendationInvestigationPage() {
 
                   <button
                     type="button"
-                    onClick={handleStartInvestigation}
+                    disabled={saving} onClick={handleStartInvestigation}
                     className="mt-4 w-full rounded-xl bg-cyan-600 hover:bg-cyan-500 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5"
                   >
                     Start Investigation Now
@@ -643,6 +556,10 @@ function RecommendationInvestigationPage() {
                 </div>
               )}
 
+              <label className="my-4 grid gap-2">Investigation notes
+                <textarea maxLength={1000} value={investigationNotes} onChange={e => setInvestigationNotes(e.target.value)}
+                  placeholder={recommendation.inspectionNotes || "Enter inspection findings"} className="rounded-xl border bg-transparent p-3" />
+              </label>
               {/* When Status is Under Investigation: Active investigation form */}
               {isUnderInvestigation && (
                 <div
@@ -713,7 +630,7 @@ function RecommendationInvestigationPage() {
 
                   <button
                     type="button"
-                    onClick={handleStartInvestigation}
+                    disabled={saving} onClick={handleStartInvestigation}
                     className="mt-3 text-xs underline font-semibold opacity-70 hover:opacity-100"
                   >
                     Reopen Investigation
@@ -745,7 +662,7 @@ function RecommendationInvestigationPage() {
                 <div className="grid gap-3 sm:grid-cols-2 pt-2">
                   <button
                     type="button"
-                    onClick={handleApproveAndAddFacility}
+                    disabled={saving} onClick={handleApproveAndAddFacility}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5"
                   >
                     <CheckCircle2 size={16} />
@@ -826,7 +743,7 @@ function RecommendationInvestigationPage() {
               </button>
               <button
                 type="button"
-                onClick={handleConfirmReject}
+                disabled={saving} onClick={handleConfirmReject}
                 className="rounded-xl bg-rose-600 hover:bg-rose-500 px-4 py-2 font-bold text-white shadow"
               >
                 Confirm Rejection

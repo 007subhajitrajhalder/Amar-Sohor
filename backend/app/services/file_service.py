@@ -8,7 +8,7 @@ from fastapi import UploadFile, HTTPException
 from starlette.concurrency import run_in_threadpool
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPLOAD_ROOT = os.path.join(BASE_DIR, "uploads")
+UPLOAD_ROOT = str(Path(__file__).resolve().parents[2] / "uploads")
 FACILITY_UPLOAD_DIR = Path(__file__).resolve().parents[2] / "uploads" / "facilities"
 MAX_FACILITY_PHOTO_SIZE = 10 * 1024 * 1024
 
@@ -68,7 +68,14 @@ def save_upload_file(file: UploadFile, subfolder: str) -> str:
     dest_folder = os.path.join(UPLOAD_ROOT, subfolder)
     os.makedirs(dest_folder, exist_ok=True)
 
-    filename = file.filename or "upload.jpg"
+    content = file.file.read(MAX_FACILITY_PHOTO_SIZE + 1)
+    if len(content) > MAX_FACILITY_PHOTO_SIZE:
+        raise HTTPException(413, "Photo must be at most 10 MB")
+    try:
+        extension = _image_extension(content, file.content_type)
+    except InvalidImage as exc:
+        raise HTTPException(422, str(exc)) from exc
+    filename = "photo." + extension
     ext = os.path.splitext(filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
         ext = ".jpg"
@@ -77,7 +84,6 @@ def save_upload_file(file: UploadFile, subfolder: str) -> str:
     dest_path = os.path.join(dest_folder, unique_filename)
 
     with open(dest_path, "wb") as buffer:
-        content = file.file.read()
         buffer.write(content)
 
     return f"/uploads/{subfolder}/{unique_filename}"
@@ -111,7 +117,7 @@ def save_base64_or_url_photo(photo_str: str, subfolder: str) -> str:
                 buffer.write(file_bytes)
 
             return f"/uploads/{subfolder}/{unique_filename}"
-        except Exception:
-            return photo_str
+        except Exception as exc:
+            raise HTTPException(422, "Invalid photo data") from exc
 
     return photo_str

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole, Mail, Phone, UserRound, AlertCircle, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { apiRequest } from "../../api/client";
+import ApiState from "../../components/ApiState";
 import { useAuth } from "../../context/AuthContext";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -28,12 +30,16 @@ const ABOUT_SLIDES = [
 const fields = [
   ["name", "Full name", "text", "Your full name", "name", UserRound],
   ["email", "Email address", "email", "you@example.com", "email", Mail],
-  ["phone", "Phone number", "tel", "Your phone number", "tel", Phone],
+  ["phone", "Phone", "tel", "Your phone number", "tel", Phone],
   ["password", "Password", "password", "Create a password (min 6 chars)", "new-password", LockKeyhole],
   ["confirmPassword", "Confirm password", "password", "Repeat your password", "new-password", LockKeyhole],
 ];
 
 function RegisterPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
@@ -44,9 +50,6 @@ function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { register, login, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
 
   // If already logged in, redirect to HomePage immediately
   useEffect(() => {
@@ -64,46 +67,53 @@ function RegisterPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const key = name === "confirm-password" ? "confirmPassword" : name;
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
 
-    if (
-      !formData.name.trim() ||
-      !formData.email.trim() ||
-      !formData.phone.trim() ||
-      !formData.password
-    ) {
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
+
+    if (!name || !email || !phone || !password) {
       setError("Please fill in all required fields.");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // 1. Call backend to register the new user account
-      await register({
-        fullName: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        password: formData.password,
+      await apiRequest("/auth/register", {
+        method: "POST",
+        auth: false,
+        body: {
+          full_name: name,
+          email: email.toLowerCase(),
+          phone: phone,
+          password: password,
+        },
       });
 
-      // 2. Automatically log in the user, obtain JWT token, and redirect to HomePage
-      await login(formData.email.trim(), formData.password);
-      navigate("/", { replace: true });
+      navigate("/login", {
+        state: { message: "Account created. Sign in to continue." },
+        replace: true,
+      });
     } catch (err) {
       setError(err.message || "Failed to create account. Please try again.");
     } finally {
@@ -186,7 +196,10 @@ function RegisterPage() {
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Join Amar Sohor</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">One account for facilities, reports, and civic updates.</p>
 
-          {error && (
+          <ApiState error={error} />
+          {location.state?.message && <p role="status" className="mt-3 text-xs text-lime-300">{location.state.message}</p>}
+
+          {error && !error.includes("ApiState") && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
               <AlertCircle size={16} className="shrink-0 text-rose-400" />
               <span>{error}</span>
@@ -194,24 +207,29 @@ function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-5 grid gap-3 sm:grid-cols-2">
-            {fields.map(([id, label, type, placeholder, autoComplete, Icon], index) => (
-              <label key={id} htmlFor={id} className={`grid gap-1.5 text-xs font-medium text-white/75 ${index < 2 ? "sm:col-span-1" : "sm:col-span-2"}`}>{label}
-                <span className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-                  <Icon size={16} className="shrink-0 text-lime-300" />
-                  <input
-                    id={id}
-                    name={id}
-                    type={type}
-                    value={formData[id]}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    autoComplete={autoComplete}
-                    required
-                    className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
-                  />
-                </span>
-              </label>
-            ))}
+            {fields.map(([id, label, type, placeholder, autoComplete, Icon], index) => {
+              const fieldName = id === "confirmPassword" ? "confirm-password" : id;
+              const value = id === "confirmPassword" ? formData.confirmPassword : formData[id];
+              return (
+                <label key={id} htmlFor={id} className={`grid gap-1.5 text-xs font-medium text-white/75 ${index < 2 ? "sm:col-span-1" : "sm:col-span-2"}`}>
+                  {label}
+                  <span className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
+                    <Icon size={16} className="shrink-0 text-lime-300" />
+                    <input
+                      required
+                      id={id}
+                      name={fieldName}
+                      type={type}
+                      value={value}
+                      onChange={handleChange}
+                      placeholder={placeholder}
+                      autoComplete={autoComplete}
+                      className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
+                    />
+                  </span>
+                </label>
+              );
+            })}
             <button
               type="submit"
               disabled={isSubmitting}

@@ -1,3 +1,5 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -19,6 +21,10 @@ const auraLayers = [
 ];
 
 function AgencyDashboardPage() {
+  const resource = useApi("/agencies/dashboard");
+  const dashboard = resource.data;
+  const percent = index => dashboard?.status_distribution[index]?.percentage ?? 0;
+
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light"
   );
@@ -47,25 +53,25 @@ function AgencyDashboardPage() {
   const statistics = [
     {
       title: "Pending",
-      value: "18",
+      value: dashboard?.statistics.pending ?? "?",
       color: "text-amber-200",
       background: "bg-amber-300/15"
     },
     {
       title: "Under Investigation",
-      value: "9",
+      value: dashboard?.statistics.under_investigation ?? "?",
       color: "text-cyan-200",
       background: "bg-cyan-300/15"
     },
     {
       title: "Resolved",
-      value: "126",
+      value: dashboard?.statistics.resolved ?? "?",
       color: "text-emerald-200",
       background: "bg-emerald-300/15"
     },
     {
       title: "Facilities",
-      value: "64",
+      value: dashboard?.statistics.facilities ?? "?",
       color: "text-purple-200",
       background: "bg-purple-300/15"
     }
@@ -185,6 +191,8 @@ function AgencyDashboardPage() {
       {/* Main Content Area */}
       <main className="relative z-10 px-5 py-8 md:px-10 md:py-12">
         <section className="mx-auto max-w-6xl">
+          <ApiState {...resource} />
+          {dashboard && <p className="text-sm">{dashboard.agency_name}</p>}
           {/* Dashboard heading */}
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -366,14 +374,14 @@ function AgencyDashboardPage() {
             >
               <div className="flex flex-col gap-7 md:flex-row md:items-center md:justify-between">
                 {[
-                  { title: "Pending", value: 18, icon: "⏳", color: "amber" },
+                  { title: "Pending", value: dashboard?.statistics.pending ?? "?", icon: "⏳", color: "amber" },
                   {
                     title: "Under Investigation",
-                    value: 9,
+                    value: dashboard?.statistics.under_investigation ?? "?",
                     icon: "🔎",
                     color: "cyan"
                   },
-                  { title: "Resolved", value: 126, icon: "✓", color: "emerald" }
+                  { title: "Resolved", value: dashboard?.statistics.resolved ?? "?", icon: "✓", color: "emerald" }
                 ].map((status, index, items) => (
                   <div key={status.title} className="flex flex-1 items-center">
                     <div
@@ -431,25 +439,25 @@ function AgencyDashboardPage() {
                   }`}
                 >
                   <span>Workflow distribution</span>
-                  <span>153 total reports</span>
+                  <span>{dashboard?.total_reports ?? "?"} total reports</span>
                 </div>
                 <div
                   className={`flex h-3 overflow-hidden rounded-full ${
                     isDarkMode ? "bg-white/10" : "bg-slate-200"
                   }`}
                 >
-                  <div className="w-[12%] bg-amber-400 transition-all duration-500" />
-                  <div className="w-[6%] bg-cyan-400 transition-all duration-500" />
-                  <div className="w-[82%] bg-emerald-400 transition-all duration-500" />
+                  <div style={{ width: percent(0) + "%" }} className="bg-amber-400 transition-all duration-500" />
+                  <div style={{ width: percent(1) + "%" }} className="bg-cyan-400 transition-all duration-500" />
+                  <div style={{ width: percent(2) + "%" }} className="bg-emerald-400 transition-all duration-500" />
                 </div>
                 <div
                   className={`mt-3 flex flex-wrap gap-5 text-xs font-medium ${
                     isDarkMode ? "text-white/60" : "text-slate-600"
                   }`}
                 >
-                  <span>● Pending — 12%</span>
-                  <span>● Under Investigation — 6%</span>
-                  <span>● Resolved — 82%</span>
+                  <span>● Pending — {percent(0)}%</span>
+                  <span>● Under Investigation — {percent(1)}%</span>
+                  <span>● Resolved — {percent(2)}%</span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,9 @@
-import { Activity, ArrowLeft, Search, ShieldCheck, UserCheck, UserMinus, Users, X } from "lucide-react";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
+import { Activity, ArrowLeft, Search, UserCheck, UserMinus, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
 
@@ -11,40 +14,11 @@ function UserManagementPage() {
   const [removedUser, setRemovedUser] = useState("");
   const [pendingRemoval, setPendingRemoval] = useState(null);
 
-  const [users, setUsers] = useState(() => {
-    const savedUsers = localStorage.getItem("amar-sohor-admin-users");
-    if (savedUsers) {
-      try {
-        return JSON.parse(savedUsers);
-      } catch {
-        localStorage.removeItem("amar-sohor-admin-users");
-      }
-    }
-
-    return [
-    {
-      id: 1,
-      name: "Ananya Sen",
-      email: "ananya@example.com",
-      role: "Citizen",
-      lastActive: "Active now",
-      verified: true
-    },
-    {
-      id: 2,
-      name: "Rahul Das",
-      email: "rahul@example.com",
-      role: "Citizen",
-      lastActive: "12 min ago",
-      verified: true
-    }
-    ];
-  });
-
-  useEffect(() => {
-    localStorage.setItem("amar-sohor-admin-users", JSON.stringify(users));
-  }, [users]);
-
+  const resource = useApi("/admin/users");
+  const users = (resource.data || []).map(u => ({ id: u.user_id, name: u.full_name, email: u.email,
+    role: u.role === "USER" ? "Citizen" : u.role, lastActive: "Not recorded", verified: null }));
+  const [error, setError] = useState("");
+  const [removing, setRemoving] = useState(false);
   const filteredUsers = users.filter((user) => {
     const matchesSearch = `${user.name} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === "all" || (filter === "verified" && user.verified);
@@ -55,11 +29,14 @@ function UserManagementPage() {
     setPendingRemoval(user);
   };
 
-  const confirmRemoveUser = () => {
-    if (!pendingRemoval) return;
-    setUsers((currentUsers) => currentUsers.filter((currentUser) => currentUser.id !== pendingRemoval.id));
-    setRemovedUser(pendingRemoval.name);
-    setPendingRemoval(null);
+  const confirmRemoveUser = async () => {
+    if (!pendingRemoval || removing) return;
+    setRemoving(true); setError("");
+    try {
+      await apiRequest("/users/" + pendingRemoval.id, { method: "DELETE" });
+      setRemovedUser(pendingRemoval.name); setPendingRemoval(null); resource.refresh();
+    } catch (error) { setError(error.message); }
+    finally { setRemoving(false); }
   };
 
   return (
@@ -97,6 +74,7 @@ function UserManagementPage() {
       />
       <div className="z-[1]">
         <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} /><ApiState error={error} />
         <section className="admin-user-management-content mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <Link
@@ -136,23 +114,23 @@ function UserManagementPage() {
                 <Users size={18} className="text-cyan-200" aria-hidden="true" />
               </div>
               <p className="mt-3 text-3xl font-bold">{users.length}</p>
-              <p className="mt-1 text-xs text-emerald-300">+8.4% this month</p>
+              <p className="mt-1 text-xs text-emerald-300">Registered accounts</p>
             </div>
             <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-white/60">Verified citizens</p>
+                <p className="text-sm text-white/60">Verification not recorded</p>
                 <UserCheck size={18} className="text-emerald-300" aria-hidden="true" />
               </div>
-              <p className="mt-3 text-3xl font-bold">{users.filter((user) => user.verified).length}</p>
-              <p className="mt-1 text-xs text-white/50">Identity checks complete</p>
+              <p className="mt-3 text-3xl font-bold">Not recorded</p>
+              <p className="mt-1 text-xs text-white/50">Verification data is unavailable</p>
             </div>
             <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-white/60">Currently active</p>
                 <Activity size={18} className="text-amber-200" aria-hidden="true" />
               </div>
-              <p className="mt-3 text-3xl font-bold">1</p>
-              <p className="mt-1 text-xs text-white/50">Across the last 15 minutes</p>
+              <p className="mt-3 text-3xl font-bold">Not recorded</p>
+              <p className="mt-1 text-xs text-white/50">Activity tracking is unavailable</p>
             </div>
           </div>
 
@@ -179,7 +157,7 @@ function UserManagementPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setFilter("verified")}
+                disabled title="Verification data is unavailable" onClick={() => setFilter("verified")}
                 className={`rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${filter === "verified" ? "border-cyan-200/60 bg-cyan-300/15 text-cyan-100" : "border-white/15 bg-white/5 text-white/60 hover:bg-white/10"}`}
                 aria-pressed={filter === "verified"}
               >
@@ -204,14 +182,14 @@ function UserManagementPage() {
                   <UserMinus size={24} aria-hidden="true" />
                 </div>
                 <h2 id="remove-user-title" className="mt-5 text-2xl font-bold">Remove {pendingRemoval.name}?</h2>
-                <p id="remove-user-description" className="mt-3 text-sm leading-7 text-white/60">This will remove the account from the local admin list. This action cannot be undone here.</p>
+                <p id="remove-user-description" className="mt-3 text-sm leading-7 text-white/60">This permanently deletes the account. Accounts with reports, recommendations, or reviews must retain their history.</p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
                   <button type="button" onClick={() => setPendingRemoval(null)} className="rounded-xl border border-white/20 px-5 py-3 font-bold text-white/70 transition hover:bg-white/10 hover:text-white">
                     Cancel
                   </button>
                   <button
                     type="button"
-                    onClick={confirmRemoveUser}
+                    disabled={removing} onClick={confirmRemoveUser}
                     className="admin-danger-action admin-confirm-remove inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white"
                   >
                     <UserMinus size={16} aria-hidden="true" />
@@ -237,7 +215,6 @@ function UserManagementPage() {
                       <h2 className="text-xl font-bold">
                         {user.name}
                       </h2>
-                      <ShieldCheck size={16} className="text-emerald-300/80" aria-label="Verified user" />
                     </div>
 
                     <p className="mt-1 text-sm text-white/60">

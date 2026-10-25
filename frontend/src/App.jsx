@@ -1,15 +1,13 @@
+import AuthGate from "./components/AuthGate";
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
-
-// Protected Route Guard with Role-Based Access Control
-import ProtectedRoute from "./components/ProtectedRoute";
 
 // Authentication pages (Public)
 import RegisterPage from "./pages/auth/RegisterPage";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 
-// Citizen pages (Protected: Accessible to all authenticated users)
+// Citizen pages (Protected: Accessible to authenticated users)
 import UserDashboardPage from "./pages/citizen/UserDashboardPage";
 import MapViewPage from "./pages/citizen/MapViewPage";
 import FacilityDetailsPage from "./pages/citizen/FacilityDetailsPage";
@@ -20,7 +18,7 @@ import UserRecommendationPage from "./pages/citizen/UserRecommendationPage";
 import MyRecommendationsPage from "./pages/citizen/MyRecommendationsPage";
 import RecommendationStatusPage from "./pages/citizen/RecommendationStatusPage";
 
-// Agency pages (Protected: Accessible only to Agency members and Admin)
+// Agency pages (Protected: Accessible to Agency members and Admins)
 import AgencyDashboardPage from "./pages/agency/AgencyDashboardPage";
 import AssignedReportsPage from "./pages/agency/AssignedReportsPage";
 import ReportInvestigationPage from "./pages/agency/ReportInvestigationPage";
@@ -32,7 +30,7 @@ import EditFacilityPage from "./pages/agency/EditFacilityPage";
 import AssignedRecommendationsPage from "./pages/agency/AssignedRecommendationsPage";
 import RecommendationInvestigationPage from "./pages/agency/RecommendationInvestigationPage";
 
-// Admin pages (Protected: Accessible only to Municipal Admin)
+// Admin pages (Protected: Accessible only to Municipal Admins)
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import AgencyManagementPage from "./pages/admin/AgencyManagementPage";
@@ -44,7 +42,6 @@ import AllRecommendationsPage from "./pages/admin/AllRecommendationsPage";
 import AllocateRecommendationPage from "./pages/admin/AllocateRecommendationPage";
 import AdminRecommendationProgressPage from "./pages/admin/AdminRecommendationProgressPage";
 
-
 function App() {
   return (
     <Routes>
@@ -54,258 +51,134 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-      {/* Citizen Routes (Accessible to authenticated users) */}
+      {/* Citizen / User Protected Routes */}
       <Route
         path="/citizen/dashboard"
-        element={
-          <ProtectedRoute>
-            <UserDashboardPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><UserDashboardPage /></AuthGate>}
       />
       <Route
         path="/map"
-        element={
-          <ProtectedRoute>
-            <MapViewPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><MapViewPage /></AuthGate>}
       />
       <Route
         path="/facilities/:facilityId"
-        element={
-          <ProtectedRoute>
-            <FacilityDetailsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><FacilityDetailsPage /></AuthGate>}
       />
       <Route
         path="/citizen/report-issue"
-        element={
-          <ProtectedRoute>
-            <ReportIssuePage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><ReportIssuePage /></AuthGate>}
       />
       <Route
         path="/citizen/report-issue/:facilityId"
-        element={
-          <ProtectedRoute>
-            <ReportIssuePage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><ReportIssuePage /></AuthGate>}
       />
       <Route
         path="/citizen/my-reports"
-        element={
-          <ProtectedRoute>
-            <MyReportsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><MyReportsPage /></AuthGate>}
       />
       <Route
         path="/citizen/reports/:reportId"
-        element={
-          <ProtectedRoute>
-            <ReportStatusPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><ReportStatusPage /></AuthGate>}
       />
       <Route
         path="/citizen/recommendation"
-        element={
-          <ProtectedRoute>
-            <UserRecommendationPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><UserRecommendationPage /></AuthGate>}
       />
       <Route
         path="/citizen/user-recommendation"
-        element={
-          <ProtectedRoute>
-            <UserRecommendationPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><UserRecommendationPage /></AuthGate>}
       />
       <Route
         path="/citizen/my-recommendations"
-        element={
-          <ProtectedRoute>
-            <MyRecommendationsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><MyRecommendationsPage /></AuthGate>}
       />
       <Route
         path="/citizen/recommendations/:recommendationId"
-        element={
-          <ProtectedRoute>
-            <RecommendationStatusPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="USER"><RecommendationStatusPage /></AuthGate>}
       />
 
-      {/* Agency Routes (Restricted: AGENT, AGENCY, ADMIN) */}
+      {/* Agency Protected Routes */}
       <Route
         path="/agency/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <AgencyDashboardPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><AgencyDashboardPage /></AuthGate>}
       />
       <Route
         path="/agency/reports"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <AssignedReportsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><AssignedReportsPage /></AuthGate>}
       />
       <Route
         path="/agency/reports/:reportId/investigate"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <ReportInvestigationPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><ReportInvestigationPage /></AuthGate>}
       />
       <Route
         path="/agency/resolved"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <PreviouslyResolvedPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><PreviouslyResolvedPage /></AuthGate>}
       />
       <Route
         path="/agency/facilities/:facilityId/edit"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <EditFacilityPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><EditFacilityPage /></AuthGate>}
       />
       <Route
         path="/agency/facilities/add"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <AddFacilityPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><AddFacilityPage /></AuthGate>}
       />
       <Route
         path="/agency/facilities"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <FacilityManagementPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><FacilityManagementPage /></AuthGate>}
       />
       <Route
         path="/agency/reports/:reportId/resolution"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <UploadResolutionPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><UploadResolutionPage /></AuthGate>}
       />
       <Route
         path="/agency/recommendations"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <AssignedRecommendationsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><AssignedRecommendationsPage /></AuthGate>}
       />
       <Route
         path="/agency/recommendations/:recommendationId/investigate"
-        element={
-          <ProtectedRoute allowedRoles={["AGENT", "AGENCY", "ADMIN"]}>
-            <RecommendationInvestigationPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="AGENT"><RecommendationInvestigationPage /></AuthGate>}
       />
 
-      {/* Admin Routes (Restricted: ADMIN only) */}
+      {/* Admin Protected Routes */}
       <Route
         path="/admin/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AdminDashboardPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AdminDashboardPage /></AuthGate>}
       />
       <Route
         path="/admin/users"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <UserManagementPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><UserManagementPage /></AuthGate>}
       />
       <Route
         path="/admin/agencies"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AgencyManagementPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AgencyManagementPage /></AuthGate>}
       />
       <Route
         path="/admin/agency-members/add"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AddAgencyMemberPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AddAgencyMemberPage /></AuthGate>}
       />
       <Route
         path="/admin/complaints"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AllComplaintsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AllComplaintsPage /></AuthGate>}
       />
       <Route
         path="/admin/complaints/:reportId"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AdminComplaintDetailsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AdminComplaintDetailsPage /></AuthGate>}
       />
       <Route
         path="/admin/agencies/:agencyId/members"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AgencyMembersPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AgencyMembersPage /></AuthGate>}
       />
       <Route
         path="/admin/recommendations"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AllRecommendationsPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AllRecommendationsPage /></AuthGate>}
       />
       <Route
         path="/admin/recommendations/:recommendationId/allocate"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AllocateRecommendationPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AllocateRecommendationPage /></AuthGate>}
       />
       <Route
         path="/admin/recommendations/:recommendationId/progress"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AdminRecommendationProgressPage />
-          </ProtectedRoute>
-        }
+        element={<AuthGate role="ADMIN"><AdminRecommendationProgressPage /></AuthGate>}
       />
     </Routes>
   );

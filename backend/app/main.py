@@ -1,5 +1,9 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from app.database.connection import get_db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -55,10 +59,12 @@ def home():
 
 
 @app.get("/health")
-def health_check():
-    return {
-        "status": "OK"
-    }
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Database unavailable") from exc
+    return {"status": "OK", "database": "connected"}
 
 
 # Include Routers

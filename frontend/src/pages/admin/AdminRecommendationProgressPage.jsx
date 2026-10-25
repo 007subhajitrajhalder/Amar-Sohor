@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, recommendationView } from "../../api/client";
 import {
   AlertCircle,
   AlertTriangle,
@@ -12,8 +15,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  RefreshCw,
-  Save,
   Trash2,
   UserCheck,
   UserRound,
@@ -24,11 +25,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
-import {
-  FACILITY_AGENCIES,
-  getRecommendationForAdmin,
-  updateRecommendationProgress
-} from "./adminRecommendationsData";
 
 const auraLayers = [
   {
@@ -62,9 +58,9 @@ const lightAuraLayers = [
 
 const STAGES = [
   { stage: 1, label: "Submitted", desc: "Citizen proposal registered" },
-  { stage: 2, label: "Site Survey", desc: "Field officer feasibility inspection" },
-  { stage: 3, label: "Approved", desc: "Municipal works budget clearance" },
-  { stage: 4, label: "Civil Works", desc: "Procurement & ground installation" },
+  { stage: 2, label: "Allocated", desc: "Officer assigned to the proposal" },
+  { stage: 3, label: "Investigation", desc: "Field officer feasibility inspection" },
+  { stage: 4, label: "Approved", desc: "Ready for facility installation" },
   { stage: 5, label: "Commissioned", desc: "Operational and verified" }
 ];
 
@@ -80,18 +76,19 @@ function AdminRecommendationProgressPage() {
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
 
-  const [recommendation, setRecommendation] = useState(() =>
-    getRecommendationForAdmin(recommendationId)
-  );
-
-  const [currentStage, setCurrentStage] = useState(() => recommendation?.stage || 1);
-  const [currentStatus, setCurrentStatus] = useState(() => recommendation?.status || "PENDING_ALLOCATION");
-  const [inspectionNotes, setInspectionNotes] = useState(
-    () => recommendation?.inspectionNotes || ""
-  );
+  const resource = useApi("/recommendations/" + recommendationId);
+  const recommendation = resource.data ? recommendationView(resource.data) : null;
+  const [error, setError] = useState("");
+  const [stageDraft, setCurrentStage] = useState(null);
+  const currentStage = stageDraft ?? recommendation?.stage ?? 1;
+  const [statusDraft, setCurrentStatus] = useState(null);
+  const currentStatus = statusDraft ?? recommendation?.status ?? "PENDING";
+  const [notesDraft, setInspectionNotes] = useState(null);
+  const inspectionNotes = notesDraft ?? recommendation?.inspectionNotes ?? "";
   const [actionMessage, setActionMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
   if (!recommendation) {
     return (
       <main
@@ -119,38 +116,25 @@ function AdminRecommendationProgressPage() {
   }
 
   const category = (recommendation.facilityType || "dustbin").toLowerCase();
-  const agency = recommendation.assignedAgency || FACILITY_AGENCIES[category] || FACILITY_AGENCIES.dustbin;
+  const agency = recommendation.assignedAgency || {};
   const member = recommendation.assignedMember;
   const FacilityIcon = FACILITY_ICONS[category] || Trash2;
 
-  const handleSaveProgress = (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-
-    let calculatedStatus = currentStatus;
-    if (currentStage === 5) calculatedStatus = "INSTALLED";
-    else if (currentStage === 3) calculatedStatus = "APPROVED";
-    else if (currentStage >= 2 && !member) calculatedStatus = "PENDING_ALLOCATION";
-    else if (currentStage >= 2) calculatedStatus = "UNDER_INVESTIGATION";
-
-    const noteLog = `Admin updated stage to "${STAGES[currentStage - 1].label}" with note: "${inspectionNotes.trim()}"`;
-
-    const updated = updateRecommendationProgress(recommendation.id, {
-      stage: currentStage,
-      status: calculatedStatus,
-      inspectionNotes: inspectionNotes.trim(),
-      historyNote: noteLog
-    });
-
-    setRecommendation((prev) => ({
-      ...prev,
-      ...updated
-    }));
-    setCurrentStatus(calculatedStatus);
-    setIsSaving(false);
-    setActionMessage("Progress and field inspection updates saved successfully.");
-
-    setTimeout(() => setActionMessage(""), 4000);
+  const handleSaveProgress = async event => {
+    event.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true); setError("");
+    try {
+      if (currentStage === 5) throw new Error("Installation is recorded when the agency creates the approved facility.");
+      if (currentStage < 3) throw new Error("Select Investigation after assigning an officer.");
+      if (!inspectionNotes.trim()) throw new Error("Enter inspection notes.");
+      const status = currentStatus === "REJECTED" ? "REJECTED" : currentStage === 4 ? "APPROVED" : "UNDER_INVESTIGATION";
+      await apiRequest("/recommendations/" + recommendation.id, { method: "PATCH",
+        body: { status, notes: inspectionNotes.trim() } });
+      setCurrentStatus(status); setCurrentStage(null); resource.refresh();
+      setActionMessage("Progress saved successfully.");
+    } catch (error) { setError(error.message); }
+    finally { setIsSaving(false); }
   };
 
   return (
@@ -174,6 +158,7 @@ function AdminRecommendationProgressPage() {
       ))}
 
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState error={error} />
 
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : "text-white"}`}>
         {/* Top bar */}
@@ -245,13 +230,7 @@ function AdminRecommendationProgressPage() {
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
-              {currentStage === 5
-                ? "Installed & Operational"
-                : currentStage === 3
-                ? "Approved"
-                : member
-                ? `Allotted (${member.fullName})`
-                : "Pending Allocation"}
+              {recommendation.statusLabel}
             </span>
 
             
@@ -309,6 +288,13 @@ function AdminRecommendationProgressPage() {
           </div>
         </div>
 
+        <form onSubmit={handleSaveProgress} className="my-5 rounded-xl border border-white/20 p-5 text-white">
+          <label className="grid gap-2">Inspection notes
+            <textarea maxLength={1000} value={inspectionNotes} onChange={e => setInspectionNotes(e.target.value)}
+              className="rounded-xl border bg-transparent p-3" />
+          </label>
+          <button disabled={isSaving || !member || ["INSTALLED", "REJECTED"].includes(recommendation.status)} className="mt-3 rounded-xl bg-cyan-700 px-4 py-2">Save Progress</button>
+        </form>
         {/* Success Action Notification */}
         {actionMessage && (
           <div className="mt-5 flex items-center justify-center text-center gap-3 rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100">
@@ -327,7 +313,7 @@ function AdminRecommendationProgressPage() {
               </p>
             </div>
             <span className="text-xs font-semibold text-cyan-200">
-              Click any step below to update stage
+              Select Investigation or Approved to update progress. Installation is recorded by the agency.
             </span>
           </div>
 
@@ -340,6 +326,10 @@ function AdminRecommendationProgressPage() {
                 <button
                   key={s.stage}
                   type="button"
+                  disabled={!member || ["INSTALLED", "REJECTED"].includes(recommendation.status) || !(
+                    (s.stage === 3 && ["ALLOTTED", "UNDER_INVESTIGATION"].includes(recommendation.status)) ||
+                    (s.stage === 4 && ["UNDER_INVESTIGATION", "APPROVED"].includes(recommendation.status))
+                  )}
                   onClick={() => setCurrentStage(s.stage)}
                   className={`group relative flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
                     isCurrent
@@ -429,7 +419,7 @@ function AdminRecommendationProgressPage() {
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 text-xs text-center">
                   <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
                     <span className="text-white/40 block">Name:</span>
-                    <span className="font-semibold text-white truncate block">{recommendation.citizen?.name || "Verified Citizen"}</span>
+                    <span className="font-semibold text-white truncate block">{recommendation.citizen?.name || "Not recorded"}</span>
                   </div>
                   <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
                     <span className="text-white/40 block">Phone:</span>

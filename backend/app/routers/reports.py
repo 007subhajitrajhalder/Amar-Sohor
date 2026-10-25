@@ -1,4 +1,12 @@
 from typing import List, Optional
+from datetime import date, datetime, timezone
+from fastapi import HTTPException
+from app.dependencies.auth import get_current_user, require_user, get_current_agent_member
+from app.dependencies.access import scoped_query, visible_record
+from app.models.user import User
+from app.models.agency_member import AgencyMember
+from app.models.report_resolution_submission import ReportResolutionSubmission
+from app.schemas.report import ReportWorkflowUpdate
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query
 from sqlalchemy.orm import Session
 
@@ -30,20 +38,21 @@ async def submit_report(
     photo: Optional[UploadFile] = File(None),
     photo_url: Optional[str] = Form(None),
     user_id: Optional[int] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user)
 ):
     """
     Submit a citizen grievance/report for a specific facility.
     The report routes directly to the agency member who registered this facility.
     """
-    final_photo_url = "/uploads/reports/default.jpg"
+    final_photo_url = ""
 
     if photo and photo.filename:
         final_photo_url = file_service.save_upload_file(photo, "reports")
     elif photo_url:
         final_photo_url = file_service.save_base64_or_url_photo(photo_url, "reports")
 
-    effective_user_id = user_id or 10
+    effective_user_id = current_user.user_id
 
     created_report = report_service.create_report(
         db=db,
@@ -61,19 +70,22 @@ async def submit_report(
 @router.get("/reports/", response_model=List[ReportResponse])
 def get_reports(
     user_id: Optional[int] = Query(None, description="Filter by citizen user_id"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Retrieve all reports or filter by citizen user_id."""
-    return report_service.get_all_reports(db=db, user_id=user_id)
+    return report_service.get_all_reports(db=db, query=scoped_query(db, Report, current_user))
 
 
 @router.get("/reports/{report_id}", response_model=ReportResponse)
 def get_report_by_id(
     report_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Retrieve details and investigation status of a specific report."""
-    return report_service.get_report_by_id(db=db, report_id=report_id)
+    report = visible_record(db, Report, Report.report_id, report_id, current_user)
+    return report_service.report_response(report)
 
 
 # ==========================================
@@ -115,3 +127,65 @@ def get_resolved_report(
 ):
     """Retrieve resolution details and after-repair evidence for a resolved report."""
     return report_service.get_resolved_report_details(db, report)
+
+
+@router.patch("/reports/{report_id}", response_model=ReportResponse)
+def update_report_workflow(
+    report_id: int, data: ReportWorkflowUpdate,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if current_user.role not in ("ADMIN", "AGENT", "AGENCY"):
+        raise HTTPException(403, "Agency or admin access required")
+    report = visible_record(db, Report, Report.report_id, report_id, current_user)
+    if report.status == "RESOLVED":
+        raise HTTPException(409, "Resolved reports cannot be changed")
+    if "assigned_agent" in data.model_fields_set:
+        if current_user.role != "ADMIN":
+            raise HTTPException(403, "Only administrators can assign reports")
+        member = db.get(AgencyMember, data.assigned_agent)
+        if not member or member.agency_id != report.assigned_agency:
+            raise HTTPException(422, "Select a member of the assigned agency")
+        report.assigned_agent = member.agent_id
+    if data.status == "RESOLVED":
+        if current_user.role != "ADMIN":
+            raise HTTPException(403, "Resolution requires administrative approval")
+        evidence = db.query(ReportResolutionSubmission).join(AgencyMember).filter(
+            ReportResolutionSubmission.report_id == report_id,
+            AgencyMember.agency_id == report.assigned_agency,
+            ReportResolutionSubmission.verification_status == "PENDING"
+        ).order_by(ReportResolutionSubmission.resolution_id.desc()).first()
+        if evidence is None:
+            raise HTTPException(409, "No pending resolution evidence to approve")
+        evidence.verification_status = "APPROVED"
+        report.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    elif data.status == "PENDING" and current_user.role != "ADMIN":
+        raise HTTPException(403, "Only administrators can reset a report")
+    if data.status is not None:
+        report.status = data.status
+    if data.notes is not None:
+        report.investigation_notes = data.notes
+    db.commit()
+    db.refresh(report)
+    return report_service.report_response(report)
+
+
+@router.post("/reports/{report_id}/resolutions", response_model=ReportResponse, status_code=201)
+async def submit_resolution(
+    report_id: int, description: str = Form(..., min_length=1, max_length=5000),
+    completion_date: date = Form(...), photo: UploadFile = File(...),
+    member: AgencyMember = Depends(get_current_agent_member), db: Session = Depends(get_db)
+):
+    report = db.query(Report).filter_by(report_id=report_id, assigned_agency=member.agency_id).first()
+    if report is None:
+        raise HTTPException(404, "Report not found")
+    if report.status != "UNDER_INVESTIGATION":
+        raise HTTPException(409, "Start an investigation before submitting resolution evidence")
+    if completion_date > datetime.now(timezone.utc).date() or not description.strip():
+        raise HTTPException(422, "Provide a description and a completion date that is not in the future")
+    url = file_service.save_upload_file(photo, "resolutions")
+    db.add(ReportResolutionSubmission(report_id=report_id, agent_id=member.agent_id,
+        resolution_photo=url, description=description.strip(), completion_date=completion_date,
+        verification_status="PENDING"))
+    db.commit()
+    db.refresh(report)
+    return report_service.report_response(report)

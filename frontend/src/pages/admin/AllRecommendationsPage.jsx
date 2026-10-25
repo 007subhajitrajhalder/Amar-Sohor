@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 import {
   Activity,
   AlertTriangle,
@@ -13,7 +16,6 @@ import {
   DoorOpen,
   Droplets,
   Download,
-  HelpCircle,
   MapPin,
   Search,
   Sparkles,
@@ -27,7 +29,6 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
-import { getAdminRecommendations } from "./adminRecommendationsData";
 
 const auraLayers = [
   {
@@ -176,7 +177,8 @@ function AllRecommendationsPage() {
   const [isLightMode, setIsLightMode] = useAdminTheme();
   const navigate = useNavigate();
 
-  const [recommendations, setRecommendations] = useState(getAdminRecommendations);
+  const resource = useApi("/recommendations");
+  const recommendations = useMemo(() => (resource.data || []).map(r => recommendationView(r)), [resource.data]);
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -208,13 +210,7 @@ function AllRecommendationsPage() {
   }, []);
 
   // Listen to storage events to sync data across tabs
-  useEffect(() => {
-    const handleStorage = () => {
-      setRecommendations(getAdminRecommendations());
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+
 
   const currentSortOption =
     SORT_OPTIONS.find((option) => option.value === sortKey) ?? SORT_OPTIONS[0];
@@ -359,7 +355,7 @@ function AllRecommendationsPage() {
       recommendation.title,
       recommendation.facilityLabel,
       recommendation.location,
-      recommendation.citizen?.name || "Verified Citizen",
+      recommendation.citizen?.name || "Not recorded",
       recommendation.assignedAgency?.name || "Civic Works",
       formatStatus(recommendation.status, recommendation.assignedMember),
       recommendation.date
@@ -381,6 +377,7 @@ function AllRecommendationsPage() {
         isLightMode ? "admin-light-mode" : "bg-[#100e0b]"
       }`}
     >
+        <ApiState {...resource} />
       {/* Background glowing aura layers */}
       {(isLightMode ? lightAuraLayers : auraLayers).map((layer, index) => (
         <div
@@ -851,7 +848,7 @@ function AllRecommendationsPage() {
                     </p>
                     <p className="mt-0.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-white text-center w-full">
                       <UserRound size={13} className="shrink-0 text-cyan-200" aria-hidden="true" />
-                      <span className="truncate">{rec.citizen?.name || "Verified Citizen"}</span>
+                      <span className="truncate">{rec.citizen?.name || "Not recorded"}</span>
                     </p>
                   </div>
 

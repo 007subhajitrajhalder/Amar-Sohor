@@ -18,92 +18,86 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { fetchReportsApi } from "../../api/client";
+import { useApi } from "../../api/useApi";
+import { apiRequest } from "../../api/client";
+import ApiState from "../../components/ApiState";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function UserDashboardPage() {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user: authUser, updateProfile } = useAuth();
+  const profile = useApi("/users/me");
+  const reports = useApi("/reports");
 
-  const [fullName, setFullName] = useState(user?.full_name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const currentUser = profile.data || authUser;
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: string }
 
-  const [stats, setStats] = useState({
-    submitted: 0,
-    resolved: 0,
-    active: 0,
-  });
-
-  // Sync state whenever authenticated user data refreshes
+  // Sync state whenever profile data loads or changes
   useEffect(() => {
-    if (user) {
-      setFullName(user.full_name || "");
-      setEmail(user.email || "");
-      setPhone(user.phone || "");
+    if (currentUser) {
+      setFullName(currentUser.full_name || "");
+      setEmail(currentUser.email || "");
+      setPhone(currentUser.phone || "");
     }
-  }, [user]);
-
-  // Fetch citizen reports statistics from backend
-  useEffect(() => {
-    async function loadCitizenStats() {
-      if (!user?.user_id) return;
-      try {
-        const reports = await fetchReportsApi(user.user_id);
-        if (Array.isArray(reports)) {
-          const total = reports.length;
-          const resolvedCount = reports.filter(
-            (r) => r.status === "RESOLVED"
-          ).length;
-          const activeCount = total - resolvedCount;
-          setStats({
-            submitted: total,
-            resolved: resolvedCount,
-            active: activeCount,
-          });
-        }
-      } catch (err) {
-        console.warn("Could not load report statistics:", err);
-      }
-    }
-
-    loadCitizenStats();
-  }, [user?.user_id]);
+  }, [currentUser?.full_name, currentUser?.email, currentUser?.phone]);
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setFeedback(null);
 
-    if (!fullName.trim()) {
+    const nameToSave = fullName.trim();
+    const emailToSave = email.trim();
+    const phoneToSave = phone.trim();
+
+    if (!nameToSave) {
       setFeedback({ type: "error", message: "Full name cannot be blank." });
       return;
     }
 
-    if (!email.trim()) {
+    if (!emailToSave) {
       setFeedback({ type: "error", message: "Email address cannot be blank." });
       return;
     }
 
-    if (!phone.trim()) {
+    if (!phoneToSave) {
       setFeedback({ type: "error", message: "Phone number cannot be blank." });
       return;
     }
 
     setIsSaving(true);
     try {
-      await updateProfile({
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
+      await apiRequest("/users/me", {
+        method: "PUT",
+        body: {
+          full_name: nameToSave,
+          email: emailToSave,
+          phone: phoneToSave,
+        },
       });
+
+      if (updateProfile) {
+        await updateProfile({
+          fullName: nameToSave,
+          email: emailToSave,
+          phone: phoneToSave,
+        });
+      }
+
       setFeedback({
         type: "success",
-        message: "Profile updated successfully!",
+        message: "Profile updated.",
       });
+
+      if (profile.refresh) {
+        profile.refresh();
+      }
     } catch (err) {
       setFeedback({
         type: "error",
@@ -113,6 +107,20 @@ function UserDashboardPage() {
       setIsSaving(false);
     }
   };
+
+  if (!profile.data && profile.loading) {
+    return (
+      <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState {...profile} />
+      </main>
+    );
+  }
+
+  const role = currentUser?.role;
+  const reportsList = Array.isArray(reports.data) ? reports.data : [];
+  const reportsSubmitted = reportsList.length;
+  const reportsResolved = reportsList.filter((r) => r.status === "RESOLVED").length;
+  const activeReports = reportsSubmitted - reportsResolved;
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -159,10 +167,10 @@ function UserDashboardPage() {
                 Manage your profile details and monitor your civic contributions across Amar Sohor.
               </p>
             </div>
-            {user?.role && (
+            {role && (
               <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-lime-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                Role: {user.role}
+                Role: {role}
               </div>
             )}
           </div>
@@ -208,9 +216,9 @@ function UserDashboardPage() {
           {/* Real Citizen Metrics */}
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              ["Reports Submitted", stats.submitted, ClipboardList, "text-white"],
-              ["Reports Resolved", stats.resolved, CheckCircle2, "text-lime-300"],
-              ["Active Reports", stats.active, UserRound, "text-blue-300"],
+              ["Reports Submitted", reportsSubmitted, ClipboardList, "text-white"],
+              ["Reports Resolved", reportsResolved, CheckCircle2, "text-lime-300"],
+              ["Active Reports", activeReports, UserRound, "text-blue-300"],
             ].map(([label, value, Icon, color]) => (
               <article
                 key={label}
@@ -232,8 +240,11 @@ function UserDashboardPage() {
               Keep your contact information current. All changes are saved directly to your account.
             </p>
 
+            <ApiState error={profile.error || reports.error} />
+
             {feedback && (
               <div
+                role="status"
                 className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-xs ${
                   feedback.type === "success"
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
@@ -250,11 +261,13 @@ function UserDashboardPage() {
             )}
 
             <form onSubmit={handleUpdateProfile} className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="text-xs font-medium text-white/50">
+              <label htmlFor="full_name" className="text-xs font-medium text-white/50">
                 Full name
                 <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
                   <UserRound size={16} className="text-lime-300 shrink-0" />
                   <input
+                    id="full_name"
+                    name="full_name"
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -265,11 +278,13 @@ function UserDashboardPage() {
                 </div>
               </label>
 
-              <label className="text-xs font-medium text-white/50">
+              <label htmlFor="email" className="text-xs font-medium text-white/50">
                 Email address
                 <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
                   <Mail size={16} className="text-lime-300 shrink-0" />
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -280,11 +295,13 @@ function UserDashboardPage() {
                 </div>
               </label>
 
-              <label className="text-xs font-medium text-white/50">
+              <label htmlFor="phone" className="text-xs font-medium text-white/50">
                 Phone number
                 <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2.5 focus-within:border-lime-300/40">
                   <Phone size={16} className="text-lime-300 shrink-0" />
                   <input
+                    id="phone"
+                    name="phone"
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -317,7 +334,7 @@ function UserDashboardPage() {
             </form>
 
             {/* Role-Specific Portal Button (Centered below Phone Number & Update Profile Button) */}
-            {user?.role === "ADMIN" && (
+            {role === "ADMIN" && (
               <div className="mt-8 flex flex-col items-center justify-center border-t border-white/10 pt-6 text-center">
                 <p className="mb-3 text-xs text-white/50">
                   You are signed in with Municipal Administrator privileges.
@@ -332,7 +349,7 @@ function UserDashboardPage() {
               </div>
             )}
 
-            {(user?.role === "AGENT" || user?.role === "AGENCY") && (
+            {(role === "AGENT" || role === "AGENCY") && (
               <div className="mt-8 flex flex-col items-center justify-center border-t border-white/10 pt-6 text-center">
                 <p className="mb-3 text-xs text-white/50">
                   You are signed in as an Agency Field Member.

@@ -1,3 +1,6 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest, statusLabel, mediaUrl } from "../../api/client";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -7,8 +10,11 @@ function ReportInvestigationPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
 
-  const [investigationNotes, setInvestigationNotes] = useState("");
-  const [status, setStatus] = useState("Pending");
+  const [investigationNotes, setInvestigationNotes] = useState(null);
+  const resource = useApi("/reports/" + reportId);
+  const status = statusLabel(resource.data?.status);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [isDark, setIsDark] = useState(
     localStorage.getItem("agencyTheme") !== "light"
@@ -36,14 +42,19 @@ function ReportInvestigationPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const handleStartInvestigation = () => {
-    setStatus("Under Investigation");
-    alert("Report status changed to Under Investigation");
+  const save = async () => {
+    if (saving) return false;
+    setSaving(true); setError("");
+    try {
+      await apiRequest("/reports/" + reportId, { method: "PATCH", body: { status: "UNDER_INVESTIGATION", notes: investigationNotes ?? resource.data?.agency_notes ?? "" } });
+      resource.refresh(); return true;
+    } catch (error) { setError(error.message); return false; }
+    finally { setSaving(false); }
   };
-
-  const handleGoToResolution = () => {
-    navigate(`/agency/reports/${reportId}/resolution`);
-  };
+  const handleStartInvestigation = () => save();
+  const handleGoToResolution = async () => { if (await save()) navigate("/agency/reports/" + reportId + "/resolution"); };
+  if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState error={error} /><ApiState {...resource} /><Link to="/agency/reports">Assigned Reports</Link></main>;
 
   return (
     <div
@@ -197,7 +208,7 @@ function ReportInvestigationPage() {
                     Report Title
                   </p>
 
-                  <p className="font-bold">Water Not Available</p>
+                  <p className="font-bold">{resource.data.title}</p>
                 </div>
 
                 <div>
@@ -209,7 +220,7 @@ function ReportInvestigationPage() {
                     Facility
                   </p>
 
-                  <p className="font-bold">College Street Public Toilet</p>
+                  <p className="font-bold">{resource.data.facility_name}</p>
                 </div>
 
                 <div>
@@ -224,7 +235,7 @@ function ReportInvestigationPage() {
                   <p
                     className={isDark ? "text-slate-300" : "text-slate-700"}
                   >
-                    The facility currently has no running water.
+                    {resource.data.description}
                   </p>
                 </div>
 
@@ -244,7 +255,7 @@ function ReportInvestigationPage() {
                         : "border-slate-200 bg-slate-100 text-slate-500"
                     }`}
                   >
-                    Complaint photograph
+                    {resource.data.photo_url ? <img className="max-h-48" src={mediaUrl(resource.data.photo_url)} alt="Complaint photograph" /> : "No photograph recorded"}
                   </div>
                 </div>
               </div>
@@ -266,14 +277,14 @@ function ReportInvestigationPage() {
                 Investigation
               </h2>
 
-              <form className="mt-5 grid gap-5">
+              <ApiState error={error} /><form className="mt-5 grid gap-5">
                 <label>
                   <span className="font-bold">Investigation Notes</span>
 
                   <textarea
-                    value={investigationNotes}
+                    value={investigationNotes ?? resource.data?.agency_notes ?? ""}
                     onChange={(event) => setInvestigationNotes(event.target.value)}
-                    placeholder="Enter investigation notes"
+                    placeholder={resource.data.agency_notes || "Enter investigation notes"}
                     className={`mt-2 min-h-36 w-full rounded-xl border p-3 outline-none transition-all duration-300 focus:ring-2 ${
                       isDark
                         ? "border-white/10 bg-slate-950/60 text-white placeholder:text-slate-500 focus:border-cyan-400/40 focus:ring-cyan-400/20"
@@ -285,7 +296,7 @@ function ReportInvestigationPage() {
                 {status === "Pending" && (
                   <button
                     type="button"
-                    onClick={handleStartInvestigation}
+                    disabled={saving} onClick={handleStartInvestigation}
                     className={`rounded-xl p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 ${
                       isDark
                         ? "bg-cyan-600 hover:bg-cyan-500 hover:shadow-cyan-500/20"
@@ -299,7 +310,7 @@ function ReportInvestigationPage() {
                 {status === "Under Investigation" && (
                   <button
                     type="button"
-                    onClick={handleGoToResolution}
+                    disabled={saving} onClick={handleGoToResolution}
                     className="rounded-xl bg-emerald-700 p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-emerald-500/20"
                   >
                     Upload Resolution

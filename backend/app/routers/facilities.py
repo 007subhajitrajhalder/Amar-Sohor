@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from app.database.connection import get_db
 from app.dependencies.agency import get_current_agency
 from app.dependencies.auth import get_current_agent_member
+from app.dependencies.auth import require_user
 from app.dependencies.facility import get_agency_facility
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
@@ -180,3 +181,43 @@ def edit_facility(
         return facility_service.update_facility(db, agency, facility, data)
     except WRITE_ERRORS as exc:
         raise _facility_error(exc) from exc
+
+
+@router.delete("/agencies/facilities/{facility_id}", status_code=204)
+def delete_facility(
+    facility: Facility = Depends(get_agency_facility),
+    db: Session = Depends(get_db)
+):
+    try:
+        facility_service.delete_facility(db, facility)
+    except WRITE_ERRORS as exc:
+        raise _facility_error(exc) from exc
+
+
+class RatingInput(BaseModel):
+    title: str
+    rating: int
+
+@router.get("/facilities/{facility_id}/ratings")
+def list_ratings(facility_id: int, db: Session = Depends(get_db)):
+    from app.models.rating import Rating
+    if db.get(Facility, facility_id) is None:
+        raise HTTPException(404, "Facility not found")
+    return [{"id": r.rating_id, "name": r.user.full_name, "rating": r.rating,
+        "date": r.created_at, "text": r.title}
+        for r in db.query(Rating).filter_by(facility_id=facility_id).order_by(Rating.created_at.desc()).all()]
+
+@router.post("/facilities/{facility_id}/ratings", status_code=201)
+def add_rating(facility_id: int, data: RatingInput,
+    user = Depends(require_user),
+    db: Session = Depends(get_db)
+):
+    from app.models.rating import Rating
+    if db.get(Facility, facility_id) is None:
+        raise HTTPException(404, "Facility not found")
+    if not 1 <= data.rating <= 5 or not 1 <= len(data.title.strip()) <= 200:
+        raise HTTPException(422, "Review must have 1?200 characters and a rating from 1 to 5")
+    rating = Rating(facility_id=facility_id, user_id=user.user_id, title=data.title.strip(), rating=data.rating)
+    db.add(rating)
+    db.commit()
+    return {"rating_id": rating.rating_id}

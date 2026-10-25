@@ -1,3 +1,5 @@
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.security import hash_password, verify_password
@@ -46,7 +48,13 @@ def register_user(db: Session, user_data):
     )
 
     db.add(new_user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or phone already registered") from exc
+
     db.refresh(new_user)
 
     return new_user

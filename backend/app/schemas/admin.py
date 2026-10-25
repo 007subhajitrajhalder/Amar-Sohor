@@ -1,8 +1,4 @@
-from pydantic import BaseModel, EmailStr
-
-
-class CreateAgencyMemberRequest(BaseModel):
-    full_name: str
-    email: EmailStr
-    phone: str
-    password: str
+from pydantic import Field
+from app.schemas.auth import RegisterRequest
+class CreateAgencyMemberRequest(RegisterRequest):
+    agency_id: int = Field(gt=0)

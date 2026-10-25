@@ -1,15 +1,13 @@
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { apiRequest } from "../../api/client";
 import { useState } from "react";
 import { ArrowLeft, Building2, ChevronDown, UserPlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
 import { useAdminTheme } from "./useAdminTheme";
 
-const agencies = [
-  { id: 1, name: "KMC SWM Department" },
-  { id: 2, name: "KMC Sanitation Department" },
-  { id: 3, name: "KMC Water Department" },
-  { id: 4, name: "Kolkata Police" }
-];
+
 
 const emptyForm = {
   fullName: "",
@@ -21,13 +19,14 @@ const emptyForm = {
 };
 
 function AddAgencyMemberPage() {
+  const resource = useApi("/admin/agencies");
+  const agencies = (resource.data || []).map(a => ({ id: a.agency_id, name: a.agency_name }));
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
   const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordCopied, setPasswordCopied] = useState(false);
 
   const handleChange = ({ target: { name, value } }) => {
     setFormData((current) => ({
@@ -36,7 +35,7 @@ function AddAgencyMemberPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -52,9 +51,15 @@ function AddAgencyMemberPage() {
       return;
     }
 
-    console.log("New agency member:", formData);
-    setSuccess("Agency member added successfully.");
-    setFormData(emptyForm);
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await apiRequest("/admin/agency-members", { method: "POST", body: { full_name: formData.fullName.trim(),
+        email: formData.email.trim(), phone: formData.phone.trim(), password: formData.password, agency_id: Number(formData.agencyId) } });
+      setSuccess("Agency member added successfully.");
+      setFormData(emptyForm);
+    } catch (error) { setError(error.message); }
+    finally { setSubmitting(false); }
   };
 
   const fieldClass =
@@ -67,6 +72,7 @@ function AddAgencyMemberPage() {
       }`}
     >
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <ApiState {...resource} />
       <section className="relative z-[1] mx-auto max-w-3xl">
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -189,7 +195,7 @@ function AddAgencyMemberPage() {
             </label>
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               <button
-                type="submit"
+                type="submit" disabled={submitting}
                 className={`admin-primary-action inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-white shadow-lg transition focus:outline-none focus:ring-2 focus:ring-cyan-300/60 ${isLightMode ? "bg-teal-700 hover:bg-teal-600" : "bg-cyan-700 hover:bg-cyan-600"}`}
               >
                 <UserPlus size={17} aria-hidden="true" />

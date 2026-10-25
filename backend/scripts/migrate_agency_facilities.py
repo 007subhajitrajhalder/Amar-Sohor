@@ -61,6 +61,22 @@ def pending_statements(connection) -> list[str]:
     report_columns = {column["name"] for column in inspector.get_columns("reports")}
     if "resolved_at" not in report_columns:
         statements.append("ALTER TABLE reports ADD COLUMN resolved_at DATETIME NULL")
+    if "investigation_notes" not in report_columns:
+        statements.append("ALTER TABLE reports ADD COLUMN investigation_notes TEXT NULL")
+    resolution_columns = {column["name"] for column in inspector.get_columns("report_resolution_submissions")}
+    if "description" not in resolution_columns:
+        statements.append("ALTER TABLE report_resolution_submissions ADD COLUMN description TEXT NULL")
+    if "completion_date" not in resolution_columns:
+        statements.append("ALTER TABLE report_resolution_submissions ADD COLUMN completion_date DATE NULL")
+    agent_column = next(c for c in inspector.get_columns("agency_members") if c["name"] == "agent_id")
+    agent_type = agent_column["type"].compile(dialect=connection.dialect)
+    for table in ("reports", "recommendations"):
+        names = {c["name"] for c in inspector.get_columns(table)}
+        if "assigned_agent" not in names:
+            statements.append(f"ALTER TABLE {table} ADD COLUMN assigned_agent {agent_type} NULL")
+        if not any(f["constrained_columns"] == ["assigned_agent"] for f in inspector.get_foreign_keys(table)):
+            statements.append(f"ALTER TABLE {table} ADD CONSTRAINT fk_{table}_assigned_agent "
+                "FOREIGN KEY (assigned_agent) REFERENCES agency_members (agent_id) ON UPDATE CASCADE ON DELETE SET NULL")
     return statements
 
 

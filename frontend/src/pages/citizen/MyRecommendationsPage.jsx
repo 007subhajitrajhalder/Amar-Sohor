@@ -17,7 +17,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { SEED_RECOMMENDATIONS } from "./recommendationsData";
+import { useApi } from "../../api/useApi";
+import ApiState from "../../components/ApiState";
+import { recommendationView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -40,41 +42,10 @@ const facilityIcons = {
   parking: Car,
 };
 
-function getStoredRecommendations() {
-  try {
-    const stored = JSON.parse(
-      localStorage.getItem("citizen_recommendations") || "[]"
-    );
-    const formattedStored = stored.map((item) => ({
-      ...item,
-      date: item.createdAt
-        ? new Date(item.createdAt).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "Recently",
-      stage: item.stage || 1,
-      reviewDepartment:
-        item.reviewDepartment || "Municipal Civic Works Evaluation Wing",
-      reviewNotes:
-        item.reviewNotes ||
-        "Your recommendation has been registered. Initial review by the urban planning officer is pending.",
-    }));
-
-    const existingIds = new Set(formattedStored.map((r) => r.id));
-    return [
-      ...formattedStored,
-      ...SEED_RECOMMENDATIONS.filter((seed) => !existingIds.has(seed.id)),
-    ];
-  } catch {
-    return SEED_RECOMMENDATIONS;
-  }
-}
-
 function MyRecommendationsPage() {
   const navigate = useNavigate();
-  const [recommendations] = useState(getStoredRecommendations);
+  const resource = useApi("/recommendations");
+  const recommendations = (resource.data || []).map(r => recommendationView(r, true));
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -190,6 +161,7 @@ function MyRecommendationsPage() {
 
       {/* Main Content */}
       <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
+        <ApiState {...resource} />
         <section className="mx-auto max-w-7xl">
           {/* Header Title */}
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
