@@ -47,8 +47,6 @@ function HomePage() {
   const { user, isAuthenticated, logout } = useAuth();
 
   const getDashboardPath = () => {
-    if (user?.role === "ADMIN") return "/admin/dashboard";
-    if (user?.role === "AGENT" || user?.role === "AGENCY") return "/agency/dashboard";
     return "/citizen/dashboard";
   };
   const [showFacilityMenu, setShowFacilityMenu] = useState(false);
