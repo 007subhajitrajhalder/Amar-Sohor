@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Oct 14, 2026 at 10:43 AM
+-- Generation Time: Oct 25, 2026 at 05:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -578,7 +578,8 @@ INSERT INTO `agency_members` (`agent_id`, `agency_id`, `user_id`, `latitude`, `l
 (522, 3, 524, 22.5592500, 88.3512600),
 (523, 3, 525, 22.4928600, 88.3155600),
 (524, 4, 526, 22.5356800, 88.3405600),
-(525, 4, 527, 22.5930000, 88.3895600);
+(525, 4, 527, 22.5930000, 88.3895600),
+(999, 1, 530, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -596,82 +597,84 @@ CREATE TABLE `facilities` (
   `added_by` int(10) UNSIGNED NOT NULL,
   `status` enum('SUSPENDED','OPEN','UNDER_REPAIR') NOT NULL DEFAULT 'OPEN',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `photo_url` varchar(1000) DEFAULT NULL
+  `photo_url` varchar(1000) DEFAULT NULL,
+  `additional_notes` text DEFAULT NULL,
+  `source_recommendation_id` int(10) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `facilities`
 --
 
-INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitude`, `longitude`, `address`, `added_by`, `status`, `created_at`, `photo_url`) VALUES
-(1, 'College Street Public Toilet', 2, 22.5744000, 88.3629000, 'College Street, Kolkata', 520, 'OPEN', '2026-10-14 07:44:07', NULL),
-(2, 'Gariahat Community Dustbin', 1, 22.5186000, 88.3653000, 'Gariahat, Kolkata', 518, 'OPEN', '2026-10-14 07:44:07', NULL),
-(3, 'Sealdah Drinking Water Point', 3, 22.5674000, 88.3712000, 'Sealdah, Kolkata', 522, 'OPEN', '2026-10-14 07:44:07', NULL),
-(4, 'New Market Parking Area', 4, 22.5601000, 88.3527000, 'New Market, Kolkata', 524, 'OPEN', '2026-10-14 07:44:07', NULL),
-(5, 'Park Street Dustbin', 1, 22.5511000, 88.3524000, 'Park Street, Kolkata', 519, 'OPEN', '2026-10-14 07:44:07', NULL),
-(6, 'Howrah Parking Zone', 4, 22.5855000, 88.3426000, 'Howrah Station Area, Howrah', 525, 'UNDER_REPAIR', '2026-10-14 07:44:07', NULL),
-(7, 'Esplanade Community Dustbin', 1, 22.5641800, 88.3427300, 'Esplanade, Kolkata, West Bengal', 9, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-001.jpg'),
-(8, 'College Street Public Toilet', 2, 22.5741900, 88.3625200, 'College Street, Kolkata, West Bengal', 19, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-002.jpg'),
-(9, 'Gariahat Drinking Water Point', 3, 22.5186000, 88.3651100, 'Gariahat, Kolkata, West Bengal', 29, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-003.jpg'),
-(10, 'Sealdah Public Parking Area', 4, 22.5676100, 88.3712000, 'Sealdah, Kolkata, West Bengal', 450, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-004.jpg'),
-(11, 'New Market Community Dustbin', 1, 22.5605200, 88.3528900, 'New Market, Kolkata, West Bengal', 45, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-005.jpg'),
-(12, 'Howrah Station Public Toilet', 2, 22.5850800, 88.3429800, 'Howrah Station Area, Howrah, West Bengal', 55, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-006.jpg'),
-(13, 'Park Street Drinking Water Point', 3, 22.5508900, 88.3529700, 'Park Street, Kolkata, West Bengal', 65, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-007.jpg'),
-(14, 'Shyambazar Public Parking Area', 4, 22.6042000, 88.3728300, 'Shyambazar, Kolkata, West Bengal', 462, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-008.jpg'),
-(15, 'Ballygunge Community Dustbin', 1, 22.5287100, 88.3656200, 'Ballygunge, Kolkata, West Bengal', 81, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-009.jpg'),
-(16, 'Jadavpur Public Toilet', 2, 22.4984200, 88.3688100, 'Jadavpur, Kolkata, West Bengal', 91, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-010.jpg'),
-(17, 'Tollygunge Drinking Water Point', 3, 22.4980800, 88.3450000, 'Tollygunge, Kolkata, West Bengal', 101, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-011.jpg'),
-(18, 'Behala Public Parking Area', 4, 22.4912900, 88.3171900, 'Behala, Kolkata, West Bengal', 474, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-012.jpg'),
-(19, 'Dumdum Community Dustbin', 1, 22.6333000, 88.4223800, 'Dumdum, Kolkata, West Bengal', 117, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-013.jpg'),
-(20, 'Belgachia Public Toilet', 2, 22.6042100, 88.3855700, 'Belgachia, Kolkata, West Bengal', 127, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-014.jpg'),
-(21, 'Maniktala Drinking Water Point', 3, 22.5894200, 88.3734300, 'Maniktala, Kolkata, West Bengal', 137, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-015.jpg'),
-(22, 'Burrabazar Public Parking Area', 4, 22.5795800, 88.3536200, 'Burrabazar, Kolkata, West Bengal', 486, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-016.jpg'),
-(23, 'Bowbazar Community Dustbin', 1, 22.5647900, 88.3598100, 'Bowbazar, Kolkata, West Bengal', 153, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-017.jpg'),
-(24, 'Lalbazar Public Toilet', 2, 22.5685000, 88.3470000, 'Lalbazar, Kolkata, West Bengal', 163, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-018.jpg'),
-(25, 'Maidan Drinking Water Point', 3, 22.5522100, 88.3421900, 'Maidan, Kolkata, West Bengal', 173, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-019.jpg'),
-(26, 'Alipore Public Parking Area', 4, 22.5354200, 88.3313800, 'Alipore, Kolkata, West Bengal', 498, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-020.jpg'),
-(27, 'Kalighat Community Dustbin', 1, 22.5195800, 88.3435700, 'Kalighat, Kolkata, West Bengal', 189, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-021.jpg'),
-(28, 'Bhowanipore Public Toilet', 2, 22.5347900, 88.3414300, 'Bhowanipore, Kolkata, West Bengal', 199, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-022.jpg'),
-(29, 'Lake Gardens Drinking Water Point', 3, 22.5070000, 88.3526200, 'Lake Gardens, Kolkata, West Bengal', 209, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-023.jpg'),
-(30, 'Santoshpur Public Parking Area', 4, 22.4812100, 88.3838100, 'Santoshpur, Kolkata, West Bengal', 510, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-024.jpg'),
-(31, 'Kasba Community Dustbin', 1, 22.5154200, 88.3880000, 'Kasba, Kolkata, West Bengal', 225, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-025.jpg'),
-(32, 'Ruby Crossing Public Toilet', 2, 22.5115800, 88.4001900, 'Ruby Crossing, Kolkata, West Bengal', 235, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-026.jpg'),
-(33, 'Tangra Drinking Water Point', 3, 22.5537900, 88.3903800, 'Tangra, Kolkata, West Bengal', 245, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-027.jpg'),
-(34, 'Park Circus Public Parking Area', 4, 22.5390000, 88.3655700, 'Park Circus, Kolkata, West Bengal', 443, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-028.jpg'),
-(35, 'Ultadanga Community Dustbin', 1, 22.5932100, 88.3904300, 'Ultadanga, Kolkata, West Bengal', 261, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-029.jpg'),
-(36, 'Kankurgachi Public Toilet', 2, 22.5864200, 88.3926200, 'Kankurgachi, Kolkata, West Bengal', 271, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-030.jpg'),
-(37, 'Phoolbagan Drinking Water Point', 3, 22.5785800, 88.3948100, 'Phoolbagan, Kolkata, West Bengal', 281, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-031.jpg'),
-(38, 'Baguiati Public Parking Area', 4, 22.6167900, 88.4320000, 'Baguiati, Kolkata, West Bengal', 455, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-032.jpg'),
-(39, 'Lake Town Community Dustbin', 1, 22.6060000, 88.4021900, 'Lake Town, Kolkata, West Bengal', 297, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-033.jpg'),
-(40, 'Kestopur Public Toilet', 2, 22.6052100, 88.4253800, 'Kestopur, Kolkata, West Bengal', 307, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-034.jpg'),
-(41, 'New Town Drinking Water Point', 3, 22.5804200, 88.4705700, 'New Town, Kolkata, West Bengal', 317, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-035.jpg'),
-(42, 'Rajarhat Public Parking Area', 4, 22.6205800, 88.4674300, 'Rajarhat, Kolkata, West Bengal', 467, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-036.jpg'),
-(43, 'Bidhannagar Community Dustbin', 1, 22.5857900, 88.4166200, 'Bidhannagar, Kolkata, West Bengal', 333, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-037.jpg'),
-(44, 'Chinar Park Public Toilet', 2, 22.6230000, 88.4488100, 'Chinar Park, Kolkata, West Bengal', 343, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-038.jpg'),
-(45, 'Garden Reach Drinking Water Point', 3, 22.5442100, 88.2830000, 'Garden Reach, Kolkata, West Bengal', 353, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-039.jpg'),
-(46, 'Metiabruz Public Parking Area', 4, 22.5544200, 88.2671900, 'Metiabruz, Kolkata, West Bengal', 479, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-040.jpg'),
-(47, 'Taratala Community Dustbin', 1, 22.5095800, 88.3153800, 'Taratala, Kolkata, West Bengal', 369, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-041.jpg'),
-(48, 'Kidderpore Public Toilet', 2, 22.5377900, 88.3215700, 'Kidderpore, Kolkata, West Bengal', 379, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-042.jpg'),
-(49, 'Chetla Drinking Water Point', 3, 22.5150000, 88.3324300, 'Chetla, Kolkata, West Bengal', 389, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-043.jpg'),
-(50, 'Rabindra Sarobar Public Parking Area', 4, 22.5072100, 88.3456200, 'Rabindra Sarobar, Kolkata, West Bengal', 491, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-044.jpg'),
-(51, 'Minto Park Community Dustbin', 1, 22.5444200, 88.3538100, 'Minto Park, Kolkata, West Bengal', 405, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-045.jpg'),
-(52, 'Theatre Road Public Toilet', 2, 22.5455800, 88.3510000, 'Theatre Road, Kolkata, West Bengal', 415, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-046.jpg'),
-(53, 'Bentinck Street Drinking Water Point', 3, 22.5657900, 88.3501900, 'Bentinck Street, Kolkata, West Bengal', 425, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-047.jpg'),
-(54, 'Strand Road Public Parking Area', 4, 22.5720000, 88.3413800, 'Strand Road, Kolkata, West Bengal', 503, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-048.jpg'),
-(55, 'Bagbazar Community Dustbin', 1, 22.6012100, 88.3655700, 'Bagbazar, Kolkata, West Bengal', 518, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-049.jpg'),
-(56, 'Ahiritola Public Toilet', 2, 22.5924200, 88.3554300, 'Ahiritola, Kolkata, West Bengal', 13, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-050.jpg'),
-(57, 'Sinthee Drinking Water Point', 3, 22.6235800, 88.3826200, 'Sinthee, Kolkata, West Bengal', 23, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-051.jpg'),
-(58, 'Cossipore Public Parking Area', 4, 22.6137900, 88.3758100, 'Cossipore, Kolkata, West Bengal', 515, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-052.jpg'),
-(59, 'Baranagar Community Dustbin', 1, 22.6410000, 88.3650000, 'Baranagar, Kolkata, West Bengal', 39, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-053.jpg'),
-(60, 'Tala Public Toilet', 2, 22.6102100, 88.3891900, 'Tala, Kolkata, West Bengal', 49, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-054.jpg'),
-(61, 'Narkeldanga Drinking Water Point', 3, 22.5794200, 88.3793800, 'Narkeldanga, Kolkata, West Bengal', 59, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-055.jpg'),
-(62, 'Entally Public Parking Area', 4, 22.5555800, 88.3695700, 'Entally, Kolkata, West Bengal', 448, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-056.jpg'),
-(63, 'Mominpur Community Dustbin', 1, 22.5267900, 88.3144300, 'Mominpur, Kolkata, West Bengal', 75, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-057.jpg'),
-(64, 'Behala Chowrasta Public Toilet', 2, 22.4790000, 88.3206200, 'Behala Chowrasta, Kolkata, West Bengal', 85, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-058.jpg'),
-(65, 'Thakurpukur Drinking Water Point', 3, 22.4532100, 88.3048100, 'Thakurpukur, Kolkata, West Bengal', 95, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-059.jpg'),
-(66, 'Garia Public Parking Area', 4, 22.4634200, 88.3910000, 'Garia, Kolkata, West Bengal', 460, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-060.jpg'),
-(67, 'Bansdroni Community Dustbin', 1, 22.4715800, 88.3671900, 'Bansdroni, Kolkata, West Bengal', 111, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-061.jpg'),
-(68, 'Narendrapur Public Toilet', 2, 22.4417900, 88.3933800, 'Narendrapur, Kolkata, West Bengal', 121, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-062.jpg');
+INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitude`, `longitude`, `address`, `added_by`, `status`, `created_at`, `photo_url`, `additional_notes`, `source_recommendation_id`) VALUES
+(1, 'College Street Public Toilet', 2, 22.5744000, 88.3629000, 'College Street, Kolkata', 520, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(2, 'Gariahat Community Dustbin', 1, 22.5186000, 88.3653000, 'Gariahat, Kolkata', 518, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(3, 'Sealdah Drinking Water Point', 3, 22.5674000, 88.3712000, 'Sealdah, Kolkata', 522, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(4, 'New Market Parking Area', 4, 22.5601000, 88.3527000, 'New Market, Kolkata', 524, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(5, 'Park Street Dustbin', 1, 22.5511000, 88.3524000, 'Park Street, Kolkata', 519, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(6, 'Howrah Parking Zone', 4, 22.5855000, 88.3426000, 'Howrah Station Area, Howrah', 525, 'UNDER_REPAIR', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(7, 'Esplanade Community Dustbin', 1, 22.5641800, 88.3427300, 'Esplanade, Kolkata, West Bengal', 9, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-001.jpg', NULL, NULL),
+(8, 'College Street Public Toilet', 2, 22.5741900, 88.3625200, 'College Street, Kolkata, West Bengal', 19, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-002.jpg', NULL, NULL),
+(9, 'Gariahat Drinking Water Point', 3, 22.5186000, 88.3651100, 'Gariahat, Kolkata, West Bengal', 29, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-003.jpg', NULL, NULL),
+(10, 'Sealdah Public Parking Area', 4, 22.5676100, 88.3712000, 'Sealdah, Kolkata, West Bengal', 450, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-004.jpg', NULL, NULL),
+(11, 'New Market Community Dustbin', 1, 22.5605200, 88.3528900, 'New Market, Kolkata, West Bengal', 45, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-005.jpg', NULL, NULL),
+(12, 'Howrah Station Public Toilet', 2, 22.5850800, 88.3429800, 'Howrah Station Area, Howrah, West Bengal', 55, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-006.jpg', NULL, NULL),
+(13, 'Park Street Drinking Water Point', 3, 22.5508900, 88.3529700, 'Park Street, Kolkata, West Bengal', 65, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-007.jpg', NULL, NULL),
+(14, 'Shyambazar Public Parking Area', 4, 22.6042000, 88.3728300, 'Shyambazar, Kolkata, West Bengal', 462, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-008.jpg', NULL, NULL),
+(15, 'Ballygunge Community Dustbin', 1, 22.5287100, 88.3656200, 'Ballygunge, Kolkata, West Bengal', 81, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-009.jpg', NULL, NULL),
+(16, 'Jadavpur Public Toilet', 2, 22.4984200, 88.3688100, 'Jadavpur, Kolkata, West Bengal', 91, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-010.jpg', NULL, NULL),
+(17, 'Tollygunge Drinking Water Point', 3, 22.4980800, 88.3450000, 'Tollygunge, Kolkata, West Bengal', 101, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-011.jpg', NULL, NULL),
+(18, 'Behala Public Parking Area', 4, 22.4912900, 88.3171900, 'Behala, Kolkata, West Bengal', 474, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-012.jpg', NULL, NULL),
+(19, 'Dumdum Community Dustbin', 1, 22.6333000, 88.4223800, 'Dumdum, Kolkata, West Bengal', 117, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-013.jpg', NULL, NULL),
+(20, 'Belgachia Public Toilet', 2, 22.6042100, 88.3855700, 'Belgachia, Kolkata, West Bengal', 127, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-014.jpg', NULL, NULL),
+(21, 'Maniktala Drinking Water Point', 3, 22.5894200, 88.3734300, 'Maniktala, Kolkata, West Bengal', 137, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-015.jpg', NULL, NULL),
+(22, 'Burrabazar Public Parking Area', 4, 22.5795800, 88.3536200, 'Burrabazar, Kolkata, West Bengal', 486, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-016.jpg', NULL, NULL),
+(23, 'Bowbazar Community Dustbin', 1, 22.5647900, 88.3598100, 'Bowbazar, Kolkata, West Bengal', 153, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-017.jpg', NULL, NULL),
+(24, 'Lalbazar Public Toilet', 2, 22.5685000, 88.3470000, 'Lalbazar, Kolkata, West Bengal', 163, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-018.jpg', NULL, NULL),
+(25, 'Maidan Drinking Water Point', 3, 22.5522100, 88.3421900, 'Maidan, Kolkata, West Bengal', 173, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-019.jpg', NULL, NULL),
+(26, 'Alipore Public Parking Area', 4, 22.5354200, 88.3313800, 'Alipore, Kolkata, West Bengal', 498, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-020.jpg', NULL, NULL),
+(27, 'Kalighat Community Dustbin', 1, 22.5195800, 88.3435700, 'Kalighat, Kolkata, West Bengal', 189, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-021.jpg', NULL, NULL),
+(28, 'Bhowanipore Public Toilet', 2, 22.5347900, 88.3414300, 'Bhowanipore, Kolkata, West Bengal', 199, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-022.jpg', NULL, NULL),
+(29, 'Lake Gardens Drinking Water Point', 3, 22.5070000, 88.3526200, 'Lake Gardens, Kolkata, West Bengal', 209, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-023.jpg', NULL, NULL),
+(30, 'Santoshpur Public Parking Area', 4, 22.4812100, 88.3838100, 'Santoshpur, Kolkata, West Bengal', 510, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-024.jpg', NULL, NULL),
+(31, 'Kasba Community Dustbin', 1, 22.5154200, 88.3880000, 'Kasba, Kolkata, West Bengal', 225, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-025.jpg', NULL, NULL),
+(32, 'Ruby Crossing Public Toilet', 2, 22.5115800, 88.4001900, 'Ruby Crossing, Kolkata, West Bengal', 235, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-026.jpg', NULL, NULL),
+(33, 'Tangra Drinking Water Point', 3, 22.5537900, 88.3903800, 'Tangra, Kolkata, West Bengal', 245, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-027.jpg', NULL, NULL),
+(34, 'Park Circus Public Parking Area', 4, 22.5390000, 88.3655700, 'Park Circus, Kolkata, West Bengal', 443, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-028.jpg', NULL, NULL),
+(35, 'Ultadanga Community Dustbin', 1, 22.5932100, 88.3904300, 'Ultadanga, Kolkata, West Bengal', 261, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-029.jpg', NULL, NULL),
+(36, 'Kankurgachi Public Toilet', 2, 22.5864200, 88.3926200, 'Kankurgachi, Kolkata, West Bengal', 271, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-030.jpg', NULL, NULL),
+(37, 'Phoolbagan Drinking Water Point', 3, 22.5785800, 88.3948100, 'Phoolbagan, Kolkata, West Bengal', 281, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-031.jpg', NULL, NULL),
+(38, 'Baguiati Public Parking Area', 4, 22.6167900, 88.4320000, 'Baguiati, Kolkata, West Bengal', 455, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-032.jpg', NULL, NULL),
+(39, 'Lake Town Community Dustbin', 1, 22.6060000, 88.4021900, 'Lake Town, Kolkata, West Bengal', 297, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-033.jpg', NULL, NULL),
+(40, 'Kestopur Public Toilet', 2, 22.6052100, 88.4253800, 'Kestopur, Kolkata, West Bengal', 307, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-034.jpg', NULL, NULL),
+(41, 'New Town Drinking Water Point', 3, 22.5804200, 88.4705700, 'New Town, Kolkata, West Bengal', 317, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-035.jpg', NULL, NULL),
+(42, 'Rajarhat Public Parking Area', 4, 22.6205800, 88.4674300, 'Rajarhat, Kolkata, West Bengal', 467, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-036.jpg', NULL, NULL),
+(43, 'Bidhannagar Community Dustbin', 1, 22.5857900, 88.4166200, 'Bidhannagar, Kolkata, West Bengal', 333, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-037.jpg', NULL, NULL),
+(44, 'Chinar Park Public Toilet', 2, 22.6230000, 88.4488100, 'Chinar Park, Kolkata, West Bengal', 343, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-038.jpg', NULL, NULL),
+(45, 'Garden Reach Drinking Water Point', 3, 22.5442100, 88.2830000, 'Garden Reach, Kolkata, West Bengal', 353, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-039.jpg', NULL, NULL),
+(46, 'Metiabruz Public Parking Area', 4, 22.5544200, 88.2671900, 'Metiabruz, Kolkata, West Bengal', 479, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-040.jpg', NULL, NULL),
+(47, 'Taratala Community Dustbin', 1, 22.5095800, 88.3153800, 'Taratala, Kolkata, West Bengal', 369, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-041.jpg', NULL, NULL),
+(48, 'Kidderpore Public Toilet', 2, 22.5377900, 88.3215700, 'Kidderpore, Kolkata, West Bengal', 379, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-042.jpg', NULL, NULL),
+(49, 'Chetla Drinking Water Point', 3, 22.5150000, 88.3324300, 'Chetla, Kolkata, West Bengal', 389, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-043.jpg', NULL, NULL),
+(50, 'Rabindra Sarobar Public Parking Area', 4, 22.5072100, 88.3456200, 'Rabindra Sarobar, Kolkata, West Bengal', 491, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-044.jpg', NULL, NULL),
+(51, 'Minto Park Community Dustbin', 1, 22.5444200, 88.3538100, 'Minto Park, Kolkata, West Bengal', 405, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-045.jpg', NULL, NULL),
+(52, 'Theatre Road Public Toilet', 2, 22.5455800, 88.3510000, 'Theatre Road, Kolkata, West Bengal', 415, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-046.jpg', NULL, NULL),
+(53, 'Bentinck Street Drinking Water Point', 3, 22.5657900, 88.3501900, 'Bentinck Street, Kolkata, West Bengal', 425, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-047.jpg', NULL, NULL),
+(54, 'Strand Road Public Parking Area', 4, 22.5720000, 88.3413800, 'Strand Road, Kolkata, West Bengal', 503, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-048.jpg', NULL, NULL),
+(55, 'Bagbazar Community Dustbin', 1, 22.6012100, 88.3655700, 'Bagbazar, Kolkata, West Bengal', 518, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1-049.jpg', NULL, NULL),
+(56, 'Ahiritola Public Toilet', 2, 22.5924200, 88.3554300, 'Ahiritola, Kolkata, West Bengal', 13, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-050.jpg', NULL, NULL),
+(57, 'Sinthee Drinking Water Point', 3, 22.6235800, 88.3826200, 'Sinthee, Kolkata, West Bengal', 23, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-051.jpg', NULL, NULL),
+(58, 'Cossipore Public Parking Area', 4, 22.6137900, 88.3758100, 'Cossipore, Kolkata, West Bengal', 515, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-052.jpg', NULL, NULL),
+(59, 'Baranagar Community Dustbin', 1, 22.6410000, 88.3650000, 'Baranagar, Kolkata, West Bengal', 39, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-053.jpg', NULL, NULL),
+(60, 'Tala Public Toilet', 2, 22.6102100, 88.3891900, 'Tala, Kolkata, West Bengal', 49, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-054.jpg', NULL, NULL),
+(61, 'Narkeldanga Drinking Water Point', 3, 22.5794200, 88.3793800, 'Narkeldanga, Kolkata, West Bengal', 59, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-055.jpg', NULL, NULL),
+(62, 'Entally Public Parking Area', 4, 22.5555800, 88.3695700, 'Entally, Kolkata, West Bengal', 448, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-056.jpg', NULL, NULL),
+(63, 'Mominpur Community Dustbin', 1, 22.5267900, 88.3144300, 'Mominpur, Kolkata, West Bengal', 75, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-057.jpg', NULL, NULL),
+(64, 'Behala Chowrasta Public Toilet', 2, 22.4790000, 88.3206200, 'Behala Chowrasta, Kolkata, West Bengal', 85, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-058.jpg', NULL, NULL),
+(65, 'Thakurpukur Drinking Water Point', 3, 22.4532100, 88.3048100, 'Thakurpukur, Kolkata, West Bengal', 95, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-059.jpg', NULL, NULL),
+(66, 'Garia Public Parking Area', 4, 22.4634200, 88.3910000, 'Garia, Kolkata, West Bengal', 460, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-060.jpg', NULL, NULL),
+(67, 'Bansdroni Community Dustbin', 1, 22.4715800, 88.3671900, 'Bansdroni, Kolkata, West Bengal', 111, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-061.jpg', NULL, NULL),
+(68, 'Narendrapur Public Toilet', 2, 22.4417900, 88.3933800, 'Narendrapur, Kolkata, West Bengal', 121, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-062.jpg', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -772,16 +775,18 @@ CREATE TABLE `reports` (
   `status` enum('PENDING','UNDER_INVESTIGATION','RESOLVED') NOT NULL DEFAULT 'PENDING',
   `assigned_agency` int(10) UNSIGNED NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `assigned_agent` int(10) UNSIGNED DEFAULT NULL
+  `assigned_agent` int(10) UNSIGNED DEFAULT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  `investigation_notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `reports`
 --
 
-INSERT INTO `reports` (`report_id`, `facility_id`, `user_id`, `title`, `description`, `photo_url`, `status`, `assigned_agency`, `created_at`, `assigned_agent`) VALUES
-(1, 2, 11, 'Dustbin overflowing heavily', 'Waste scattered around Gariahat market junction.', '/uploads/reports/sample.jpg', 'PENDING', 1, '2026-10-14 07:44:36', 518),
-(2, 1, 11, 'Leaking tap and broken flush', 'Water leaking continuously on College Street toilet.', '/uploads/reports/test_report.jpg', 'PENDING', 2, '2026-10-14 08:22:29', 520);
+INSERT INTO `reports` (`report_id`, `facility_id`, `user_id`, `title`, `description`, `photo_url`, `status`, `assigned_agency`, `created_at`, `assigned_agent`, `resolved_at`, `investigation_notes`) VALUES
+(1, 2, 11, 'Dustbin overflowing heavily', 'Waste scattered around Gariahat market junction.', '/uploads/reports/sample.jpg', 'PENDING', 1, '2026-10-14 07:44:36', 518, NULL, NULL),
+(2, 1, 11, 'Leaking tap and broken flush', 'Water leaking continuously on College Street toilet.', '/uploads/reports/test_report.jpg', 'PENDING', 2, '2026-10-14 08:22:29', 520, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -795,7 +800,9 @@ CREATE TABLE `report_resolution_submissions` (
   `agent_id` int(10) UNSIGNED NOT NULL,
   `resolution_photo` varchar(1000) NOT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `verification_status` enum('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING'
+  `verification_status` enum('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+  `description` text DEFAULT NULL,
+  `completion_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1336,7 +1343,10 @@ INSERT INTO `users` (`user_id`, `full_name`, `email`, `phone`, `password_hash`, 
 (524, 'Suman Ghosh', 'suman@water.example.com', '9876543214', '$2b$12$ktj1P8lR2fvDuy4X6RsePu2rIZyjH6s3hmr25DA7T7.VUu8BHckou', '2026-10-14 07:44:07', 'AGENT'),
 (525, 'Ananya Paul', 'ananya@water.example.com', '9876543215', '$2b$12$ktj1P8lR2fvDuy4X6RsePu2rIZyjH6s3hmr25DA7T7.VUu8BHckou', '2026-10-14 07:44:07', 'AGENT'),
 (526, 'Rajib Dutta', 'rajib@police.example.com', '9876543216', '$2b$12$ktj1P8lR2fvDuy4X6RsePu2rIZyjH6s3hmr25DA7T7.VUu8BHckou', '2026-10-14 07:44:07', 'AGENT'),
-(527, 'Neha Sharma', 'neha@police.example.com', '9876543217', '$2b$12$ktj1P8lR2fvDuy4X6RsePu2rIZyjH6s3hmr25DA7T7.VUu8BHckou', '2026-10-14 07:44:07', 'AGENT');
+(527, 'Neha Sharma', 'neha@police.example.com', '9876543217', '$2b$12$ktj1P8lR2fvDuy4X6RsePu2rIZyjH6s3hmr25DA7T7.VUu8BHckou', '2026-10-14 07:44:07', 'AGENT'),
+(528, 'Admin', 'admin@gmail.com', '0123456789', '$2b$12$0QjOoTDgyG7EptOw1awnde05K.v9baz7PgAy6BGmBIdC.qmnACY0C', '2026-10-25 14:00:46', 'ADMIN'),
+(529, 'User', 'user@gmail.com', '1234567890', '$2b$12$7XXRRc47JDoffXSprlaL9OcdzflTf2GjVHWksf7Md2gqbAw7uXtPC', '2026-10-25 15:26:47', 'USER'),
+(530, 'Agent', 'agent@gmail.com', '9999999999', '$2b$12$xRiAMBtB0Qk3Busa/PkHbeNCycHwKRDtqIylkd3ZTDjg8dB6LJNPS', '2026-10-25 15:44:49', 'AGENT');
 
 --
 -- Indexes for dumped tables
@@ -1362,6 +1372,7 @@ ALTER TABLE `agency_members`
 --
 ALTER TABLE `facilities`
   ADD PRIMARY KEY (`facility_id`),
+  ADD UNIQUE KEY `uq_facilities_source_recommendation` (`source_recommendation_id`),
   ADD KEY `fk_facilities_agent` (`added_by`),
   ADD KEY `idx_facilities_category` (`category_id`),
   ADD KEY `idx_facilities_status` (`status`),
@@ -1442,7 +1453,7 @@ ALTER TABLE `agencies`
 -- AUTO_INCREMENT for table `agency_members`
 --
 ALTER TABLE `agency_members`
-  MODIFY `agent_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=526;
+  MODIFY `agent_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1000;
 
 --
 -- AUTO_INCREMENT for table `facilities`
@@ -1490,7 +1501,7 @@ ALTER TABLE `report_resolution_submissions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=528;
+  MODIFY `user_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=531;
 
 --
 -- Constraints for dumped tables
@@ -1508,7 +1519,8 @@ ALTER TABLE `agency_members`
 --
 ALTER TABLE `facilities`
   ADD CONSTRAINT `fk_facilities_agent` FOREIGN KEY (`added_by`) REFERENCES `agency_members` (`agent_id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_facilities_category` FOREIGN KEY (`category_id`) REFERENCES `facility_categories` (`category_id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_facilities_category` FOREIGN KEY (`category_id`) REFERENCES `facility_categories` (`category_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_facilities_source_recommendation` FOREIGN KEY (`source_recommendation_id`) REFERENCES `recommendations` (`recommendation_id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `facility_categories`
