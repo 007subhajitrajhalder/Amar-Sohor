@@ -41,7 +41,7 @@ function AdminHeader({ isLightMode, setIsLightMode }) {
           </div>
         </Link>
 
-        <div className="flex items-center gap-3 pr-28 sm:pr-32">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setIsLightMode((currentMode) => !currentMode)}

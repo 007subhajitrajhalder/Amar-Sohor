@@ -148,7 +148,7 @@ function MapViewPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:border-lime-300/30 hover:bg-lime-300 hover:text-black mr-28 sm:mr-32"
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
           >
             <ArrowLeft size={17} />
             <span className="hidden sm:inline">
@@ -212,7 +212,7 @@ function MapViewPage() {
               <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/50">
                 Locate registered public facilities around your current
                 location and find the nearest available service point
-                within 10 km.
+                within 1 km.
               </p>
             </div>
 
@@ -386,7 +386,7 @@ function MapViewPage() {
                 </h2>
 
                 <p className="mt-1 text-xs text-white/40">
-                  Showing registered facilities within 10 km.
+                  Showing registered facilities within 1 km.
                 </p>
               </div>
 
