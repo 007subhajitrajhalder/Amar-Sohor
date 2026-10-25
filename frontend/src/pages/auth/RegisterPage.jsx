@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail, Phone, UserRound, AlertCircle, Loader2 } from "lucide-react";
+import { LockKeyhole, Mail, Phone, UserRound, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "../../api/client";
 import ApiState from "../../components/ApiState";
@@ -48,6 +48,8 @@ function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -210,6 +212,12 @@ function RegisterPage() {
             {fields.map(([id, label, type, placeholder, autoComplete, Icon], index) => {
               const fieldName = id === "confirmPassword" ? "confirm-password" : id;
               const value = id === "confirmPassword" ? formData.confirmPassword : formData[id];
+              const isPasswordField = id === "password";
+              const isConfirmPasswordField = id === "confirmPassword";
+              const isAnyPassword = isPasswordField || isConfirmPasswordField;
+              const isVisible = isPasswordField ? showPassword : isConfirmPasswordField ? showConfirmPassword : false;
+              const inputType = isAnyPassword ? (isVisible ? "text" : "password") : type;
+
               return (
                 <label key={id} htmlFor={id} className={`grid gap-1.5 text-xs font-medium text-white/75 ${index < 2 ? "sm:col-span-1" : "sm:col-span-2"}`}>
                   {label}
@@ -219,13 +227,27 @@ function RegisterPage() {
                       required
                       id={id}
                       name={fieldName}
-                      type={type}
+                      type={inputType}
                       value={value}
                       onChange={handleChange}
                       placeholder={placeholder}
                       autoComplete={autoComplete}
                       className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
                     />
+                    {isAnyPassword && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isPasswordField) setShowPassword(!showPassword);
+                          if (isConfirmPasswordField) setShowConfirmPassword(!showConfirmPassword);
+                        }}
+                        className="text-white/40 hover:text-white/80 transition focus:outline-none shrink-0"
+                        title={isVisible ? "Hide password" : "Show password"}
+                        aria-label={isVisible ? "Hide password" : "Show password"}
+                      >
+                        {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    )}
                   </span>
                 </label>
               );

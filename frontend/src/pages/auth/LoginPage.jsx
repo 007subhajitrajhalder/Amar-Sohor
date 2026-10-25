@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { LockKeyhole, Mail, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -29,6 +29,7 @@ function LoginPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -180,7 +181,7 @@ function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -188,6 +189,15 @@ function LoginPage() {
                   required
                   className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-white/40 hover:text-white/80 transition focus:outline-none shrink-0"
+                  title={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </span>
             </label>
             <div className="text-right">
