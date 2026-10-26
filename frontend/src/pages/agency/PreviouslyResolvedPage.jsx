@@ -273,7 +273,7 @@ function PreviouslyResolvedPage() {
             </tbody>
           </table>
         </div>
-        <Pagination total={resource.data?.total} offset={offset} onChange={setOffset} disabled={resource.loading || Boolean(resource.error)} />
+        <Pagination showCount={false} total={resource.data?.total} offset={offset} onChange={setOffset} disabled={resource.loading || Boolean(resource.error)} />
       </main>
     </div>
   );
