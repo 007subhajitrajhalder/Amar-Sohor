@@ -79,7 +79,7 @@ function UploadResolutionPage() {
       body.append("completion_date", completionDate);
       body.append("photo", resolutionPhoto);
       await apiRequest("/reports/" + reportId + "/resolutions", { method: "POST", body });
-      navigate("/agency/reports", { state: { message: "Resolution submitted for administrator approval." } });
+      navigate("/agency/reports", { state: { message: "Resolution submitted successfully. Report has been marked as resolved." } });
     } catch (error) { setError(error.message); }
     finally { setSubmitting(false); }
   };
@@ -266,7 +266,7 @@ function UploadResolutionPage() {
                   : "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-200/40 hover:bg-emerald-100 hover:text-emerald-800"
               }`}
             >
-              Submit Resolution for Approval
+              {submitting ? "Submitting..." : "Submit Resolution"}
             </button>
           </form>
         </div>

@@ -139,7 +139,7 @@ test("citizen registration and report submission through agency investigation an
   await page.getByLabel("Resolution Description").fill("Completed test repair.");
   await page.locator("input[type=file]").setInputFiles(photo);
   await page.getByLabel("Completion Date").fill("2026-10-24");
-  await page.getByRole("button", { name: "Submit Resolution for Approval" }).click();
+  await page.getByRole("button", { name: "Submit Resolution" }).click();
   await expect(page).toHaveURL(/\/agency\/reports$/);
   const before = await (await request.get(api + "/agencies/reports/resolved", { headers: headers(agent) })).json();
   expect(before.items.some(r => r.report_id === reportId)).toBe(false);

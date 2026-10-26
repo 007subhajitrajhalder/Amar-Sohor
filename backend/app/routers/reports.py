@@ -185,7 +185,9 @@ async def submit_resolution(
     url = file_service.save_upload_file(photo, "resolutions")
     db.add(ReportResolutionSubmission(report_id=report_id, agent_id=member.agent_id,
         resolution_photo=url, description=description.strip(), completion_date=completion_date,
-        verification_status="PENDING"))
+        verification_status="APPROVED"))
+    report.status = "RESOLVED"
+    report.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(report)
     return report_service.report_response(report)
