@@ -158,8 +158,7 @@ function AssignedReportsPage() {
                 isDarkMode ? "text-white/60" : "text-slate-600"
               }`}
             >
-              View complaints assigned to your agency and begin investigating
-              them.
+              Total Assigned Reports: <span className="font-bold text-lime-400">{dashboard?.total_reports ?? resource.data?.length ?? 0}</span> ({reports.length} requiring action)
             </p>
           </div>
         </div>
@@ -176,14 +175,15 @@ function AssignedReportsPage() {
             >
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 {[
-                  { title: "Pending", value: dashboard?.statistics.pending ?? "?", icon: "⏳", color: "amber" },
+                  { title: "Total Assigned", value: dashboard?.total_reports ?? (resource.data?.length ?? 0), icon: "📋", color: "blue" },
+                  { title: "Pending", value: dashboard?.statistics.pending ?? 0, icon: "⏳", color: "amber" },
                   {
                     title: "Under Investigation",
-                    value: dashboard?.statistics.under_investigation ?? "?",
+                    value: dashboard?.statistics.under_investigation ?? 0,
                     icon: "🔎",
                     color: "cyan"
                   },
-                  { title: "Resolved", value: dashboard?.statistics.resolved ?? "?", icon: "✓", color: "emerald" }
+                  { title: "Resolved", value: dashboard?.statistics.resolved ?? 0, icon: "✓", color: "emerald" }
                 ].map((status, index, items) => (
                   <div key={status.title} className="flex flex-1 items-center">
                     <div
@@ -196,11 +196,13 @@ function AssignedReportsPage() {
                       <div className="flex items-center justify-between">
                         <span
                           className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
-                            status.color === "amber"
-                              ? "bg-amber-300/15 text-amber-500"
-                              : status.color === "cyan"
-                                ? "bg-cyan-300/15 text-cyan-500"
-                                : "bg-emerald-300/15 text-emerald-500"
+                            status.color === "blue"
+                              ? "bg-blue-300/15 text-blue-400"
+                              : status.color === "amber"
+                                ? "bg-amber-300/15 text-amber-500"
+                                : status.color === "cyan"
+                                  ? "bg-cyan-300/15 text-cyan-500"
+                                  : "bg-emerald-300/15 text-emerald-500"
                           }`}
                         >
                           {status.icon}
@@ -267,7 +269,24 @@ function AssignedReportsPage() {
         
 
         <div className="mt-7 grid gap-4">
-          {reports.map((report) => (
+          {reports.length === 0 ? (
+            <div
+              className={`rounded-2xl border p-12 text-center shadow-lg backdrop-blur-xl ${
+                isDarkMode
+                  ? "border-white/10 bg-white/5 text-white/70"
+                  : "border-slate-200 bg-white/80 text-slate-600"
+              }`}
+            >
+              <p className="mb-3 text-4xl">✓</p>
+              <h3 className={`text-lg font-bold ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                No Active Assigned Reports
+              </h3>
+              <p className="mt-1 text-sm">
+                There are no pending or under-investigation complaints assigned at this moment.
+              </p>
+            </div>
+          ) : (
+            reports.map((report) => (
             <article
               key={report.id}
               className={`group flex items-center justify-between rounded-2xl border p-6 shadow-xl ring-1 ring-inset backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
@@ -321,7 +340,8 @@ function AssignedReportsPage() {
                 Investigate
               </Link>
             </article>
-          ))}
+          )))
+          }
         </div>
       </main>
     </div>

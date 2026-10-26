@@ -10,7 +10,6 @@ function ReportInvestigationPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
 
-  const [investigationNotes, setInvestigationNotes] = useState(null);
   const resource = useApi("/reports/" + reportId);
   const status = statusLabel(resource.data?.status);
   const [error, setError] = useState("");
@@ -42,17 +41,26 @@ function ReportInvestigationPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const save = async () => {
-    if (saving) return false;
-    setSaving(true); setError("");
+  const handleStartInvestigation = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError("");
     try {
-      await apiRequest("/reports/" + reportId, { method: "PATCH", body: { status: "UNDER_INVESTIGATION", notes: investigationNotes ?? resource.data?.agency_notes ?? "" } });
-      resource.refresh(); return true;
-    } catch (error) { setError(error.message); return false; }
-    finally { setSaving(false); }
+      await apiRequest("/reports/" + reportId, {
+        method: "PATCH",
+        body: { status: "UNDER_INVESTIGATION" },
+      });
+      navigate("/agency/reports/" + reportId + "/resolution");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSaving(false);
+    }
   };
-  const handleStartInvestigation = () => save();
-  const handleGoToResolution = async () => { if (await save()) navigate("/agency/reports/" + reportId + "/resolution"); };
+
+  const handleGoToResolution = () => {
+    navigate("/agency/reports/" + reportId + "/resolution");
+  };
   if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white">
         <ApiState error={error} /><ApiState {...resource} /><Link to="/agency/reports">Assigned Reports</Link></main>;
 
@@ -277,46 +285,40 @@ function ReportInvestigationPage() {
                 Investigation
               </h2>
 
-              <ApiState error={error} /><form className="mt-5 grid gap-5">
-                <label>
-                  <span className="font-bold">Investigation Notes</span>
-
-                  <textarea
-                    value={investigationNotes ?? resource.data?.agency_notes ?? ""}
-                    onChange={(event) => setInvestigationNotes(event.target.value)}
-                    placeholder={resource.data.agency_notes || "Enter investigation notes"}
-                    className={`mt-2 min-h-36 w-full rounded-xl border p-3 outline-none transition-all duration-300 focus:ring-2 ${
-                      isDark
-                        ? "border-white/10 bg-slate-950/60 text-white placeholder:text-slate-500 focus:border-cyan-400/40 focus:ring-cyan-400/20"
-                        : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-cyan-500/40 focus:ring-cyan-500/20"
-                    }`}
-                  />
-                </label>
+              <ApiState error={error} />
+              <div className="mt-5 grid gap-5">
+                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  {status === "Pending" && "Click below to begin the investigation. The report status will update to Under Investigation and you can upload the resolution evidence."}
+                  {status === "Under Investigation" && "This complaint is currently under investigation. Once work is completed on-site, upload the resolution evidence."}
+                  {status === "Resolved" && "This complaint has been investigated and resolved."}
+                </p>
 
                 {status === "Pending" && (
                   <button
                     type="button"
-                    disabled={saving} onClick={handleStartInvestigation}
+                    disabled={saving}
+                    onClick={handleStartInvestigation}
                     className={`rounded-xl p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 ${
                       isDark
                         ? "bg-cyan-600 hover:bg-cyan-500 hover:shadow-cyan-500/20"
                         : "bg-blue-700 hover:bg-blue-600 hover:shadow-blue-500/20"
                     }`}
                   >
-                    Start Investigation
+                    {saving ? "Starting..." : "Start Investigation"}
                   </button>
                 )}
 
                 {status === "Under Investigation" && (
                   <button
                     type="button"
-                    disabled={saving} onClick={handleGoToResolution}
+                    disabled={saving}
+                    onClick={handleGoToResolution}
                     className="rounded-xl bg-emerald-700 p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-emerald-500/20"
                   >
                     Upload Resolution
                   </button>
                 )}
-              </form>
+              </div>
             </section>
           </div>
         </div>

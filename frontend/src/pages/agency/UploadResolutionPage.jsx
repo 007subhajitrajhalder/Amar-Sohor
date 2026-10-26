@@ -60,10 +60,22 @@ function UploadResolutionPage() {
   const handleSubmitResolution = async event => {
     event.preventDefault();
     if (submitting) return;
+    if (!resolutionDescription.trim()) {
+      setError("Please describe the work performed.");
+      return;
+    }
+    if (!resolutionPhoto) {
+      setError("Please select an after-repair photograph.");
+      return;
+    }
+    if (!completionDate) {
+      setError("Please select a completion date.");
+      return;
+    }
     setSubmitting(true); setError("");
     try {
       const body = new FormData();
-      body.append("description", resolutionDescription);
+      body.append("description", resolutionDescription.trim());
       body.append("completion_date", completionDate);
       body.append("photo", resolutionPhoto);
       await apiRequest("/reports/" + reportId + "/resolutions", { method: "POST", body });
@@ -235,6 +247,7 @@ function UploadResolutionPage() {
               </span>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={completionDate}
                 onChange={(event) => setCompletionDate(event.target.value)}
                 className={`w-full rounded-xl border p-4 outline-none transition-all duration-300 focus:ring-2 ${

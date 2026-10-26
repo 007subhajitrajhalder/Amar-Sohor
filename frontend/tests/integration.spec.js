@@ -134,10 +134,8 @@ test("citizen registration and report submission through agency investigation an
   expect((await request.delete(api + "/agencies/facilities/" + reportFacility, { headers: headers(agent) })).status()).toBe(409);
   await login(page, "agent");
   await page.goto("/agency/reports/" + reportId + "/investigate");
-  await page.getByLabel("Investigation Notes").fill("Verified test investigation.");
   await page.getByRole("button", { name: "Start Investigation", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Upload Resolution", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Upload Resolution", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/agency/reports/${reportId}/resolution$`));
   await page.getByLabel("Resolution Description").fill("Completed test repair.");
   await page.locator("input[type=file]").setInputFiles(photo);
   await page.getByLabel("Completion Date").fill("2026-10-24");
