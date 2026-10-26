@@ -105,11 +105,14 @@ def get_resolved_reports(
     search: str | None = Query(default=None, max_length=150),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    mine: bool = Query(default=False, description="Filter to only reports allotted to or resolved by the logged-in agency member"),
     agency: Agency = Depends(get_current_agency),
+    agent: AgencyMember = Depends(get_current_agent_member),
     db: Session = Depends(get_db)
 ):
     """Retrieve resolved reports scoped to the signed-in agency."""
-    return report_service.list_resolved_reports(db, agency.agency_id, search, limit, offset)
+    agent_id = agent.agent_id if mine else None
+    return report_service.list_resolved_reports(db, agency.agency_id, search, limit, offset, agent_id=agent_id)
 
 
 @router.get(

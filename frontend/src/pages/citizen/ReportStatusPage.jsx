@@ -219,7 +219,7 @@ function ReportStatusPage() {
                 <h2 className="text-lg font-bold">Complaint Details</h2>
                 <span className="flex items-center gap-1.5 rounded-lg border border-lime-300/20 bg-lime-300/10 px-2.5 py-0.5 text-xs font-semibold text-lime-300">
                   <FacilityIcon size={13} />
-                  {data.issueCategory || "Civic Complaint"}
+                  {data.facilityCategoryLabel || "Civic Complaint"}
                 </span>
               </div>
 
@@ -331,26 +331,45 @@ function ReportStatusPage() {
                   {/* Resolution Evidence Photo if Resolved */}
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/35 mb-1.5">
-                      Resolution Evidence Photograph
+                      Resolution Evidence
                     </p>
-                    {data.resolvedPhotoUrl ? (
-                      <div className="overflow-hidden rounded-xl border border-lime-300/20 bg-black/40">
+                    {data.resolutionPhotoUrl ? (
+                      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
                         <img
-                          src={data.resolvedPhotoUrl}
-                          alt="Resolved repair evidence"
+                          src={data.resolutionPhotoUrl}
+                          alt="Agency resolution evidence"
                           className="max-h-52 w-full object-cover"
                         />
-                        <div className="flex items-center justify-between p-2 text-xs text-lime-300">
-                          <span className="flex items-center gap-1">
-                            <CheckCircle2 size={13} /> Resolution approved
-                          </span>
-                          <span className="text-white/40">{data.resolvedDate}</span>
+                        <div className="space-y-1 p-2 text-xs">
+                          <p className={`flex items-center gap-1 ${
+                            data.resolutionStatus === "APPROVED"
+                              ? "text-lime-300"
+                              : data.resolutionStatus === "REJECTED"
+                              ? "text-rose-300"
+                              : "text-amber-300"
+                          }`}>
+                            {data.resolutionStatus === "APPROVED" ? (
+                              <><CheckCircle2 size={13} /> Resolution approved</>
+                            ) : data.resolutionStatus === "REJECTED" ? (
+                              <><AlertTriangle size={13} /> Evidence rejected</>
+                            ) : (
+                              <><CircleDashed size={13} /> Awaiting approval</>
+                            )}
+                          </p>
+                          {data.resolutionDescription && (
+                            <p className="leading-relaxed text-white/70">{data.resolutionDescription}</p>
+                          )}
+                          <p className="text-white/40">
+                            Completed {data.resolutionCompletionDate}
+                            {data.resolutionSubmittedAt !== "Not recorded" &&
+                              ` · Submitted ${data.resolutionSubmittedAt}`}
+                          </p>
                         </div>
                       </div>
                     ) : (
                       <div className="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-black/15 p-4 text-center text-xs text-white/35">
                         <AlertTriangle size={18} className="mb-1.5 text-amber-300/70" />
-                        <span>Resolved photograph will appear here once agency repairs are executed.</span>
+                        <span>Resolution evidence will appear here after the agency submits it.</span>
                       </div>
                     )}
                   </div>

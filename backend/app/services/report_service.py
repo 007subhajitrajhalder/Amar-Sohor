@@ -75,9 +75,16 @@ def resolved_report_response(report: Report) -> ResolvedReportResponse:
 
 def list_resolved_reports(
     db: Session, agency_id: int, search: str | None = None,
-    limit: int = 50, offset: int = 0
+    limit: int = 50, offset: int = 0, agent_id: int | None = None
 ) -> ResolvedReportListResponse:
     filters = [Report.assigned_agency == agency_id, Report.status == "RESOLVED"]
+    if agent_id is not None:
+        filters.append(
+            or_(
+                Report.assigned_agent == agent_id,
+                Report.resolution_submissions.any(ReportResolutionSubmission.agent_id == agent_id)
+            )
+        )
     if search and search.strip():
         search = search.strip()
         matches = [

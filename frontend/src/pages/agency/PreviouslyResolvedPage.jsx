@@ -54,7 +54,7 @@ function PreviouslyResolvedPage() {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [selectedReport, setSelectedReport] = useState(null);
-  const resource = useApi("/agencies/reports/resolved?" + new URLSearchParams({ search, offset: String(offset), limit: "50" }));
+  const resource = useApi("/agencies/reports/resolved?" + new URLSearchParams({ search, offset: String(offset), limit: "50", mine: "true" }));
   const resolvedReports = (resource.data?.items || []).map(report => ({
     id: report.report_id, title: report.title, facility: report.facility_name,
     date: displayDate(report.resolved_at), status: "Resolved"
@@ -174,7 +174,7 @@ function PreviouslyResolvedPage() {
                 isDarkMode ? "text-white/60" : "text-slate-600"
               }`}
             >
-              View complaints that have already been resolved by your agency.
+              View complaints that have been resolved by you.
             </p>
           </div>
         </div>

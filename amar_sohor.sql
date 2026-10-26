@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Oct 25, 2026 at 05:00 PM
+-- Generation Time: Oct 26, 2026 at 03:39 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -608,7 +608,7 @@ CREATE TABLE `facilities` (
 
 INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitude`, `longitude`, `address`, `added_by`, `status`, `created_at`, `photo_url`, `additional_notes`, `source_recommendation_id`) VALUES
 (1, 'College Street Public Toilet', 2, 22.5744000, 88.3629000, 'College Street, Kolkata', 520, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
-(2, 'Gariahat Community Dustbin', 1, 22.5186000, 88.3653000, 'Gariahat, Kolkata', 518, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(2, 'Gariahat Community Dustbin', 1, 22.5186000, 88.3653000, 'Gariahat, Kolkata', 999, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/1/5528f52159914e85909743e7c11f5c03.jpg', NULL, NULL),
 (3, 'Sealdah Drinking Water Point', 3, 22.5674000, 88.3712000, 'Sealdah, Kolkata', 522, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
 (4, 'New Market Parking Area', 4, 22.5601000, 88.3527000, 'New Market, Kolkata', 524, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
 (5, 'Park Street Dustbin', 1, 22.5511000, 88.3524000, 'Park Street, Kolkata', 519, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
@@ -617,7 +617,7 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitu
 (8, 'College Street Public Toilet', 2, 22.5741900, 88.3625200, 'College Street, Kolkata, West Bengal', 19, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-002.jpg', NULL, NULL),
 (9, 'Gariahat Drinking Water Point', 3, 22.5186000, 88.3651100, 'Gariahat, Kolkata, West Bengal', 29, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-003.jpg', NULL, NULL),
 (10, 'Sealdah Public Parking Area', 4, 22.5676100, 88.3712000, 'Sealdah, Kolkata, West Bengal', 450, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-004.jpg', NULL, NULL),
-(11, 'New Market Community Dustbin', 1, 22.5605200, 88.3528900, 'New Market, Kolkata, West Bengal', 45, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/1-005.jpg', NULL, NULL),
+(11, 'New Market Dustbin', 1, 22.5605200, 88.3528900, 'New Market, Kolkata, West Bengal', 45, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/1/f4058dd7779c4b638fa3f38db21984fc.jpg', NULL, NULL),
 (12, 'Howrah Station Public Toilet', 2, 22.5850800, 88.3429800, 'Howrah Station Area, Howrah, West Bengal', 55, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-006.jpg', NULL, NULL),
 (13, 'Park Street Drinking Water Point', 3, 22.5508900, 88.3529700, 'Park Street, Kolkata, West Bengal', 65, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-007.jpg', NULL, NULL),
 (14, 'Shyambazar Public Parking Area', 4, 22.6042000, 88.3728300, 'Shyambazar, Kolkata, West Bengal', 462, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-008.jpg', NULL, NULL),
@@ -625,7 +625,6 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitu
 (16, 'Jadavpur Public Toilet', 2, 22.4984200, 88.3688100, 'Jadavpur, Kolkata, West Bengal', 91, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/2-010.jpg', NULL, NULL),
 (17, 'Tollygunge Drinking Water Point', 3, 22.4980800, 88.3450000, 'Tollygunge, Kolkata, West Bengal', 101, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-011.jpg', NULL, NULL),
 (18, 'Behala Public Parking Area', 4, 22.4912900, 88.3171900, 'Behala, Kolkata, West Bengal', 474, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-012.jpg', NULL, NULL),
-(19, 'Dumdum Community Dustbin', 1, 22.6333000, 88.4223800, 'Dumdum, Kolkata, West Bengal', 117, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-013.jpg', NULL, NULL),
 (20, 'Belgachia Public Toilet', 2, 22.6042100, 88.3855700, 'Belgachia, Kolkata, West Bengal', 127, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/2-014.jpg', NULL, NULL),
 (21, 'Maniktala Drinking Water Point', 3, 22.5894200, 88.3734300, 'Maniktala, Kolkata, West Bengal', 137, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/3-015.jpg', NULL, NULL),
 (22, 'Burrabazar Public Parking Area', 4, 22.5795800, 88.3536200, 'Burrabazar, Kolkata, West Bengal', 486, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/4-016.jpg', NULL, NULL),
@@ -653,7 +652,6 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitu
 (44, 'Chinar Park Public Toilet', 2, 22.6230000, 88.4488100, 'Chinar Park, Kolkata, West Bengal', 343, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-038.jpg', NULL, NULL),
 (45, 'Garden Reach Drinking Water Point', 3, 22.5442100, 88.2830000, 'Garden Reach, Kolkata, West Bengal', 353, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-039.jpg', NULL, NULL),
 (46, 'Metiabruz Public Parking Area', 4, 22.5544200, 88.2671900, 'Metiabruz, Kolkata, West Bengal', 479, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-040.jpg', NULL, NULL),
-(47, 'Taratala Community Dustbin', 1, 22.5095800, 88.3153800, 'Taratala, Kolkata, West Bengal', 369, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-041.jpg', NULL, NULL),
 (48, 'Kidderpore Public Toilet', 2, 22.5377900, 88.3215700, 'Kidderpore, Kolkata, West Bengal', 379, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-042.jpg', NULL, NULL),
 (49, 'Chetla Drinking Water Point', 3, 22.5150000, 88.3324300, 'Chetla, Kolkata, West Bengal', 389, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-043.jpg', NULL, NULL),
 (50, 'Rabindra Sarobar Public Parking Area', 4, 22.5072100, 88.3456200, 'Rabindra Sarobar, Kolkata, West Bengal', 491, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/4-044.jpg', NULL, NULL),
@@ -674,7 +672,8 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitu
 (65, 'Thakurpukur Drinking Water Point', 3, 22.4532100, 88.3048100, 'Thakurpukur, Kolkata, West Bengal', 95, 'UNDER_REPAIR', '2026-10-14 06:30:00', '/uploads/facilities/3-059.jpg', NULL, NULL),
 (66, 'Garia Public Parking Area', 4, 22.4634200, 88.3910000, 'Garia, Kolkata, West Bengal', 460, 'SUSPENDED', '2026-10-14 06:30:00', '/uploads/facilities/4-060.jpg', NULL, NULL),
 (67, 'Bansdroni Community Dustbin', 1, 22.4715800, 88.3671900, 'Bansdroni, Kolkata, West Bengal', 111, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-061.jpg', NULL, NULL),
-(68, 'Narendrapur Public Toilet', 2, 22.4417900, 88.3933800, 'Narendrapur, Kolkata, West Bengal', 121, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-062.jpg', NULL, NULL);
+(68, 'Narendrapur Public Toilet', 2, 22.4417900, 88.3933800, 'Narendrapur, Kolkata, West Bengal', 121, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-062.jpg', NULL, NULL),
+(69, 'my facility', 1, 22.5760000, 88.3690000, 'nabapally thakurpukur', 999, 'SUSPENDED', '2026-10-26 13:43:14', '/uploads/facilities/1/d643ebd5945f44a2aa42f081b4c15bab.jpg', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -785,8 +784,11 @@ CREATE TABLE `reports` (
 --
 
 INSERT INTO `reports` (`report_id`, `facility_id`, `user_id`, `title`, `description`, `photo_url`, `status`, `assigned_agency`, `created_at`, `assigned_agent`, `resolved_at`, `investigation_notes`) VALUES
-(1, 2, 11, 'Dustbin overflowing heavily', 'Waste scattered around Gariahat market junction.', '/uploads/reports/sample.jpg', 'PENDING', 1, '2026-10-14 07:44:36', 518, NULL, NULL),
-(2, 1, 11, 'Leaking tap and broken flush', 'Water leaking continuously on College Street toilet.', '/uploads/reports/test_report.jpg', 'PENDING', 2, '2026-10-14 08:22:29', 520, NULL, NULL);
+(1, 2, 11, 'Dustbin overflowing heavily', 'Waste scattered around Gariahat market junction.', '/uploads/reports/sample.jpg', 'RESOLVED', 1, '2026-10-14 07:44:36', 518, '2026-10-26 13:27:31', NULL),
+(2, 1, 11, 'Leaking tap and broken flush', 'Water leaking continuously on College Street toilet.', '/uploads/reports/test_report.jpg', 'PENDING', 2, '2026-10-14 08:22:29', 520, NULL, NULL),
+(3, 6, 529, 'bad dustbin', 'very poor smell', '/uploads/reports/957aa16791cd4111994300ff804842cf.jpg', 'RESOLVED', 1, '2026-10-26 13:12:52', 999, '2026-10-26 13:31:29', NULL),
+(55, 67, 529, 'sdfsdfsdf', 'sdfsdfsdf', '', 'UNDER_INVESTIGATION', 1, '2026-10-26 13:29:44', 999, NULL, NULL),
+(56, 24, 529, 'very bad', 'wak thu', '/uploads/reports/ea265c3d5c224feb8ae86ccdeeed2603.jpg', 'PENDING', 2, '2026-10-26 14:04:19', 163, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -804,6 +806,15 @@ CREATE TABLE `report_resolution_submissions` (
   `description` text DEFAULT NULL,
   `completion_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `report_resolution_submissions`
+--
+
+INSERT INTO `report_resolution_submissions` (`resolution_id`, `report_id`, `agent_id`, `resolution_photo`, `submitted_at`, `verification_status`, `description`, `completion_date`) VALUES
+(1, 1, 9, '/uploads/resolutions/6465f8c16ca64f09b7d7edc66a4f0079.png', '2026-10-26 13:07:39', 'PENDING', 'Repaired the reported facility on site. All issues resolved.', '2026-10-26'),
+(3, 1, 9, '/uploads/resolutions/dcdc9124202d4b5db35c9f23b40e6fee.png', '2026-10-26 13:27:31', 'APPROVED', 'Fixed leak and replaced tap. Everything verified operational.', '2026-10-26'),
+(4, 3, 999, '/uploads/resolutions/b813a5cae5af451fb70489abae6d73df.jpg', '2026-10-26 13:31:29', 'APPROVED', 'done', '2026-10-26');
 
 -- --------------------------------------------------------
 
@@ -1459,7 +1470,7 @@ ALTER TABLE `agency_members`
 -- AUTO_INCREMENT for table `facilities`
 --
 ALTER TABLE `facilities`
-  MODIFY `facility_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+  MODIFY `facility_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT for table `facility_categories`
@@ -1489,13 +1500,13 @@ ALTER TABLE `recommendation_investigations`
 -- AUTO_INCREMENT for table `reports`
 --
 ALTER TABLE `reports`
-  MODIFY `report_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `report_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- AUTO_INCREMENT for table `report_resolution_submissions`
 --
 ALTER TABLE `report_resolution_submissions`
-  MODIFY `resolution_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `resolution_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`

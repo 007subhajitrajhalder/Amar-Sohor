@@ -56,11 +56,14 @@ def get_categories(db: Session, agency_id: int):
     ).all()
 
 
-def get_statistics(db: Session, agency_id: int) -> FacilityStatistics:
+def get_statistics(db: Session, agency_id: int, agent_id: int | None = None) -> FacilityStatistics:
+    stat_filters = [FacilityCategory.handling_agency == agency_id]
+    if agent_id is not None:
+        stat_filters.append(Facility.added_by == agent_id)
     counts = dict(db.execute(
         select(Facility.status, func.count(Facility.facility_id))
         .join(FacilityCategory, Facility.category_id == FacilityCategory.category_id)
-        .where(FacilityCategory.handling_agency == agency_id)
+        .where(*stat_filters)
         .group_by(Facility.status)
     ).all())
     return FacilityStatistics(
@@ -75,9 +78,11 @@ def get_statistics(db: Session, agency_id: int) -> FacilityStatistics:
 def list_facilities(
     db: Session, agency_id: int, search: str | None = None,
     category_id: int | None = None, status: str | None = None,
-    limit: int = 50, offset: int = 0
+    limit: int = 50, offset: int = 0, agent_id: int | None = None
 ) -> FacilityListResponse:
     filters = [FacilityCategory.handling_agency == agency_id]
+    if agent_id is not None:
+        filters.append(Facility.added_by == agent_id)
     if category_id is not None:
         filters.append(Facility.category_id == category_id)
     if status is not None:
@@ -105,7 +110,7 @@ def list_facilities(
     return FacilityListResponse(
         items=[facility_response(item) for item in facilities],
         total=total, limit=limit, offset=offset,
-        statistics=get_statistics(db, agency_id)
+        statistics=get_statistics(db, agency_id, agent_id=agent_id)
     )
 
 

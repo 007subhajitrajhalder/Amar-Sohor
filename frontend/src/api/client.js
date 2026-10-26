@@ -175,9 +175,15 @@ export const facilityView = f => ({ ...f, id: f.facility_id, name: f.facility_na
   status: statusLabel(f.status), imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id });
 export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_name,
   facilityAddress: r.facility_address, facilityCategory: categoryKey(r.facility_category),
+  facilityCategoryLabel: r.facility_category,
   status: statusLabel(r.status), date: displayDate(r.created_at), resolvedDate: displayDate(r.resolved_at),
   photoUrl: mediaUrl(r.photo_url), assignedAgency: r.agency_name, assignedOfficer: r.assigned_officer,
-  assignedMember: r.assigned_member, agencyNotes: r.agency_notes });
+  assignedMember: r.assigned_member, agencyNotes: r.agency_notes,
+  resolutionPhotoUrl: mediaUrl(r.resolution?.photo_url),
+  resolutionStatus: r.resolution?.verification_status,
+  resolutionDescription: r.resolution?.description,
+  resolutionCompletionDate: displayDate(r.resolution?.completion_date),
+  resolutionSubmittedAt: displayDate(r.resolution?.submitted_at) });
 
 export function facilityPayload({ name, category, address, latitude, longitude, status, photo, notes }) {
   if (!name.trim() || !address.trim() || !category) throw new Error("Name, address and category are required.");

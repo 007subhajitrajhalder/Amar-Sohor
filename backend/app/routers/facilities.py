@@ -144,11 +144,14 @@ def get_facilities(
     status: FacilityStatus | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    mine: bool = Query(default=False, description="Filter to only facilities added by the logged-in agency member"),
     agency: Agency = Depends(get_current_agency),
+    agent: AgencyMember = Depends(get_current_agent_member),
     db: Session = Depends(get_db)
 ):
+    agent_id = agent.agent_id if mine else None
     return facility_service.list_facilities(
-        db, agency.agency_id, search, category_id, status, limit, offset
+        db, agency.agency_id, search, category_id, status, limit, offset, agent_id=agent_id
     )
 
 

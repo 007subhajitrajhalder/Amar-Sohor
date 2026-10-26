@@ -21,7 +21,7 @@ const auraLayers = [
 ];
 
 function AgencyDashboardPage() {
-  const resource = useApi("/agencies/dashboard");
+  const resource = useApi("/agencies/dashboard?mine=true");
   const dashboard = resource.data;
   const percent = index => dashboard?.status_distribution[index]?.percentage ?? 0;
 
@@ -53,24 +53,28 @@ function AgencyDashboardPage() {
   const statistics = [
     {
       title: "Pending",
+      caption: "Assigned pending",
       value: dashboard?.statistics.pending ?? "?",
       color: "text-amber-200",
       background: "bg-amber-300/15"
     },
     {
       title: "Under Investigation",
+      caption: "Assigned investigating",
       value: dashboard?.statistics.under_investigation ?? "?",
       color: "text-cyan-200",
       background: "bg-cyan-300/15"
     },
     {
       title: "Resolved",
+      caption: "Resolved by you",
       value: dashboard?.statistics.resolved ?? "?",
       color: "text-emerald-200",
       background: "bg-emerald-300/15"
     },
     {
-      title: "Facilities",
+      title: "Total Facilities",
+      caption: "Under your jurisdiction",
       value: dashboard?.statistics.facilities ?? "?",
       color: "text-purple-200",
       background: "bg-purple-300/15"
@@ -192,13 +196,19 @@ function AgencyDashboardPage() {
       <main className="relative z-10 px-5 py-8 md:px-10 md:py-12">
         <section className="mx-auto max-w-6xl">
           <ApiState {...resource} />
-          {dashboard && <p className="text-sm">{dashboard.agency_name}</p>}
           {/* Dashboard heading */}
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className={`text-sm font-semibold uppercase tracking-widest ${isDarkMode ? "text-cyan-100/60" : "text-cyan-700"}`}>
-                Agency Portal
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className={`text-sm font-semibold uppercase tracking-widest ${isDarkMode ? "text-cyan-100/60" : "text-cyan-700"}`}>
+                  Agency Portal
+                </p>
+                {dashboard && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-0.5 text-xs font-semibold text-cyan-300">
+                    🏢 {dashboard.agency_name} • {dashboard.department_type}
+                  </span>
+                )}
+              </div>
 
               <h1 className={`mt-2 text-3xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"}`}>
                 Agency Dashboard
@@ -209,7 +219,7 @@ function AgencyDashboardPage() {
                   isDarkMode ? "text-white/60" : "text-slate-600"
                 }`}
               >
-                View agency complaints and facility information.
+                Overview of complaints and municipal facilities under your jurisdiction.
               </p>
             </div>
           </div>
@@ -217,7 +227,7 @@ function AgencyDashboardPage() {
           {/* Statistics cards */}
           <section className="mt-8">
             <h2 className={`text-xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"}`}>
-              Agency Overview
+              Jurisdiction Overview
             </h2>
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -261,7 +271,7 @@ function AgencyDashboardPage() {
                       isDarkMode ? "text-white/50" : "text-slate-500"
                     }`}
                   >
-                    Total {statistic.title.toLowerCase()}
+                    {statistic.caption}
                   </p>
                 </article>
               ))}

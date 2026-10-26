@@ -251,6 +251,13 @@ function MyReportsPage() {
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-lime-300/20 bg-lime-300/10 text-lime-300">
                         <Icon size={20} />
                       </div>
+                      {report.photoUrl && (
+                        <img
+                          src={report.photoUrl}
+                          alt={`Evidence for ${report.title}`}
+                          className="h-11 w-11 shrink-0 rounded-xl border border-white/10 object-cover"
+                        />
+                      )}
 
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -259,9 +266,9 @@ function MyReportsPage() {
                           </span>
                           <span className="text-xs text-white/30">•</span>
                           <span className="text-xs text-white/40">{report.date}</span>
-                          {report.issueCategory && (
+                          {report.facilityCategoryLabel && (
                             <span className="rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/70">
-                              {report.issueCategory}
+                              {report.facilityCategoryLabel}
                             </span>
                           )}
                         </div>

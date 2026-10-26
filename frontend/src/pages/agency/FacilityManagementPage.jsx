@@ -58,7 +58,7 @@ function FacilityManagementPage() {
   );
 
   const categories = useApi("/agencies/facilities/categories", { poll: 0 });
-  const query = new URLSearchParams({ limit: "50", offset: String(offset) });
+  const query = new URLSearchParams({ limit: "50", offset: String(offset), mine: "true" });
   if (searchQuery.trim()) query.set("search", searchQuery.trim());
   if (selectedCategory !== "all") query.set("category_id", selectedCategory);
   const resource = useApi("/agencies/facilities?" + query);
@@ -205,7 +205,7 @@ function FacilityManagementPage() {
               Facility Management
             </h1>
             <p className="mt-0.5 text-xs opacity-60">
-              View, inspect, edit, and commission municipal amenities across Kolkata.
+              View, inspect, edit, and manage facilities registered and handled by you.
             </p>
           </div>
 

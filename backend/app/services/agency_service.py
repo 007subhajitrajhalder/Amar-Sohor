@@ -6,7 +6,7 @@ Aligned with project workflow:
 3. Agency dashboard provides overview metrics and complaint status distribution.
 """
 from typing import Optional, Tuple, List, Dict, Any
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.orm import Session
 
 from app.models.agency import Agency
@@ -14,6 +14,7 @@ from app.models.agency_member import AgencyMember
 from app.models.facility import Facility
 from app.models.facility_category import FacilityCategory
 from app.models.report import Report
+from app.models.report_resolution_submission import ReportResolutionSubmission
 from app.models.user import User
 from app.schemas.agency import (
     AgencyDashboardResponse,
@@ -124,23 +125,33 @@ def format_agent_details(
     }
 
 
-def get_agency_dashboard(db: Session, agency: Agency) -> AgencyDashboardResponse:
+def get_agency_dashboard(db: Session, agency: Agency, agent: Optional[AgencyMember] = None) -> AgencyDashboardResponse:
     """Build the dashboard for an agency resolved by the authorization dependency."""
+    report_filter = [Report.assigned_agency == agency.agency_id]
+    if agent is not None:
+        report_filter.append(
+            or_(
+                Report.assigned_agent == agent.agent_id,
+                Report.resolution_submissions.any(ReportResolutionSubmission.agent_id == agent.agent_id)
+            )
+        )
     report_counts = dict(
         db.execute(
             select(Report.status, func.count(Report.report_id))
-            .where(Report.assigned_agency == agency.agency_id)
+            .where(*report_filter)
             .group_by(Report.status)
         ).all()
     )
 
-    # Category ownership determines responsibility, not the member who added
-    # the facility. Include OPEN, UNDER_REPAIR, and SUSPENDED facilities.
+    facility_filter = [FacilityCategory.handling_agency == agency.agency_id]
+    if agent is not None:
+        facility_filter.append(Facility.added_by == agent.agent_id)
+
     facility_count = db.scalar(
         select(func.count(Facility.facility_id))
         .join(FacilityCategory, Facility.category_id == FacilityCategory.category_id)
-        .where(FacilityCategory.handling_agency == agency.agency_id)
-    )
+        .where(*facility_filter)
+    ) or 0
 
     total_reports = sum(report_counts.values())
     status_distribution = [
