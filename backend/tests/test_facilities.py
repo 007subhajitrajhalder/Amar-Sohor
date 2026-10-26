@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from helpers import ApiTestCase
 from app.models import Facility, Recommendation
@@ -49,6 +50,70 @@ class FacilityTests(ApiTestCase):
         listing = self.request(user_id=1, path="/agencies/facilities")[1]
         self.assertEqual(dashboard["statistics"]["facilities"], 4)
         self.assertEqual(listing["statistics"]["total"], 4)
+
+
+    def test_coordinate_precision_and_update_persist_after_reload(self):
+        coordinates = {"latitude": "23.8123456", "longitude": "-90.4123456"}
+        code, created = self.request(
+            user_id=1, path="/agencies/facilities", method="POST",
+            body=self.payload(**coordinates)
+        )
+        self.assertEqual(code, 201)
+        facility_id = created["facility_id"]
+        for method, expected in (
+            (None, coordinates),
+            ("PUT", {"latitude": "-23.8123456", "longitude": "90.4123456"})
+        ):
+            with self.subTest(method=method):
+                if method:
+                    code, updated = self.request(
+                        user_id=1, path=f"/agencies/facilities/{facility_id}",
+                        method=method, body=self.payload(**expected)
+                    )
+                    self.assertEqual(code, 200)
+                    for field, value in expected.items():
+                        self.assertEqual(updated[field], float(value))
+                # Read through a new session so ORM state cannot mask a missing commit.
+                with Session(self.engine) as fresh_db:
+                    saved = fresh_db.get(Facility, facility_id)
+                    for field, value in expected.items():
+                        self.assertEqual(str(getattr(saved, field)), value)
+                for path in (f"/agencies/facilities/{facility_id}", f"/facilities/{facility_id}"):
+                    code, loaded = self.request(user_id=1, path=path)
+                    self.assertEqual(code, 200)
+                    for field, value in expected.items():
+                        self.assertEqual(loaded[field], float(value))
+
+    def test_coordinate_boundaries_are_valid_on_create_and_update(self):
+        for latitude, longitude in ((-90, -180), (90, 180), (0, 0)):
+            with self.subTest(latitude=latitude, longitude=longitude):
+                payload = self.payload(latitude=latitude, longitude=longitude)
+                code, created = self.request(
+                    user_id=1, path="/agencies/facilities", method="POST", body=payload
+                )
+                self.assertEqual(code, 201)
+                code, updated = self.request(
+                    user_id=1, path=f'/agencies/facilities/{created["facility_id"]}',
+                    method="PUT", body=payload
+                )
+                self.assertEqual(code, 200)
+                self.assertEqual((updated["latitude"], updated["longitude"]), (latitude, longitude))
+
+    def test_invalid_coordinates_do_not_change_saved_location(self):
+        before = self.request(user_id=1, path="/agencies/facilities/201")[1]
+        for field, bound in (("latitude", 90), ("longitude", 180)):
+            for value in (-bound - 1, bound + 1, "NaN", "Infinity", "-Infinity", "", None, "0.12345678"):
+                for method, path in (("POST", "/agencies/facilities"), ("PUT", "/agencies/facilities/201")):
+                    with self.subTest(field=field, value=value, method=method):
+                        code, error = self.request(
+                            user_id=1, path=path, method=method,
+                            body=self.payload(**{field: value})
+                        )
+                        self.assertEqual(code, 422)
+                        self.assertTrue(any(field in item["loc"] for item in error["detail"]))
+        self.db.expire_all()
+        self.assertEqual(self.request(user_id=1, path="/agencies/facilities/201")[1], before)
+        self.assertEqual(self.db.query(Facility).count(), 4)
 
     def test_categories_filters_pagination_and_unfiltered_statistics(self):
         code, categories = self.request(user_id=1, path="/agencies/facilities/categories")

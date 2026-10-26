@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
+import CurrentLocationButton from "../../components/CurrentLocationButton";
 import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -437,6 +438,12 @@ function FacilityEditor({ facilityId }) {
                 />
               </div>
             </div>
+
+            <CurrentLocationButton
+              isDarkMode={isDarkMode}
+              disabled={isSubmitting || Boolean(success)}
+              onCoordinates={coordinates => setFormData(previous => ({ ...previous, ...coordinates }))}
+            />
 
             {/* Image Section */}
             <div

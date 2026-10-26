@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
+import CurrentLocationButton from "../../components/CurrentLocationButton";
 import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -418,6 +419,12 @@ function AddFacilityPage() {
                 />
               </div>
             </div>
+
+            <CurrentLocationButton
+              isDarkMode={isDarkMode}
+              disabled={submitting || isSubmitted}
+              onCoordinates={({ latitude, longitude }) => { setLatitude(latitude); setLongitude(longitude); }}
+            />
 
             {/* Facility Image / Photograph Section */}
             <div

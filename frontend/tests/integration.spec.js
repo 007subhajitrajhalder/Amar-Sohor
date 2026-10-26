@@ -9,11 +9,15 @@ let state, admin, agent, other, citizen, agentId, reportFacility, reportId;
 const headers = token => ({ Authorization: "Bearer " + token });
 const photo = { name: "evidence.png", mimeType: "image/png", buffer: png };
 async function login(page, role) {
-  await page.goto("/login");
+  // Third-party carousel images need not finish loading before signing in.
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
   await page.getByLabel("Email address").fill(state.emails[role]);
   await page.getByLabel("Password", { exact: true }).fill(state.password);
   await page.getByRole("button", { name: "Login", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(role === "admin" ? "/admin/dashboard" : role === "citizen" ? "/citizen/dashboard" : "/agency/dashboard"));
+  await expect(page).toHaveURL("/");
+  const dashboard = role === "admin" ? "/admin/dashboard" : role === "citizen" ? "/citizen/dashboard" : "/agency/dashboard";
+  await page.goto(dashboard, { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(new RegExp(dashboard));
 }
 async function token(request, role) {
   const response = await request.post(api + "/auth/login", { data: { email: state.emails[role], password: state.password } });
@@ -43,13 +47,29 @@ test.beforeAll(async ({ request }) => {
 test("agency CRUD: browser forms, real MySQL persistence, views, counts, deletion and isolation", async ({ page, request }) => {
   await login(page, "agent");
   const baseline = await (await request.get(api + "/agencies/dashboard", { headers: headers(agent) })).json();
-  await expect(page.getByText(String(baseline.total_reports) + " total reports", { exact: true })).toBeVisible();
+  const memberDashboard = await (await request.get(api + "/agencies/dashboard?mine=true", { headers: headers(agent) })).json();
+  await expect(page.getByText(String(memberDashboard.total_reports) + " total reports", { exact: true })).toBeVisible();
   const name = "Integration facility " + state.run;
   await page.goto("/agency/facilities");
   await page.getByRole("link", { name: "Add Facility", exact: true }).click();
   await page.getByLabel("Facility Name").fill(name);
   await page.getByLabel("Facility Category").selectOption(String(state.categories[0].id));
   await page.getByLabel("Physical Address").fill("Integration address");
+  await expect(page.getByLabel("Latitude", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Longitude", { exact: true })).toHaveValue("");
+  expect(await page.evaluate(async () => (await navigator.permissions.query({ name: "geolocation" })).state)).toBe("prompt");
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Browser.setPermission", {
+    permission: { name: "geolocation" }, setting: "denied", origin: "http://127.0.0.1:5173"
+  });
+  await page.getByRole("button", { name: "Use My Current Location" }).click();
+  await expect(page.getByRole("alert")).toContainText("Location access was denied");
+  await expect(page.getByRole("button", { name: "Use My Current Location" })).toBeEnabled();
+  for (const [label, value] of [["Latitude", "91"], ["Latitude", "-91"], ["Longitude", "181"], ["Longitude", "-181"]]) {
+    const input = page.getByLabel(label, { exact: true });
+    await input.fill(value);
+    expect(await input.evaluate(element => element.validity.valid)).toBe(false);
+  }
   await page.getByLabel("Latitude", { exact: true }).fill("0");
   await page.getByLabel("Longitude", { exact: true }).fill("0");
   const createdPromise = page.waitForResponse(r => r.url().endsWith("/agencies/facilities") && r.request().method() === "POST");
@@ -67,12 +87,32 @@ test("agency CRUD: browser forms, real MySQL persistence, views, counts, deletio
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   await page.goto("/agency/facilities/" + created.facility_id + "/edit");
   await expect(page.getByLabel("Facility Name")).toHaveValue(name);
+  await page.getByRole("button", { name: "Use My Current Location" }).click();
+  await expect(page.getByRole("alert")).toContainText("Location access was denied");
+  await expect(page.getByLabel("Latitude", { exact: true })).toHaveValue("0");
+  await expect(page.getByLabel("Longitude", { exact: true })).toHaveValue("0");
+  await page.getByLabel("Latitude", { exact: true }).fill("-23.8123456");
+  await page.getByLabel("Longitude", { exact: true }).fill("90.4123456");
+  expect(await (await request.get(api + "/agencies/facilities/" + created.facility_id, { headers: headers(agent) })).json())
+    .toMatchObject({ latitude: 0, longitude: 0 });
   await page.getByLabel("Facility Name").fill(name + " edited");
   await page.getByLabel("Operational Status").selectOption("UNDER_REPAIR");
   await page.getByRole("button", { name: "Save Changes" }).click();
   await expect(page).toHaveURL(/\/agency\/facilities$/);
   await expect(page.getByRole("heading", { name: name + " edited", exact: true })).toBeVisible();
   expect(persisted(created.facility_id)).toMatchObject({ name: name + " edited", status: "UNDER_REPAIR" });
+  await page.goto("/agency/facilities/" + created.facility_id + "/edit");
+  await expect(page.getByLabel("Latitude", { exact: true })).toHaveValue("-23.8123456");
+  await expect(page.getByLabel("Longitude", { exact: true })).toHaveValue("90.4123456");
+  await page.reload();
+  await expect(page.getByLabel("Latitude", { exact: true })).toHaveValue("-23.8123456");
+  await expect(page.getByLabel("Longitude", { exact: true })).toHaveValue("90.4123456");
+  await page.goto("/agency/facilities");
+  await expect(page.getByText("-23.8123456, 90.4123456", { exact: true })).toBeVisible();
+  const pagination = page.getByRole("navigation", { name: "Pagination" });
+  await expect(pagination.locator("span")).toHaveCount(0);
+  await expect(pagination.getByRole("button", { name: "Previous" })).toBeVisible();
+  await expect(pagination.getByRole("button", { name: "Next" })).toBeVisible();
   for (const method of ["get", "put", "delete"]) {
     const response = await request[method](api + "/agencies/facilities/" + created.facility_id,
       { headers: headers(other), ...(method === "put" ? { data: payload("unauthorized") } : {}) });
@@ -101,6 +141,9 @@ test("agency CRUD: browser forms, real MySQL persistence, views, counts, deletio
   expect(after.statistics.facilities).toBe(baseline.statistics.facilities);
   await page.goto("/agency/resolved");
   await expect(page.getByText("No resolved complaints found.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Pagination" }).locator("span")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
 });
 test("citizen registration and report submission through agency investigation and admin resolution", async ({ page, request }) => {
   await page.goto("/register");
@@ -259,4 +302,69 @@ test("loading, network errors and retry preserve genuine server data", async ({ 
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Report fixture " + state.run, exact: true })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("device geolocation fills both forms and persists only on submit", async ({ page, context, request }) => {
+  test.setTimeout(90000);
+  await login(page, "agent");
+  await context.grantPermissions(["geolocation"]);
+  await page.goto("/agency/facilities/add");
+  const writes = [];
+  page.on("request", r => {
+    if (/\/agencies\/facilities(?:\/\d+)?$/.test(new URL(r.url()).pathname) &&
+        ["POST", "PUT"].includes(r.method())) writes.push(r.method());
+  });
+  const locationButton = page.getByRole("button", { name: /Use My Current Location|Getting location/ });
+  await locationButton.click();
+  await expect(locationButton).toBeEnabled({ timeout: 20000 });
+  const locationError = page.getByRole("alert");
+  if (await locationError.count()) {
+    const message = await locationError.innerText();
+    expect(message).toMatch(/location.*(unavailable|timed out|denied)/i);
+    expect(writes).toEqual([]);
+    // Use the actual device provider only; never substitute coordinates.
+    test.skip(true, "Device geolocation could not complete: " + message);
+  }
+  const coordinates = {
+    latitude: Number(await page.getByLabel("Latitude", { exact: true }).inputValue()),
+    longitude: Number(await page.getByLabel("Longitude", { exact: true }).inputValue())
+  };
+  expect(Number.isFinite(coordinates.latitude) && Math.abs(coordinates.latitude) <= 90).toBe(true);
+  expect(Number.isFinite(coordinates.longitude) && Math.abs(coordinates.longitude) <= 180).toBe(true);
+  expect(writes).toEqual([]);
+  await page.getByLabel("Facility Name").fill("Device location " + state.run);
+  await page.getByLabel("Facility Category").selectOption(String(state.categories[0].id));
+  await page.getByLabel("Physical Address").fill("Device location verification " + state.run);
+  const createdPromise = page.waitForResponse(r => r.url().endsWith("/agencies/facilities") && r.request().method() === "POST");
+  await page.getByRole("button", { name: "Add Facility", exact: true }).click();
+  const createdResponse = await createdPromise;
+  expect(createdResponse.status()).toBe(201);
+  const created = await createdResponse.json();
+  expect(created).toMatchObject(coordinates);
+  expect(persisted(created.facility_id).latitude).toBe(coordinates.latitude);
+  await expect(page).toHaveURL(/\/agency\/facilities$/);
+  await expect(page.getByText(coordinates.latitude + ", " + coordinates.longitude, { exact: true })).toBeVisible();
+  await page.goto("/agency/facilities/" + created.facility_id + "/edit");
+  for (const [field, value] of Object.entries(coordinates)) {
+    expect(Number(await page.locator('[name="' + field + '"]').inputValue())).toBe(value);
+  }
+  await locationButton.click();
+  await expect(locationButton).toBeEnabled({ timeout: 20000 });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  const updated = {
+    latitude: Number(await page.getByLabel("Latitude", { exact: true }).inputValue()),
+    longitude: Number(await page.getByLabel("Longitude", { exact: true }).inputValue())
+  };
+  expect(writes).toEqual(["POST"]);
+  const path = "/agencies/facilities/" + created.facility_id;
+  expect(await (await request.get(api + path, { headers: headers(agent) })).json()).toMatchObject(coordinates);
+  await page.getByRole("button", { name: "Save Changes" }).click();
+  await expect(page).toHaveURL(/\/agency\/facilities$/);
+  expect(writes).toEqual(["POST", "PUT"]);
+  expect(await (await request.get(api + path, { headers: headers(agent) })).json()).toMatchObject(updated);
+  await page.goto("/agency/facilities/" + created.facility_id + "/edit");
+  await page.reload();
+  for (const [field, value] of Object.entries(updated)) {
+    await expect(page.locator('[name="' + field + '"]')).toHaveValue(String(value));
+  }
 });
