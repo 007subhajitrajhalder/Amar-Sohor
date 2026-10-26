@@ -70,11 +70,17 @@ async def submit_report(
 @router.get("/reports/", response_model=List[ReportResponse])
 def get_reports(
     user_id: Optional[int] = Query(None, description="Filter by citizen user_id"),
+    mine: bool = Query(default=False, description="Filter to reports assigned to the current agent"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Retrieve all reports or filter by citizen user_id."""
-    return report_service.get_all_reports(db=db, query=scoped_query(db, Report, current_user))
+    """Retrieve all reports or filter by citizen user_id / assigned agent."""
+    query = scoped_query(db, Report, current_user)
+    if mine and current_user.role in ("AGENT", "AGENCY"):
+        member = db.query(AgencyMember).filter_by(user_id=current_user.user_id).first()
+        if member:
+            query = query.filter(Report.assigned_agent == member.agent_id)
+    return report_service.get_all_reports(db=db, user_id=user_id, query=query)
 
 
 @router.get("/reports/{report_id}", response_model=ReportResponse)

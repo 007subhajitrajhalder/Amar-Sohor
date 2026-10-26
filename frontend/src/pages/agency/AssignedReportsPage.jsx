@@ -34,8 +34,8 @@ function AssignedReportsPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
-  const resource = useApi("/reports");
-  const dashboardResource = useApi("/agencies/dashboard");
+  const resource = useApi("/reports?mine=true");
+  const dashboardResource = useApi("/agencies/dashboard?mine=true");
   const dashboard = dashboardResource.data;
   const percent = index => dashboard?.status_distribution[index]?.percentage ?? 0;
   const reports = (resource.data || []).filter(r => r.status !== "RESOLVED").map(reportView);
