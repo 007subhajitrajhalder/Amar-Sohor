@@ -1,9 +1,84 @@
-import { ArrowLeft, Mail, Phone, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { ArrowLeft, Mail, Phone, ShieldCheck, KeyRound, AlertCircle, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "../../api/client";
+
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const navigate = useNavigate();
+
+  const handleCheckEmail = async (e) => {
+    if (e) e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Please enter your registered email address.");
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    try {
+      const response = await apiRequest("/auth/forgot-password/check-email", {
+        method: "POST",
+        body: { email: cleanEmail },
+        auth: false,
+      });
+
+      setEmailVerified(true);
+      setVerifiedEmail(cleanEmail);
+      setSuccessMsg(response.message || "Email verified successfully! Please enter your 6-digit security code below.");
+    } catch (err) {
+      setEmailVerified(false);
+      setVerifiedEmail("");
+      setError(err.message || "No account found with this email address. Please check your email and try again.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  const handleOtpInput = (e) => {
+    const val = e.target.value.slice(0, 6);
+    setOtp(val);
+    setError("");
+  };
+
+  const goToResetPassword = (codeToUse) => {
+    const code = (codeToUse !== undefined ? codeToUse : otp).trim();
+
+    if (!emailVerified || !verifiedEmail) {
+      setError("Please submit and verify your email address first.");
+      return;
+    }
+
+    if (!code || code.length !== 6) {
+      setError("Please enter a 6-digit security code.");
+      return;
+    }
+
+    navigate("/reset-password", {
+      state: {
+        email: verifiedEmail,
+        otp: code,
+      },
+    });
+  };
+
+  const handleVerifyOtp = (e) => {
+    if (e) e.preventDefault();
+    goToResetPassword();
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
       <div
@@ -19,33 +94,169 @@ function ForgotPasswordPage() {
             <div className="h-11 w-11 overflow-hidden rounded-full shadow-lg shadow-lime-300/20 transition group-hover:scale-105">
               <img src={logo} alt="Amar Sohor Logo" className="h-full w-full object-cover" />
             </div>
-            <h1 className="text-xl font-bold tracking-wide md:text-2xl">Amar <span className="text-lime-300">Sohor</span></h1>
+            <h1 className="text-xl font-bold tracking-wide md:text-2xl">
+              Amar <span className="text-lime-300">Sohor</span>
+            </h1>
           </Link>
-          
+
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/" className="rounded-xl border border-white/20 px-4 py-2.5 text-sm transition hover:bg-white/10 sm:px-5">Back To Home</Link>
+            <Link
+              to="/login"
+              className="rounded-xl border border-white/20 px-4 py-2.5 text-sm transition hover:bg-white/10 sm:px-5"
+            >
+              Sign In
+            </Link>
           </div>
         </div>
       </header>
 
       <main className="relative z-30 flex min-h-[calc(100vh-78px)] items-center justify-center px-4 py-6 md:px-8 md:py-8">
-      <section className="mx-auto w-full max-w-md rounded-2xl border border-white/15 bg-black/35 p-5 text-center shadow-xl backdrop-blur-2xl sm:p-7 md:p-8">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-lime-300/25 bg-lime-300/10 text-lime-300"><ShieldCheck size={24} /></div>
-        <div className="mt-3">
-          <span className="inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">Account recovery</span>
-        </div>
-        <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Reset your password</h1>
-        <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-white/50 sm:text-sm">Password reset email delivery is not configured. Contact your administrator for account recovery.</p>
-        <form onSubmit={event => event.preventDefault()} className="mt-5 grid gap-3.5 text-left">
-          <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/75">Email address
-            <span className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
-              <Mail size={17} className="shrink-0 text-lime-300" /><input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 sm:text-sm" />
+        <section className="mx-auto w-full max-w-md rounded-2xl border border-white/15 bg-black/40 p-6 text-center shadow-2xl backdrop-blur-2xl sm:p-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-lime-300/30 bg-lime-300/10 text-lime-300 shadow-lg shadow-lime-300/10">
+            <ShieldCheck size={28} />
+          </div>
+
+          <div className="mt-4">
+            <span className="inline-flex rounded-full border border-lime-300/25 bg-lime-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-lime-300">
+              Account Recovery
             </span>
-          </label>
-          <button disabled type="submit" className="min-h-[46px] rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200">Email recovery unavailable</button>
-        </form>
-        <Link to="/login" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-lime-300 hover:text-lime-200 sm:text-sm"><ArrowLeft size={15} />Back to sign in</Link>
-      </section>
+          </div>
+
+          <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Forgot Password?</h1>
+          <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-white/60 sm:text-sm">
+            {!emailVerified
+              ? "Enter your registered email address to verify your account."
+              : "Email verified. Enter the 6-digit security code below to reset your password."}
+          </p>
+
+          {error && (
+            <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/15 p-3 text-left text-xs text-rose-300 animate-fadeIn">
+              <AlertCircle size={16} className="shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-lime-300/30 bg-lime-300/15 p-3 text-left text-xs text-lime-300 animate-fadeIn">
+              <CheckCircle2 size={16} className="shrink-0 text-lime-400" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {/* Email input form */}
+          <form onSubmit={handleCheckEmail} className="mt-5 grid gap-3 text-left">
+            <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/80">
+              Email address
+              <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
+                <Mail size={18} className="shrink-0 text-lime-300" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailVerified) {
+                      setEmailVerified(false);
+                      setVerifiedEmail("");
+                      setSuccessMsg("");
+                      setOtp("");
+                    }
+                  }}
+                  disabled={emailVerified}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                  className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30 disabled:opacity-60 sm:text-sm"
+                />
+              </span>
+            </label>
+
+            {/* Submit button (always present; shows verified status once email is confirmed) */}
+            <button
+              type="submit"
+              disabled={isCheckingEmail || emailVerified}
+              className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-lg transition ${
+                emailVerified
+                  ? "bg-lime-400/20 text-lime-300 border border-lime-300/30 cursor-default"
+                  : "bg-lime-300 text-black shadow-lime-300/20 hover:bg-lime-200 disabled:opacity-60"
+              }`}
+            >
+              {isCheckingEmail ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Checking Email...
+                </>
+              ) : emailVerified ? (
+                <>
+                  <CheckCircle2 size={18} />
+                  Email Verified
+                </>
+              ) : (
+                <>
+                  Submit
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Text box appearing below the submit button once email is verified */}
+          {emailVerified && (
+            <form onSubmit={handleVerifyOtp} className="mt-4 grid gap-3 border-t border-white/10 pt-4 text-left animate-fadeIn">
+              <label htmlFor="otp" className="grid gap-1.5 text-xs font-medium text-white/80">
+                Security Code / OTP
+                <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
+                  <KeyRound size={18} className="shrink-0 text-lime-300" />
+                  <input
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    maxLength={6}
+                    value={otp}
+                    onChange={handleOtpInput}
+                    placeholder="Enter any 6-digit code"
+                    required
+                    autoFocus
+                    className="w-full bg-transparent text-sm font-mono tracking-widest text-white outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-white/30 sm:text-base"
+                  />
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-lg shadow-lime-300/20 transition hover:bg-lime-200"
+              >
+                Proceed to Reset Password
+                <ArrowRight size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailVerified(false);
+                  setVerifiedEmail("");
+                  setOtp("");
+                  setSuccessMsg("");
+                  setError("");
+                }}
+                className="text-center text-xs text-white/40 hover:text-white/70 transition"
+              >
+                Change email address
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 border-t border-white/10 pt-4">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-lime-300 hover:text-lime-200 transition sm:text-sm"
+            >
+              <ArrowLeft size={16} />
+              Back to Sign In
+            </Link>
+          </div>
+        </section>
       </main>
 
       <footer className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10">
@@ -149,42 +360,14 @@ function ForgotPasswordPage() {
                   aria-label="Instagram"
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
                 >
-                  <span className="text-lg font-bold">◎</span>
-                </a>
-
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-xs font-bold">▶</span>
-                </a>
-
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="X / Twitter"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-sm font-bold">𝕏</span>
+                  <span className="text-lg font-bold">ig</span>
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/35">
-              © 2026 Amar Sohor. All rights reserved.
-            </p>
-
-            <p className="text-xs text-white/35">
-              Making cities smarter, cleaner and more connected.
-            </p>
+          <div className="mt-4 border-t border-white/10 pt-4 text-center text-xs text-white/40">
+            &copy; {new Date().getFullYear()} Amar Sohor. All rights reserved.
           </div>
         </div>
       </footer>

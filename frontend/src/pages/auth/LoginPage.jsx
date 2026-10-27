@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import { LockKeyhole, Mail, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -151,8 +151,15 @@ function LoginPage() {
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Sign in to your account</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">Access your reports, saved facilities, and civic activity in one place.</p>
 
+          {location.state?.message && !error && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/15 p-3 text-xs text-lime-300 animate-fadeIn">
+              <CheckCircle2 size={16} className="shrink-0 text-lime-400" />
+              <span>{location.state.message}</span>
+            </div>
+          )}
+
           {error && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 animate-fadeIn">
               <AlertCircle size={16} className="shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>

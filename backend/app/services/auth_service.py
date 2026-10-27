@@ -85,3 +85,23 @@ def login_user(db: Session, user_data):
         return None
 
     return user
+
+
+def check_email_exists(db: Session, email: str) -> bool:
+    clean_email = email.strip().lower()
+    statement = select(User).where(User.email == clean_email)
+    result = db.execute(statement)
+    return result.scalar_one_or_none() is not None
+
+
+def reset_user_password(db: Session, email: str, new_password: str) -> bool:
+    clean_email = email.strip().lower()
+    statement = select(User).where(User.email == clean_email)
+    result = db.execute(statement)
+    user = result.scalar_one_or_none()
+    if user is None:
+        return False
+    user.password_hash = hash_password(new_password)
+    db.commit()
+    db.refresh(user)
+    return True

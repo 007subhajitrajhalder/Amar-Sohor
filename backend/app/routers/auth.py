@@ -5,6 +5,8 @@ from app.database.connection import get_db
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
+    CheckEmailRequest,
+    ResetPasswordRequest,
     TokenResponse,
     AuthUser
 )
@@ -93,6 +95,57 @@ def login(
             "role": user.role,
             "agency_id": agency_id
         }
+    }
+
+
+@router.post(
+    "/forgot-password/check-email",
+    status_code=200
+)
+def check_forgot_password_email(
+    payload: CheckEmailRequest,
+    db: Session = Depends(get_db)
+):
+    exists = auth_service.check_email_exists(db, payload.email)
+    if not exists:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address."
+        )
+    return {
+        "exists": True,
+        "message": "Email verified. Please enter the OTP to proceed."
+    }
+
+
+@router.post(
+    "/reset-password",
+    status_code=200
+)
+def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    if not payload.otp or len(payload.otp.strip()) != 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid security code. Please enter a 6-digit OTP."
+        )
+
+    success = auth_service.reset_user_password(
+        db,
+        email=payload.email,
+        new_password=payload.new_password
+    )
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found."
+        )
+
+    return {
+        "success": True,
+        "message": "Password updated successfully. You can now log in with your new password."
     }
 
 

@@ -22,6 +22,24 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class CheckEmailRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr
+    new_password: str = Field(min_length=8)
+    otp: str = Field(min_length=1, max_length=10)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_must_fit_bcrypt(cls, password: str) -> str:
+        if len(password.encode("utf-8")) > 72:
+            raise ValueError("Password must be at most 72 UTF-8 bytes")
+        return password
+
+
 class AuthUser(BaseModel):
     user_id: int
     full_name: str

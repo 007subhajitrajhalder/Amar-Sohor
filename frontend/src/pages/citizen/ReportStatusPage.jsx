@@ -73,7 +73,7 @@ function ReportStatusPage() {
       date: currentStage >= 3 ? "In Progress" : "Awaiting resolution evidence",
       description:
         currentStage >= 3
-          ? "Resolution evidence is awaiting administrative approval."
+          ? "Resolution evidence is uploaded ."
           : "The agency can submit repair evidence after investigation.",
     },
     {
@@ -82,7 +82,7 @@ function ReportStatusPage() {
       date: currentStage >= 4 ? (data.resolvedDate || "Work Completed") : "Pending resolution",
       description:
         currentStage >= 4
-          ? "The administrator approved the submitted resolution."
+          ? "The issue is completely resolved."
           : "Final clearance awaiting repair completion.",
     },
   ];
@@ -318,15 +318,6 @@ function ReportStatusPage() {
                     </div>
                   )}
 
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-white/35">
-                      Investigation & Resolution Log
-                    </p>
-                    <div className="mt-1.5 rounded-xl border border-white/10 bg-black/25 p-3.5 text-xs leading-relaxed text-white/70">
-                      {data.agencyNotes ||
-                        "Complaint is registered. Agency team will inspect and upload resolution proof once work is executed."}
-                    </div>
-                  </div>
 
                   {/* Resolution Evidence Photo if Resolved */}
                   <div>
