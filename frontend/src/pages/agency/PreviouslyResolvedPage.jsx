@@ -1,8 +1,55 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { displayDate } from "../../api/client";
-import Pagination from "../../components/Pagination";
-import ResolvedReportDetails from "../../components/ResolvedReportDetails";
+import { displayDate, mediaUrl } from "../../api/client";
+
+function Pagination({ total = 0, offset, limit = 50, onChange, disabled, showCount = true }) {
+  return (
+    <nav aria-label="Pagination" className={`my-5 flex items-center gap-3 text-sm ${showCount ? "justify-between" : "justify-end"}`}>
+      <button
+        type="button"
+        disabled={disabled || offset === 0}
+        className="rounded-xl border px-4 py-2 disabled:opacity-40"
+        onClick={() => onChange(Math.max(0, offset - limit))}
+      >
+        Previous
+      </button>
+      {showCount && <span>{total ? offset + 1 : 0}-{Math.min(offset + limit, total)} of {total}</span>}
+      <button
+        type="button"
+        disabled={disabled || offset + limit >= total}
+        className="rounded-xl border px-4 py-2 disabled:opacity-40"
+        onClick={() => onChange(offset + limit)}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
+function ResolvedReportDetails({ id, onClose }) {
+  const resource = useApi("/agencies/reports/resolved/" + id);
+  const data = resource.data;
+  return (
+    <section aria-label="Resolved report details" className="my-5 rounded-2xl border p-5">
+      <button type="button" onClick={onClose} className="float-right underline">Close details</button>
+      <ApiState {...resource} />
+      {data && (
+        <>
+          <h2 className="text-xl font-bold">#{data.report_id}: {data.title}</h2>
+          <p>{data.facility_name}</p>
+          <p className="my-3">{data.description}</p>
+          <p>Resolved: {displayDate(data.resolved_at)}</p>
+          {data.photo_url && <img className="mt-3 max-h-64 rounded-xl" src={mediaUrl(data.photo_url)} alt="Reported issue" />}
+          {data.resolution_photo_url ? (
+            <img className="mt-3 max-h-64 rounded-xl" src={mediaUrl(data.resolution_photo_url)} alt="Approved resolution evidence" />
+          ) : (
+            <p className="mt-2 text-sm opacity-60">No approved resolution photo recorded.</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 

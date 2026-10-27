@@ -43,7 +43,10 @@ class RecommendationResponse(BaseModel):
     ai_validated: bool | None = None
     ai_status: str | None = None
     created_at: datetime
+    installed_at: datetime | None = None
     citizen_name: str | None = None
+    citizen_email: str | None = None
+    citizen_phone: str | None = None
     history: list[Dict[str, Any]] = Field(default_factory=list)
 
 

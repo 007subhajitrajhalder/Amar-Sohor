@@ -57,4 +57,9 @@ class Recommendation(Base):
     agency = relationship("Agency", back_populates="recommendations")
     assigned_member = relationship("AgencyMember", foreign_keys=[assigned_agent])
     investigations = relationship("RecommendationInvestigation", back_populates="recommendation", cascade="all, delete-orphan")
-
+    installed_facility = relationship(
+        "Facility",
+        foreign_keys="Facility.source_recommendation_id",
+        uselist=False,
+        viewonly=True,
+    )

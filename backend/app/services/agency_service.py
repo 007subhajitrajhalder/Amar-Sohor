@@ -106,13 +106,16 @@ def format_agent_details(
 ) -> Optional[Dict[str, Any]]:
     """
     Helper to format agency member info for API responses.
-    Provides officer identity, contact info, and department jurisdiction.
+    Provides officer identity, contact info, department jurisdiction, and coordinates.
     """
     if not member:
         return None
 
     user = member.user
     agency = member.agency
+    lat = float(member.latitude) if member.latitude is not None else None
+    lng = float(member.longitude) if member.longitude is not None else None
+
     return {
         "agent_id": member.agent_id,
         "user_id": member.user_id,
@@ -121,7 +124,9 @@ def format_agent_details(
         "phone": user.phone if user else None,
         "role": user.role if user else "AGENCY_MEMBER",
         "agency_id": member.agency_id,
-        "agency_name": agency.agency_name if agency else "Civic Agency"
+        "agency_name": agency.agency_name if agency else "Civic Agency",
+        "latitude": lat,
+        "longitude": lng,
     }
 
 

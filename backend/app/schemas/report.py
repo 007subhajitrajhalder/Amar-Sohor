@@ -36,6 +36,8 @@ class ReportResponse(BaseModel):
     created_at: datetime
     resolved_at: datetime | None = None
     citizen_name: str | None = None
+    citizen_email: str | None = None
+    citizen_phone: str | None = None
     resolution: Dict[str, Any] | None = None
 
 

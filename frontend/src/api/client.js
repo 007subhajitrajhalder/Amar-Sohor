@@ -170,13 +170,26 @@ export function categoryKey(name = "") {
 export const statusLabel = value => ({ OPEN: "Open", UNDER_REPAIR: "Under Repair", SUSPENDED: "Suspended",
   PENDING: "Pending", UNDER_INVESTIGATION: "Under Investigation", RESOLVED: "Resolved" }[value] || value);
 export const displayDate = value => value ? new Date(value).toLocaleDateString("en-GB") : "Not recorded";
+export const displayDateTime = value => {
+  if (!value) return "Not recorded";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString("en-GB") + " at " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+};
+
 export const facilityView = f => ({ ...f, id: f.facility_id, name: f.facility_name,
   category: categoryKey(f.category_name), categoryLabel: f.category_name, agency: f.agency_name,
   status: statusLabel(f.status), imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id });
+
 export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_name,
   facilityAddress: r.facility_address, facilityCategory: categoryKey(r.facility_category),
   facilityCategoryLabel: r.facility_category,
-  status: statusLabel(r.status), date: displayDate(r.created_at), resolvedDate: displayDate(r.resolved_at),
+  citizen: {
+    name: r.citizen_name || "Not recorded",
+    email: r.citizen_email || "Not recorded",
+    phone: r.citizen_phone || "Not recorded"
+  },
+  status: statusLabel(r.status), date: displayDate(r.created_at), rawDate: r.created_at, resolvedDate: displayDate(r.resolved_at),
   photoUrl: mediaUrl(r.photo_url), assignedAgency: r.agency_name, assignedOfficer: r.assigned_officer,
   assignedMember: r.assigned_member, agencyNotes: r.agency_notes,
   resolutionPhotoUrl: mediaUrl(r.resolution?.photo_url),
@@ -202,17 +215,35 @@ export function facilityPayload({ name, category, address, latitude, longitude, 
 
 export function recommendationView(r, citizen = false) {
   const status = { PENDING: "Pending Review", ALLOCATED: "Allotted", UNDER_INVESTIGATION: "Under Investigation",
-    APPROVED: "Approved", REJECTED: "Rejected", INSTALLED: "Installed" }[r.status];
+    APPROVED: "Approved", REJECTED: "Rejected", INSTALLED: "Installed" }[r.status] || r.status;
   const member = r.assigned_member;
-  return { ...r, id: String(r.recommendation_id), facilityType: categoryKey(r.category_name), facilityLabel: r.category_name,
-    location: r.address, coordinates: r.latitude === null ? null : { lat: r.latitude, lng: r.longitude },
-    photoUrl: mediaUrl(r.photo_url), date: r.created_at, status: citizen ? status : r.status === "ALLOCATED" ? "ALLOTTED" : r.status,
+  return {
+    ...r,
+    id: String(r.recommendation_id),
+    facilityType: categoryKey(r.category_name),
+    facilityLabel: r.category_name,
+    location: r.address,
+    coordinates: r.latitude === null ? null : { lat: r.latitude, lng: r.longitude },
+    photoUrl: mediaUrl(r.photo_url),
+    date: displayDate(r.created_at),
+    rawDate: r.created_at,
+    status: citizen ? status : r.status === "ALLOCATED" ? "ALLOTTED" : r.status,
+    rawStatus: r.status,
     stage: (citizen
-      ? { PENDING: 1, ALLOCATED: 1, UNDER_INVESTIGATION: 2, APPROVED: 3, INSTALLED: 4, REJECTED: 2 }
-      : { PENDING: 1, ALLOCATED: 2, UNDER_INVESTIGATION: 3, APPROVED: 4, INSTALLED: 5, REJECTED: 3 })[r.status],
-    statusLabel: status, citizen: { name: r.citizen_name || "Not recorded" },
+      ? { PENDING: 1, ALLOCATED: 2, UNDER_INVESTIGATION: 2, APPROVED: 3, INSTALLED: 4, REJECTED: 2 }
+      : { PENDING: 1, ALLOCATED: 2, UNDER_INVESTIGATION: 3, APPROVED: 4, INSTALLED: 5, REJECTED: 3 })[r.status] || 1,
+    statusLabel: status,
+    citizen: { name: r.citizen_name || "Not recorded", email: r.citizen_email, phone: r.citizen_phone },
     assignedAgency: r.agency_name ? { id: r.assigned_agency, name: r.agency_name } : null,
     assignedMember: member ? { ...member, id: member.agent_id, fullName: member.full_name, agencyId: member.agency_id } : null,
-    reviewDepartment: r.review_department, reviewNotes: r.review_notes, inspectionNotes: r.review_notes || "",
-    rejectionReason: r.status === "REJECTED" ? r.review_notes : "", history: r.history || [] };
+    reviewDepartment: r.agency_name || r.review_department || "Municipal Corporation",
+    reviewNotes: r.review_notes || "",
+    inspectionNotes: r.review_notes || "",
+    rejectionReason: r.status === "REJECTED" ? r.review_notes : "",
+    history: (r.history || []).map(item => ({
+      ...item,
+      formattedDate: displayDateTime(item.date),
+      dateOnly: displayDate(item.date)
+    }))
+  };
 }

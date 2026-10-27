@@ -1,23 +1,26 @@
-
 import {
   ArrowLeft,
   Camera,
   Car,
   Check,
   CircleDashed,
+  Clock3,
   DoorOpen,
   Droplets,
+  History,
   MapPin,
   Mail,
   Phone,
   ShieldCheck,
   Sparkles,
   Trash2,
+  UserCheck,
+  XCircle
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { recommendationView } from "../../api/client";
+import { displayDateTime, recommendationView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -26,66 +29,182 @@ const facilityIcons = {
   dustbin: Trash2,
   water: Droplets,
   toilet: DoorOpen,
-  parking: Car,
+  parking: Car
 };
 
 function RecommendationStatusPage() {
   const { recommendationId } = useParams();
+  const cleanId = String(recommendationId || "").replace(/^REC-/i, "").replace(/^0+/, "") || "0";
   const navigate = useNavigate();
-  const resource = useApi("/recommendations/" + recommendationId.replace(/^REC-0*/, ""));
-  if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/citizen/my-recommendations">My Recommendations</Link></main>;
+
+  // Fetch recommendation details from the backend server
+  const resource = useApi("/recommendations/" + cleanId);
+
+  if (resource.loading) {
+    return (
+      <div className="relative min-h-screen overflow-x-hidden text-white">
+        <div
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${kolkataBg})` }}
+        />
+        <div className="pointer-events-none fixed inset-0 z-10 bg-black/60" />
+        <main className="relative z-30 flex min-h-screen items-center justify-center p-6">
+          <ApiState {...resource} />
+        </main>
+      </div>
+    );
+  }
+
+  if (!resource.data) {
+    return (
+      <div className="relative min-h-screen overflow-x-hidden text-white">
+        <div
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${kolkataBg})` }}
+        />
+        <div className="pointer-events-none fixed inset-0 z-10 bg-black/60" />
+        <div className="pointer-events-none fixed inset-0 z-20 bg-gradient-to-b from-black/40 via-black/20 to-black/75" />
+
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07101f]/75 px-5 py-4 backdrop-blur-2xl md:px-10">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <img
+                src={logo}
+                alt="Amar Sohor Logo"
+                className="h-11 w-11 rounded-full border border-lime-300/20 object-cover"
+              />
+              <h1 className="text-xl font-bold md:text-2xl">
+                Amar <span className="text-lime-300">Sohor</span>
+              </h1>
+            </Link>
+            <button
+              onClick={() => navigate("/citizen/my-recommendations")}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:bg-lime-300 hover:text-black transition"
+            >
+              <ArrowLeft size={17} />
+              <span>Back to My Recommendations</span>
+            </button>
+          </div>
+        </header>
+
+        <main className="relative z-30 flex min-h-[60vh] items-center justify-center px-4 py-16">
+          <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-white/[0.045] p-8 text-center backdrop-blur-2xl">
+            <ApiState {...resource} />
+            <div className="mt-6">
+              <Link
+                to="/citizen/my-recommendations"
+                className="inline-flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black hover:bg-lime-200 transition"
+              >
+                <ArrowLeft size={16} />
+                Back to My Recommendations
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Dynamic backend record transformed with data validation
   const data = recommendationView(resource.data, true);
-
   const FacilityIcon = facilityIcons[data.facilityType] || Sparkles;
-  const currentStage = data.stage || 1;
+  const rawStatus = data.rawStatus || "PENDING";
+  const isRejected = rawStatus === "REJECTED";
+  const isApproved = ["APPROVED", "INSTALLED"].includes(rawStatus);
+  const isInstalled = rawStatus === "INSTALLED";
+  const isAllocated = rawStatus === "ALLOCATED";
+  const isInvestigating = rawStatus === "UNDER_INVESTIGATION";
+  const investigationEvent = data.history.find((entry) => entry.status === "PENDING");
+  const decisionEvent = data.history.find((entry) =>
+    ["APPROVED", "REJECTED"].includes(entry.status)
+  );
 
-  const timelineSteps = [
+  // Exact step-by-step progress validated against database lifecycle status
+  const implementationSteps = [
     {
       step: 1,
       title: "Proposal Submitted",
-      date: data.date || "Registered",
-      description: "Citizen submission received and logged in civic registry.",
+      date: displayDateTime(data.created_at),
+      description: `Civic proposal registered in municipal registry for ${data.facilityLabel || "facility"} installation.`,
+      statusText: "Submitted & Logged",
+      state: "completed"
     },
     {
       step: 2,
       title: "Site Feasibility & Survey",
-      date:
-        currentStage >= 2
-          ? (currentStage >= 3 ? "Investigation completed" : "Under investigation")
-          : "Pending site inspection",
+      date: investigationEvent
+        ? investigationEvent.formattedDate
+        : "Date not recorded",
       description:
-        currentStage >= 2
-          ? "See the recorded inspection notes for details."
-          : "Awaiting field officer inspection.",
+        rawStatus === "PENDING"
+          ? `Dispatched to ${data.assignedAgency?.name || "designated civic agency"}. Awaiting specialist allocation.`
+          : isAllocated
+          ? `${data.assignedMember ? `${data.assignedMember.fullName} is assigned` : "A field specialist is assigned"} from ${data.assignedAgency?.name || "the managing agency"}. The feasibility investigation has not yet started.`
+          : isInvestigating
+          ? `Allocated to ${data.assignedMember ? data.assignedMember.fullName : "field specialist"} (${data.assignedAgency?.name || "Managing Agency"}) for on-ground feasibility study.${data.reviewNotes ? ` Notes: "${data.reviewNotes}"` : ""}`
+          : isRejected
+          ? `Survey concluded: ${data.reviewNotes || "Does not meet site feasibility requirements."}`
+          : `Feasibility inspection completed by ${data.assignedMember ? data.assignedMember.fullName : "field officer"} and passed technical review.`,
+      statusText:
+        rawStatus === "PENDING"
+          ? "Pending Allocation"
+          : isAllocated
+          ? "Officer Assigned"
+          : isInvestigating
+          ? "Survey Active"
+          : isRejected
+          ? "Survey Rejected"
+          : "Survey Approved",
+      state: isApproved ? "completed" : isRejected ? "rejected" : rawStatus === "PENDING" ? "upcoming" : "current"
     },
     {
       step: 3,
-      title: "Municipal Approval",
-      date:
-        currentStage >= 3
-          ? "Approved"
-          : "Awaiting civic board sanction",
-      description:
-        currentStage >= 3
-          ? "The recommendation has been approved."
-          : "Pending administrative and financial sanction.",
+      title: "Agency Feasibility Decision",
+      date: decisionEvent ? decisionEvent.formattedDate : "Date not recorded",
+      description: isApproved
+        ? "The agency approved the site as feasible for facility installation."
+        : isRejected
+        ? `Proposal was not approved: ${data.rejectionReason || data.reviewNotes || "Feasibility requirements not satisfied."}`
+        : "The agency decision is pending completion of the field survey.",
+      statusText: isApproved ? "Sanction Granted" : isRejected ? "Rejected" : "Awaiting Board",
+      state: isApproved ? "completed" : isRejected ? "rejected" : "upcoming"
     },
     {
       step: 4,
       title: "Facility Commissioned",
-      date:
-        currentStage >= 4
-          ? "Installed & Active"
-          : "Installation to follow",
-      description:
-        currentStage >= 4
-          ? "Facility is installed, live on public city map."
-          : "Installation follows approval by the responsible agency.",
-    },
+      date: data.installed_at
+        ? displayDateTime(data.installed_at)
+        : "Date not recorded",
+      description: isInstalled
+        ? "Facility installed on site, verified by managing agency, and live on the Amar Sohor public city map."
+        : isApproved
+        ? `Approved for installation. Scheduled for commissioning by ${data.assignedAgency?.name || "managing agency"}.`
+        : isRejected
+        ? "Proposal was not approved for commissioning."
+        : "Commissioning follows board approval and technical clearance.",
+      statusText: isInstalled ? "Operational & Live" : isApproved ? "Scheduled" : isRejected ? "Cancelled" : "Pending",
+      state: isInstalled ? "completed" : isApproved ? "current" : isRejected ? "rejected" : "upcoming"
+    }
   ];
+
+  const getTimelineStatusBadge = (status) => {
+    switch (status) {
+      case "SUBMITTED":
+        return "border-cyan-300/30 bg-cyan-400/15 text-cyan-200";
+      case "APPROVED":
+        return "border-emerald-300/30 bg-emerald-400/15 text-emerald-200";
+      case "REJECTED":
+        return "border-rose-300/30 bg-rose-400/15 text-rose-200";
+      case "INSTALLED":
+        return "border-lime-300/30 bg-lime-400/15 text-lime-200";
+      default:
+        return "border-amber-300/30 bg-amber-400/15 text-amber-200";
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
+      {/* Background Wallpaper */}
       <div
         className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${kolkataBg})` }}
@@ -106,14 +225,14 @@ function RecommendationStatusPage() {
               Amar <span className="text-lime-300">Sohor</span>
             </h1>
           </Link>
+
           <div className="flex items-center gap-3">
-            
             <button
               onClick={() => navigate("/citizen/my-recommendations")}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:bg-lime-300 hover:text-black transition"
             >
               <ArrowLeft size={17} />
-              <span>Back to all Recommendations List</span>
+              <span>Back to My Recommendations</span>
             </button>
           </div>
         </div>
@@ -140,9 +259,11 @@ function RecommendationStatusPage() {
                     ? "bg-lime-300/15 text-lime-300 border border-lime-300/30"
                     : data.status === "Approved"
                     ? "bg-purple-400/15 text-purple-300 border border-purple-400/30"
-                    : data.status === "Submitted"
+                    : isRejected
+                    ? "bg-rose-400/15 text-rose-300 border border-rose-400/30"
+                    : data.status === "Submitted" || data.status === "Pending Review"
                     ? "bg-amber-400/15 text-amber-300 border border-amber-400/30"
-                    : "bg-blue-400/15 text-blue-300 border border-blue-400/30"
+                    : "bg-cyan-400/15 text-cyan-300 border border-cyan-400/30"
                 }`}
               >
                 ● {data.status}
@@ -150,71 +271,123 @@ function RecommendationStatusPage() {
             </div>
           </div>
 
-          {/* Stepper / Implementation Progress Tracker */}
+          {/* Rejection Notification if Rejected */}
+          {isRejected && (
+            <div className="mt-6 flex items-start gap-3.5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-5 text-rose-200 backdrop-blur-xl">
+              <XCircle size={22} className="shrink-0 text-rose-400 mt-0.5" />
+              <div>
+                <p className="font-bold text-white text-sm">Proposal Status: Rejected</p>
+                <p className="mt-1 text-xs leading-relaxed text-rose-200/90">
+                  {data.rejectionReason || data.reviewNotes || "The civic evaluation committee determined this proposal does not meet installation or feasibility criteria at this time."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Implementation Progress Lifecycle Stepper (Validated from Backend) */}
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-2xl md:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <h2 className="text-lg font-bold">Implementation Progress</h2>
-              <span className="text-xs text-white/40">
-                Stage {currentStage} of 4 • {data.status}
+              <div>
+                <h2 className="text-lg font-bold">Implementation Progress</h2>
+                <p className="text-xs text-white/50 mt-0.5">
+                  Synchronized with municipal service records and field surveys
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-lime-300">
+                Database Lifecycle Status: {data.status}
               </span>
             </div>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {timelineSteps.map((stepItem) => {
-                const isDone = currentStage > stepItem.step;
-                const isCurrent = currentStage === stepItem.step;
+              {implementationSteps.map((stepItem) => {
+                const isCompleted = stepItem.state === "completed";
+                const isCurrent = stepItem.state === "current";
+                const isStepRejected = stepItem.state === "rejected";
 
-                let iconStyle = "bg-white/10 text-white/40";
-                if (isDone) {
-                  iconStyle = "bg-lime-300 text-black";
+                let iconClasses = "bg-white/10 text-white/40";
+                let cardBorder = "border-white/5 bg-white/[0.02]";
+
+                if (isCompleted) {
+                  iconClasses = "bg-lime-300 text-black";
+                  cardBorder = "border-lime-300/20 bg-lime-400/[0.04]";
                 } else if (isCurrent) {
-                  iconStyle = "bg-lime-300/20 text-lime-300 ring-2 ring-lime-300";
+                  iconClasses = "bg-lime-300/20 text-lime-300 ring-2 ring-lime-300";
+                  cardBorder = "border-lime-300/40 bg-lime-400/[0.08] shadow-lg shadow-lime-950/30";
+                } else if (isStepRejected) {
+                  iconClasses = "bg-rose-400/20 text-rose-300 ring-2 ring-rose-400";
+                  cardBorder = "border-rose-400/30 bg-rose-500/[0.05]";
                 }
 
                 return (
-                  <div key={stepItem.step} className="relative flex flex-col gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold text-xs transition ${iconStyle}`}
-                      >
-                        {isDone ? (
-                          <Check size={16} strokeWidth={2.5} />
-                        ) : isCurrent ? (
-                          <CircleDashed size={16} className="animate-spin" />
-                        ) : (
-                          <span>{stepItem.step}</span>
-                        )}
+                  <div
+                    key={stepItem.step}
+                    className={`relative flex flex-col justify-between gap-2 rounded-xl border p-4 transition ${cardBorder}`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-xs transition ${iconClasses}`}
+                        >
+                          {isCompleted ? (
+                            <Check size={16} strokeWidth={2.5} />
+                          ) : isCurrent ? (
+                            <CircleDashed size={16} className="animate-spin" />
+                          ) : isStepRejected ? (
+                            <XCircle size={16} />
+                          ) : (
+                            <span>{stepItem.step}</span>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-xs sm:text-sm font-bold truncate ${
+                              isCurrent
+                                ? "text-lime-300"
+                                : isCompleted
+                                ? "text-white"
+                                : isStepRejected
+                                ? "text-rose-300"
+                                : "text-white/40"
+                            }`}
+                          >
+                            {stepItem.title}
+                          </p>
+                          <p className="text-[10px] text-white/45">{stepItem.date}</p>
+                        </div>
                       </div>
 
-                      <div>
-                        <p
-                          className={`text-xs sm:text-sm font-bold ${
-                            isCurrent
-                              ? "text-lime-300"
-                              : isDone
-                              ? "text-white"
-                              : "text-white/40"
-                          }`}
-                        >
-                          {stepItem.title}
-                        </p>
-                        <p className="text-[11px] text-white/40">{stepItem.date}</p>
-                      </div>
+                      <p className="mt-3 text-xs leading-relaxed text-white/60">
+                        {stepItem.description}
+                      </p>
                     </div>
 
-                    <p className="text-xs leading-relaxed text-white/45 pl-1">
-                      {stepItem.description}
-                    </p>
+                    <div className="mt-3 border-t border-white/5 pt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-white/40">Step {stepItem.step} of 4</span>
+                      <span
+                        className={`font-semibold ${
+                          isCompleted
+                            ? "text-lime-300"
+                            : isCurrent
+                            ? "text-amber-300"
+                            : isStepRejected
+                            ? "text-rose-300"
+                            : "text-white/40"
+                        }`}
+                      >
+                        {stepItem.statusText}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Details Grid */}
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            {/* Citizen Proposal Details Card */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6">
+          {/* Details Grid: Left = Proposal Details, Right = Municipal Review & Activity Timeline */}
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {/* Column 1: Citizen Proposal Details Card */}
+            <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold">Proposal Details</h2>
                 <span className="flex items-center gap-1.5 rounded-lg border border-lime-300/20 bg-lime-300/10 px-2.5 py-0.5 text-xs font-semibold text-lime-300">
@@ -223,7 +396,7 @@ function RecommendationStatusPage() {
                 </span>
               </div>
 
-              <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
+              <div className="space-y-3.5 text-xs sm:text-sm">
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/35">
                     Proposal Title
@@ -235,15 +408,15 @@ function RecommendationStatusPage() {
 
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/35">
-                    Proposed Location
+                    Proposed Location & Area
                   </p>
                   <p className="mt-0.5 flex items-start gap-1.5 font-medium text-white/85">
                     <MapPin size={15} className="mt-0.5 text-lime-300 shrink-0" />
                     <span>{data.location}</span>
                   </p>
                   {data.coordinates && (
-                    <p className="mt-0.5 font-mono text-[11px] text-lime-300/70 pl-5">
-                      Coordinates: {data.coordinates.lat}, {data.coordinates.lng}
+                    <p className="mt-1 font-mono text-[11px] text-lime-300/80 pl-5">
+                      Coordinates: {Number(data.coordinates.lat).toFixed(6)}, {Number(data.coordinates.lng).toFixed(6)}
                     </p>
                   )}
                 </div>
@@ -262,7 +435,7 @@ function RecommendationStatusPage() {
                     <p className="text-xs uppercase tracking-wider text-white/35">
                       Citizen Justification & Need
                     </p>
-                    <p className="mt-0.5 leading-relaxed text-white/60">
+                    <p className="mt-0.5 leading-relaxed text-white/70 rounded-xl border border-white/10 bg-white/5 p-3">
                       {data.description}
                     </p>
                   </div>
@@ -271,21 +444,18 @@ function RecommendationStatusPage() {
                 {/* Submitted Photo */}
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/35 mb-1.5">
-                    Location Photograph
+                    Location Photograph Evidence
                   </p>
-                  {data.photoPreview || data.photoUrl ? (
+                  {data.photoUrl ? (
                     <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
                       <img
-                        src={data.photoPreview || data.photoUrl}
-                        alt="Proposed location snapshot"
-                        className="max-h-56 w-full object-cover"
+                        src={data.photoUrl}
+                        alt={data.title}
+                        className="max-h-56 w-full object-cover transition duration-300 hover:scale-105"
                       />
-                      <div className="p-2 text-right text-xs text-white/40">
-                        {data.photoName || "Location evidence photograph"}
-                      </div>
                     </div>
                   ) : (
-                    <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-black/15 text-xs text-white/30">
+                    <div className="flex h-36 items-center justify-center rounded-xl border border-dashed border-white/10 bg-black/15 text-xs text-white/30">
                       <Camera size={16} className="mr-2 opacity-50" />
                       No photograph attached to this proposal
                     </div>
@@ -294,62 +464,162 @@ function RecommendationStatusPage() {
               </div>
             </section>
 
-            {/* Municipal Review Card */}
-            <section className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6">
-              <div>
+            {/* Column 2: Municipal Review Card & Activity Timeline */}
+            <div className="space-y-6">
+              {/* Municipal Review Card */}
+              <section className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6 space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold">Municipal Review & Survey</h2>
+                    <span className="flex items-center gap-1 text-xs text-white/40">
+                      <ShieldCheck size={15} className="text-lime-300" />
+                      Verified Civic Authority
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/35">
+                        Reviewing Civic Agency
+                      </p>
+                      <p className="mt-0.5 font-semibold text-white/90">
+                        {data.assignedAgency?.name || data.reviewDepartment || "Kolkata Municipal Corporation"}
+                      </p>
+                    </div>
+
+                    {data.assignedMember ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-white/35">
+                          Assigned Field Specialist
+                        </p>
+                        <p className="mt-0.5 font-semibold text-white/90 flex items-center gap-1.5">
+                          <UserCheck size={14} className="text-lime-300 shrink-0" />
+                          <span>{data.assignedMember.fullName} {data.assignedMember.designation ? `(${data.assignedMember.designation})` : ""}</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-white/35">
+                          Assigned Field Specialist
+                        </p>
+                        <p className="mt-0.5 text-xs text-amber-200/80">
+                          Pending individual specialist allocation by {data.assignedAgency?.name || "agency"}.
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/35">
+                        Official Inspection Remarks & Next Steps
+                      </p>
+                      <div className="mt-1.5 rounded-xl border border-white/10 bg-black/25 p-3.5 text-xs leading-relaxed text-white/70">
+                        {data.reviewNotes || "This recommendation is currently under municipal review. Field officers will inspect the location for feasibility and civic necessity."}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs">
+                      <div>
+                        <p className="text-white/35 uppercase text-[10px]">Submission Date</p>
+                        <p className="mt-0.5 font-semibold text-white/80">{data.date}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/35 uppercase text-[10px]">Current Status</p>
+                        <p className="mt-0.5 font-semibold text-lime-300">
+                          {data.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Links */}
+                <div className="pt-3 border-t border-white/10">
+                  <Link
+                    to="/citizen/recommendation"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-2.5 text-xs sm:text-sm font-bold text-black hover:bg-lime-200 transition shadow-lg shadow-lime-300/10"
+                  >
+                    <Sparkles size={14} />
+                    <span>Submit Another Recommendation</span>
+                  </Link>
+                </div>
+              </section>
+
+              {/* Activity & Evaluation Timeline (100% Validated from Backend Database) */}
+              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-xl backdrop-blur-2xl md:p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold">Municipal Review & Survey</h2>
-                  <span className="flex items-center gap-1 text-xs text-white/40">
-                    <ShieldCheck size={15} className="text-lime-300" />
-                    Verified Civic Dept
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <History size={17} className="text-lime-300" />
+                    Activity & Evaluation Timeline
+                  </h3>
+                  <span className="text-[11px] text-white/40">
+                    {(data.history || []).length} Recorded Event{(data.history || []).length === 1 ? "" : "s"}
                   </span>
                 </div>
 
-                <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-white/35">
-                      Reviewing Authority
-                    </p>
-                    <p className="mt-0.5 font-semibold text-white/90">
-                      {data.reviewDepartment}
-                    </p>
-                  </div>
+                <div className="mt-4 space-y-4">
+                  {(data.history || []).length > 0 ? (
+                    data.history.map((entry, idx) => (
+                      <div
+                        key={idx}
+                        className="relative flex items-start gap-3.5 border-l-2 border-lime-300/30 pl-4 py-1 text-xs"
+                      >
+                        <span className="absolute -left-[5px] top-2 h-2.5 w-2.5 rounded-full bg-lime-300 shadow-[0_0_8px_#bef264]" />
 
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-white/35">
-                      Official Inspection Notes & Next Steps
-                    </p>
-                    <div className="mt-1.5 rounded-xl border border-white/10 bg-black/25 p-3.5 text-xs leading-relaxed text-white/70">
-                      {data.reviewNotes}
-                    </div>
-                  </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-white text-sm">
+                              {entry.action}
+                            </span>
+                            {entry.status && (
+                              <span
+                                className={`rounded px-2 py-0.5 text-[10px] font-semibold border ${getTimelineStatusBadge(
+                                  entry.status
+                                )}`}
+                              >
+                                {entry.status}
+                              </span>
+                            )}
+                          </div>
 
-                  <div className="grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs">
-                    <div>
-                      <p className="text-white/35 uppercase text-[11px]">Submission Date</p>
-                      <p className="mt-0.5 font-semibold text-white/80">{data.date}</p>
+                          {entry.description && entry.description !== entry.action && (
+                            <p className="mt-1 text-xs leading-relaxed text-white/70 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+                              {entry.description}
+                            </p>
+                          )}
+
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-white/45">
+                            {entry.actor && (
+                              <span className="text-lime-300/90 font-medium">
+                                By: {entry.actor} {entry.actor_role ? `(${entry.actor_role})` : ""}
+                              </span>
+                            )}
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock3 size={11} />
+                              {entry.formattedDate || entry.date}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="relative flex items-start gap-3.5 border-l-2 border-lime-300/30 pl-4 py-1 text-xs">
+                      <span className="absolute -left-[5px] top-2 h-2.5 w-2.5 rounded-full bg-lime-300" />
+                      <div>
+                        <p className="font-bold text-white text-sm">Proposal Registered</p>
+                        <p className="mt-1 text-xs text-white/70">
+                          Proposal logged in civic database. Awaiting administrative evaluation.
+                        </p>
+                        <p className="mt-1 text-[11px] text-white/45 flex items-center gap-1">
+                          <Clock3 size={11} />
+                          {data.date}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white/35 uppercase text-[11px]">Public Priority</p>
-                      <p className="mt-0.5 font-semibold text-lime-300">
-                        Active Civic Evaluation
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Action Links */}
-              <div className="mt-6 space-y-2.5 pt-4 border-t border-white/10">
-                <Link
-                  to="/citizen/recommendation"
-                  className="flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-2.5 text-xs sm:text-sm font-bold text-black hover:bg-lime-200 transition"
-                >
-                  <Sparkles size={14} />
-                  <span>Submit Another Recommendation</span>
-                </Link>
-              </div>
-            </section>
+              </section>
+            </div>
           </div>
         </section>
       </main>

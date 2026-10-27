@@ -1,10 +1,11 @@
 import ApiState from "../../components/ApiState";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ArrowLeft,
   Camera,
   CheckCircle2,
   ChevronDown,
+  Compass,
   Car,
   DoorOpen,
   Droplets,
@@ -21,47 +22,127 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { submitRecommendationApi, API_BASE_URL } from "../../api/client";
+import { useApi } from "../../api/useApi";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
-const FACILITY_OPTIONS = [
+const CATEGORY_META = {
+  dustbin: {
+    icon: Trash2,
+    short: "Dustbin",
+    description: "Public trash can, segregation bins or waste disposal spot",
+  },
+  water_point: {
+    icon: Droplets,
+    short: "Drinking Water",
+    description: "Clean drinking water fountain, cooler or RO dispenser",
+  },
+  water: {
+    icon: Droplets,
+    short: "Drinking Water",
+    description: "Clean drinking water fountain, cooler or RO dispenser",
+  },
+  toilet: {
+    icon: DoorOpen,
+    short: "Public Toilet",
+    description: "Sanitary public washroom for men, women, or all-gender/accessible",
+  },
+  parking: {
+    icon: Car,
+    short: "Parking Spot",
+    description: "Designated two-wheeler or four-wheeler civic parking area",
+  },
+};
+
+const DEFAULT_META = {
+  icon: MapPin,
+  short: "Civic Amenity",
+  description: "Proposed civic infrastructure or public facility",
+};
+
+const FALLBACK_FACILITY_OPTIONS = [
   {
-    id: "dustbin",
+    id: "1",
+    categoryId: 1,
+    categoryName: "DUSTBIN",
     label: "Dustbin / Waste Bin",
     short: "Dustbin",
     icon: Trash2,
     description: "Public trash can, segregation bins or waste disposal spot",
+    agencyName: "KMC SWM Department",
   },
   {
-    id: "water",
-    label: "Water Dispenser / Drinking Water Point",
-    short: "Water Dispenser",
-    icon: Droplets,
-    description: "Clean drinking water fountain, cooler or RO dispenser",
-  },
-  {
-    id: "toilet",
+    id: "2",
+    categoryId: 2,
+    categoryName: "TOILET",
     label: "Public Toilet / Restroom",
     short: "Public Toilet",
     icon: DoorOpen,
     description: "Sanitary public washroom for men, women, or all-gender/accessible",
+    agencyName: "KMC Sanitation Department",
   },
   {
-    id: "parking",
+    id: "3",
+    categoryId: 3,
+    categoryName: "WATER_POINT",
+    label: "Drinking Water Point",
+    short: "Drinking Water",
+    icon: Droplets,
+    description: "Clean drinking water fountain, cooler or RO dispenser",
+    agencyName: "KMC Water Department",
+  },
+  {
+    id: "4",
+    categoryId: 4,
+    categoryName: "PARKING",
     label: "Parking Spot / Zone",
     short: "Parking Spot",
     icon: Car,
     description: "Designated two-wheeler or four-wheeler civic parking area",
+    agencyName: "Kolkata Police",
   },
 ];
 
 function UserRecommendationPage() {
   const navigate = useNavigate();
 
+  const categoriesQuery = useApi("/facilities/categories", { poll: 0 });
+
+  const facilityOptions = useMemo(() => {
+    if (!categoriesQuery.data || !Array.isArray(categoriesQuery.data) || categoriesQuery.data.length === 0) {
+      return FALLBACK_FACILITY_OPTIONS;
+    }
+    return categoriesQuery.data.map((cat) => {
+      const key = (cat.category_name || "").toLowerCase();
+      const meta =
+        CATEGORY_META[key] ||
+        Object.entries(CATEGORY_META).find(([k]) => key.includes(k))?.[1] ||
+        DEFAULT_META;
+      return {
+        id: String(cat.category_id),
+        categoryId: cat.category_id,
+        categoryName: cat.category_name,
+        label: cat.display_name || cat.category_name,
+        short: meta.short || cat.display_name,
+        icon: meta.icon,
+        description: meta.description,
+        agencyName: cat.agency_name,
+      };
+    });
+  }, [categoriesQuery.data]);
+
   const [title, setTitle] = useState("");
-  const [facilityType, setFacilityType] = useState("dustbin");
+  const [facilityType, setFacilityType] = useState("1");
+
+  useEffect(() => {
+    if (facilityOptions.length > 0 && !facilityOptions.some((f) => f.id === String(facilityType))) {
+      setFacilityType(String(facilityOptions[0].id));
+    }
+  }, [facilityOptions, facilityType]);
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [coordinates, setCoordinates] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
@@ -86,8 +167,10 @@ function UserRecommendationPage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const lat = position.coords.latitude.toFixed(5);
-        const lng = position.coords.longitude.toFixed(5);
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        setLatitude(lat);
+        setLongitude(lng);
         setCoordinates({ lat, lng });
 
         // If location text is empty or previous coordinates, auto-populate
@@ -156,8 +239,21 @@ function UserRecommendationPage() {
       return;
     }
 
-    if (!location.trim() && !coordinates) {
-      alert("Please provide the location or use 'Detect My Location'.");
+    if (!location.trim()) {
+      alert("Please provide the address or location description.");
+      return;
+    }
+
+    const latTrimmed = String(latitude).trim();
+    const lngTrimmed = String(longitude).trim();
+
+    if (!latTrimmed || isNaN(Number(latTrimmed)) || Number(latTrimmed) < -90 || Number(latTrimmed) > 90) {
+      alert("Please enter a valid Latitude between -90 and 90 (or click 'Detect My Location').");
+      return;
+    }
+
+    if (!lngTrimmed || isNaN(Number(lngTrimmed)) || Number(lngTrimmed) < -180 || Number(lngTrimmed) > 180) {
+      alert("Please enter a valid Longitude between -180 and 180 (or click 'Detect My Location').");
       return;
     }
 
@@ -174,17 +270,26 @@ function UserRecommendationPage() {
     if (isSubmitting) return;
     setError("");
     setIsSubmitting(true);
-    const selectedFacilityMeta = FACILITY_OPTIONS.find((f) => f.id === facilityType);
+    const selectedFacilityMeta =
+      facilityOptions.find((f) => String(f.id) === String(facilityType)) || facilityOptions[0];
     let newRecommendation;
 
     try {
+      const latNum = latitude !== "" && !isNaN(Number(latitude))
+        ? Number(latitude)
+        : (coordinates?.lat !== undefined ? Number(coordinates.lat) : null);
+      const lngNum = longitude !== "" && !isNaN(Number(longitude))
+        ? Number(longitude)
+        : (coordinates?.lng !== undefined ? Number(coordinates.lng) : null);
+
       const backendData = await submitRecommendationApi({
         title: title.trim(),
         description: description.trim(),
         address: location.trim(),
-        facilityType: facilityType,
-        latitude: coordinates?.lat !== undefined ? Number(coordinates.lat) : null,
-        longitude: coordinates?.lng !== undefined ? Number(coordinates.lng) : null,
+        categoryId: Number(selectedFacilityMeta.categoryId || selectedFacilityMeta.id),
+        facilityType: selectedFacilityMeta.categoryName?.toLowerCase() || "dustbin",
+        latitude: latNum,
+        longitude: lngNum,
         landmark: landmark.trim(),
         photoFile: photoFile,
         photoUrl: photoPreview,
@@ -201,7 +306,9 @@ function UserRecommendationPage() {
         facilityType: backendData.facility_type || facilityType,
         facilityLabel: backendData.facility_label || selectedFacilityMeta?.short || facilityType,
         location: location.trim(),
-        coordinates: coordinates || (backendData.latitude ? { lat: backendData.latitude, lng: backendData.longitude } : null),
+        latitude: backendData.latitude !== undefined && backendData.latitude !== null ? backendData.latitude : (latNum ?? null),
+        longitude: backendData.longitude !== undefined && backendData.longitude !== null ? backendData.longitude : (lngNum ?? null),
+        coordinates: (latNum !== null && lngNum !== null) ? { lat: latNum, lng: lngNum } : null,
         landmark: landmark.trim(),
         description: backendData.description,
         photoPreview: photoPreview || photoUrlResolved,
@@ -230,8 +337,10 @@ function UserRecommendationPage() {
 
   const handleResetForm = () => {
     setTitle("");
-    setFacilityType("dustbin");
+    setFacilityType(String(facilityOptions[0]?.id || "1"));
     setLocation("");
+    setLatitude("");
+    setLongitude("");
     setCoordinates(null);
     setLandmark("");
     setDescription("");
@@ -242,10 +351,9 @@ function UserRecommendationPage() {
     setSubmittedData(null);
   };
 
-
   const selectedFacilityMeta =
-    FACILITY_OPTIONS.find((f) => f.id === facilityType) || FACILITY_OPTIONS[0];
-  const FacilityIcon = selectedFacilityMeta.icon;
+    facilityOptions.find((f) => String(f.id) === String(facilityType)) || facilityOptions[0] || FALLBACK_FACILITY_OPTIONS[0];
+  const FacilityIcon = selectedFacilityMeta?.icon || Trash2;
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -263,70 +371,72 @@ function UserRecommendationPage() {
             <img
               src={logo}
               alt="Amar Sohor Logo"
-              className="h-11 w-11 rounded-full border border-lime-300/20 object-cover"
+              className="h-10 w-10 rounded-full border border-lime-300/30 object-cover shadow-lg shadow-lime-300/10"
             />
-            <h1 className="text-xl font-bold md:text-2xl">
-              Amar <span className="text-lime-300">Sohor</span>
-            </h1>
+            <div className="leading-tight">
+              <span className="text-xl font-bold tracking-wide">
+                Amar <span className="text-lime-300">Sohor</span>
+              </span>
+              <p className="text-[10px] tracking-wider text-white/50 uppercase">Civic Intelligence</p>
+            </div>
           </Link>
+
           <div className="flex items-center gap-3">
             <Link
               to="/citizen/my-recommendations"
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:border-lime-300/30 hover:text-white transition"
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold hover:border-lime-300/50 hover:bg-lime-300/10 hover:text-lime-300 transition"
             >
-              My Recommendations
+              My Proposals
             </Link>
-            
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 hover:bg-lime-300 hover:text-black transition"
+
+            <Link
+              to="/citizen/dashboard"
+              className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold hover:border-lime-300/50 hover:bg-lime-300/10 hover:text-lime-300 transition"
             >
-              <ArrowLeft size={17} />
-              <span>Back</span>
-            </button>
+              <ArrowLeft size={16} />
+              <span>Dashboard</span>
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="relative z-30 px-4 py-6 md:px-8 md:py-8">
-        <ApiState error={error} />
-        <section className="mx-auto max-w-3xl">
-          {/* Header titles */}
-          <div className="text-center sm:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/10 px-3.5 py-1 text-xs font-bold tracking-[3px] text-lime-300 uppercase">
-              <Sparkles size={13} />
-              Citizen Voice & Urban Planning
-            </div>
-            <h1 className="mt-2 text-2xl font-bold md:text-4xl">
-              Recommend a <span className="text-lime-300">Facility</span>
-            </h1>
-            <p className="mt-1.5 text-xs md:text-sm text-white/50 max-w-2xl">
-              Spot an area that needs a dustbin, drinking water point, public toilet, or parking spot? Propose a new location to help municipal authorities improve city infrastructure.
-            </p>
+      <main className="relative z-30 mx-auto max-w-4xl px-4 py-8 md:px-8">
+        <section>
+          {/* Breadcrumbs / Page Tag */}
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-lime-300">
+            <Sparkles size={14} />
+            <span>Civic Proposal Engine</span>
+            <span className="text-white/30">•</span>
+            <span className="text-white/50">Direct Public Proposal</span>
           </div>
 
-          {/* Submitted State */}
+          <h1 className="mt-2 text-2xl font-bold md:text-3xl lg:text-4xl">
+            Recommend a New Public Facility
+          </h1>
+          <p className="mt-1.5 text-xs sm:text-sm text-white/60">
+            Citizens can directly suggest locations where new waste bins, drinking water coolers, public toilets, or parking spots are needed. Your proposal will be directly submitted to the Municipal Administrator for allocation to designated field agencies.
+          </p>
+
+          <ApiState error={error} />
+
+          {/* Submission Success View */}
           {isSubmitted && submittedData ? (
-            <div className="mt-6 rounded-2xl border border-lime-300/30 bg-white/[0.045] p-5 text-center shadow-xl backdrop-blur-2xl md:p-6">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lime-300/20 text-lime-300">
+            <div className="mt-6 rounded-2xl border border-lime-300/30 bg-black/40 p-6 text-center backdrop-blur-2xl md:p-8 animate-fadeIn">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-lime-300/40 bg-lime-300/15 text-lime-300 shadow-lg shadow-lime-300/20">
                 <CheckCircle2 size={32} />
               </div>
 
-              <span className="mt-4 inline-block rounded-full bg-lime-300/15 px-3 py-1 text-xs font-semibold text-lime-300">
-                Recommendation Submitted • {submittedData.id}
-              </span>
-
-              <h2 className="mt-2.5 text-xl font-bold md:text-2xl">
-                Thank you for your civic contribution!
+              <h2 className="mt-4 text-xl font-bold sm:text-2xl text-white">
+                Recommendation Registered!
               </h2>
 
-              <p className="mx-auto mt-1.5 max-w-lg text-xs md:text-sm text-white/60">
-                Your recommendation for a new{" "}
-                <strong className="text-lime-300 font-semibold">
-                  {submittedData.facilityLabel}
-                </strong>{" "}
-                has been logged. Civic planning officers will review the area feasibility and inspect the spot.
+              <p className="mt-1 text-sm font-mono text-lime-300/90 font-semibold">
+                ID: REC-{String(submittedData.id).padStart(4, "0")}
+              </p>
+
+              <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-white/70">
+                Your proposal has been logged in the Municipal Administration Registry and assigned to the review pipeline for feasibility survey.
               </p>
 
               {/* Summary card */}
@@ -352,6 +462,12 @@ function UserRecommendationPage() {
                     <MapPin size={15} className="text-lime-300 shrink-0" />
                     {submittedData.location}
                   </p>
+                  {(submittedData.latitude !== null && submittedData.latitude !== undefined && submittedData.longitude !== null && submittedData.longitude !== undefined) && (
+                    <p className="mt-1 font-mono text-xs text-lime-300/80 flex items-center gap-1">
+                      <Compass size={13} className="text-lime-300 shrink-0" />
+                      Lat: {submittedData.latitude}, Long: {submittedData.longitude}
+                    </p>
+                  )}
                 </div>
 
                 {submittedData.landmark && (
@@ -399,7 +515,6 @@ function UserRecommendationPage() {
                 )}
               </div>
 
-
               {/* Actions */}
               <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5">
                 <Link
@@ -441,39 +556,35 @@ function UserRecommendationPage() {
                     required
                     className="w-full appearance-none rounded-xl border border-white/10 bg-[#0c1427] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-lime-300/50 focus:ring-1 focus:ring-lime-300/30"
                   >
-                    {FACILITY_OPTIONS.map((opt) => (
+                    {facilityOptions.map((opt) => (
                       <option key={opt.id} value={opt.id} className="bg-[#0c1427] text-white py-2">
-                        {opt.label}
+                        {opt.label} {opt.agencyName ? `— (${opt.agencyName})` : ""}
                       </option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lime-300">
                     <FacilityIcon size={18} />
                   </div>
-                  <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40">
-                    <ChevronDown size={17} />
-                  </div>
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
+                  />
                 </div>
-
-                {/* Facility quick preview pill */}
-                <div className="flex items-center gap-2 rounded-lg bg-white/[0.025] px-3 py-1.5 text-xs text-white/50 border border-white/5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-lime-300 shrink-0" />
-                  <span>{selectedFacilityMeta.description}</span>
-                </div>
+                <p className="text-xs text-white/40">{selectedFacilityMeta.description}</p>
               </div>
 
-              {/* Title */}
+              {/* Title / Summary */}
               <div className="space-y-1.5">
-                <label htmlFor="recommendation-title" className="text-xs font-medium text-white/70">
-                  Recommendation Title <span className="text-lime-300">*</span>
+                <label htmlFor="facility-title" className="text-xs font-medium text-white/70">
+                  Proposal Title / Headline <span className="text-lime-300">*</span>
                 </label>
                 <input
-                  id="recommendation-title"
+                  id="facility-title"
                   required
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Install twin dustbins near Sector V bus terminus"
+                  placeholder="e.g. Drinking water point needed near Deshapriya Park Gate 2"
                   className="w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
                 />
                 <p className="text-xs text-white/35">
@@ -531,6 +642,75 @@ function UserRecommendationPage() {
                 <p className="text-xs text-white/35">
                   Click &ldquo;Detect My Location&rdquo; to use your current GPS position or enter the street address manually.
                 </p>
+              </div>
+
+              {/* Latitude and Longitude Input Fields */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="facility-latitude" className="text-xs font-medium text-white/70">
+                      Latitude <span className="text-lime-300">*</span>
+                    </label>
+                    <span className="text-[10px] text-white/40">-90 to 90</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      id="facility-latitude"
+                      required
+                      type="number"
+                      step="any"
+                      min="-90"
+                      max="90"
+                      value={latitude}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLatitude(val);
+                        if (val !== "" && longitude !== "") {
+                          setCoordinates({ lat: val, lng: longitude });
+                        }
+                      }}
+                      placeholder="e.g. 22.572646"
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 pl-10 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
+                    />
+                    <Compass
+                      size={17}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lime-300"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="facility-longitude" className="text-xs font-medium text-white/70">
+                      Longitude <span className="text-lime-300">*</span>
+                    </label>
+                    <span className="text-[10px] text-white/40">-180 to 180</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      id="facility-longitude"
+                      required
+                      type="number"
+                      step="any"
+                      min="-180"
+                      max="180"
+                      value={longitude}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLongitude(val);
+                        if (latitude !== "" && val !== "") {
+                          setCoordinates({ lat: latitude, lng: val });
+                        }
+                      }}
+                      placeholder="e.g. 88.363895"
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 pl-10 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-lime-300/40 focus:bg-white/[0.07]"
+                    />
+                    <Compass
+                      size={17}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lime-300"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Nearby Landmark */}
@@ -631,7 +811,6 @@ function UserRecommendationPage() {
                 <Send size={16} className={isSubmitting ? "animate-pulse" : ""} />
               </button>
 
-
               <div className="flex items-center justify-center gap-2 text-xs text-white/40">
                 <HelpCircle size={13} />
                 <span>
@@ -647,8 +826,8 @@ function UserRecommendationPage() {
               What facilities can you recommend?
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-              {FACILITY_OPTIONS.map((item) => {
-                const Icon = item.icon;
+              {facilityOptions.map((item) => {
+                const Icon = item.icon || MapPin;
                 return (
                   <div
                     key={item.id}
@@ -661,6 +840,11 @@ function UserRecommendationPage() {
                     <p className="mt-1 text-xs text-white/40 line-clamp-2">
                       {item.description}
                     </p>
+                    {item.agencyName && (
+                      <span className="mt-2 block text-[10px] text-lime-300/75 font-medium truncate">
+                        {item.agencyName}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -671,7 +855,6 @@ function UserRecommendationPage() {
                 className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-6 py-3 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition duration-300 hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-300"
               >
                 Any reports regarding existing facilities?
-                
               </Link>
             </div>
           </div>
@@ -824,4 +1007,3 @@ function UserRecommendationPage() {
 }
 
 export default UserRecommendationPage;
-

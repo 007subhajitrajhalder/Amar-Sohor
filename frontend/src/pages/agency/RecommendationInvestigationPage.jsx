@@ -21,7 +21,9 @@ import {
   FileText,
   Sparkles,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  History,
+  X
 } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
@@ -96,14 +98,22 @@ function RecommendationInvestigationPage() {
     localStorage.getItem("agencyTheme") !== "light"
   );
 
-  const resource = useApi("/recommendations/" + recommendationId);
+  const cleanId = String(recommendationId || "").replace(/^REC-/i, "").replace(/^0+/, "") || "0";
+  const resource = useApi("/recommendations/" + cleanId);
   const recommendation = resource.data ? recommendationView(resource.data) : null;
-  const [investigationNotes, setInvestigationNotes] = useState("");
+  const [investigationNotesDraft, setInvestigationNotesDraft] = useState({
+    recommendationId: null,
+    value: ""
+  });
+  const investigationNotes = investigationNotesDraft.recommendationId === recommendation?.id
+    ? investigationNotesDraft.value
+    : recommendation?.inspectionNotes || recommendation?.reviewNotes || "";
   const [actionNotification, setActionNotification] = useState("");
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
   // Sync theme
   useEffect(() => {
     const syncTheme = () => {
@@ -126,10 +136,14 @@ function RecommendationInvestigationPage() {
     window.dispatchEvent(new Event("agencyThemeChange"));
   };
 
+  if (resource.loading) {
+    return (
+      <main className={`min-h-screen p-8 ${isDark ? "bg-[#100e0b] text-white" : "bg-slate-100 text-slate-900"}`}>
+        <ApiState {...resource} />
+      </main>
+    );
+  }
 
-
-  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white">
-        <ApiState error={error} /><ApiState {...resource} /></main>;
   if (!recommendation) {
     return (
       <div
@@ -155,8 +169,8 @@ function RecommendationInvestigationPage() {
 
   const facilityBadge = getFacilityBadge(recommendation.facilityType, isDark);
   const FacilityIcon = FACILITY_ICONS[recommendation.facilityType] || Trash2;
-  const currentStatus = (recommendation.status || "").toUpperCase();
-  const isPendingInvestigation = currentStatus === "ALLOTTED" || currentStatus === "PENDING_ALLOCATION";
+  const currentStatus = (recommendation.rawStatus || recommendation.status || "").toUpperCase();
+  const isPendingInvestigation = ["ALLOTTED", "ALLOCATED", "PENDING_ALLOCATION", "PENDING"].includes(currentStatus);
   const isUnderInvestigation = currentStatus === "UNDER_INVESTIGATION";
   const isApproved = currentStatus === "APPROVED";
   const isRejected = currentStatus === "REJECTED";
@@ -164,22 +178,58 @@ function RecommendationInvestigationPage() {
 
   const update = async (status, notes) => {
     if (saving) return null;
-    setSaving(true); setError("");
+    setSaving(true);
+    setError("");
     try {
-      const result = await apiRequest("/recommendations/" + recommendation.id, { method: "PATCH", body: { status, notes } });
-      resource.refresh(); setActionNotification("Recommendation updated successfully."); return recommendationView(result);
-    } catch (error) { setError(error.message); return null; }
-    finally { setSaving(false); }
+      const result = await apiRequest("/recommendations/" + cleanId, {
+        method: "PATCH",
+        body: { status, notes }
+      });
+      resource.refresh();
+      setActionNotification("Recommendation status updated to " + status.replaceAll("_", " ").toLowerCase() + " successfully.");
+      return recommendationView(result);
+    } catch (err) {
+      setError(err.message || "Failed to update recommendation.");
+      return null;
+    } finally {
+      setSaving(false);
+    }
   };
-  const handleStartInvestigation = () => update("UNDER_INVESTIGATION", investigationNotes.trim() || "Investigation started.");
+
+  const handleStartInvestigation = () =>
+    update("UNDER_INVESTIGATION", investigationNotes.trim() || "Field feasibility inspection commenced by assigned agency specialist.");
+
+  const handleSaveNotes = () => {
+    if (!investigationNotes.trim()) {
+      setError("Please enter inspection findings before saving.");
+      return;
+    }
+    return update("UNDER_INVESTIGATION", investigationNotes.trim());
+  };
+
   const handleApproveAndAddFacility = async () => {
-    const result = isApproved ? recommendation : await update("APPROVED", investigationNotes.trim() || "Site feasibility approved.");
-    if (result) navigate("/agency/facilities/add", { state: { recommendation: result } });
+    const notes = investigationNotes.trim() || "Site feasibility verified and approved for facility installation.";
+    const result = isApproved ? recommendation : await update("APPROVED", notes);
+    if (result) {
+      navigate("/agency/facilities/add", {
+        state: { recommendation: result }
+      });
+    }
   };
+
   const handleConfirmReject = async () => {
-    if (!rejectionReason.trim()) { setError("Please provide a rejection reason."); return; }
-    if (await update("REJECTED", rejectionReason.trim())) setIsRejectModalOpen(false);
+    if (!rejectionReason.trim()) {
+      setError("Please provide a rejection rationale detailing why this proposal cannot be implemented.");
+      return;
+    }
+    const result = await update("REJECTED", rejectionReason.trim());
+    if (result) {
+      setIsRejectModalOpen(false);
+    }
   };
+
+  const handleRestartInvestigation = () =>
+    update("UNDER_INVESTIGATION", "Investigation restarted by the assigned agency specialist.");
 
   return (
     <div
@@ -280,15 +330,48 @@ function RecommendationInvestigationPage() {
         {/* Action toast */}
         {actionNotification && (
           <div
-            className={`mt-4 flex items-center gap-3 rounded-2xl border p-4 text-xs font-bold shadow-xl backdrop-blur-xl ${
+            className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border p-4 text-xs font-bold shadow-xl backdrop-blur-xl ${
               isDark 
                 ? "border-emerald-300/40 bg-emerald-400/20 text-emerald-200" 
                 : "border-emerald-400/40 bg-emerald-50 text-emerald-800"
             }`}
             role="status"
           >
-            <CheckCircle2 size={18} className={`shrink-0 ${isDark ? "text-emerald-300" : "text-emerald-600"}`} />
-            <span>{actionNotification}</span>
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 size={18} className={`shrink-0 ${isDark ? "text-emerald-300" : "text-emerald-600"}`} />
+              <span>{actionNotification}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionNotification("")}
+              className="opacity-70 hover:opacity-100"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Error notification */}
+        {error && (
+          <div
+            className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border p-4 text-xs font-semibold shadow-xl backdrop-blur-xl ${
+              isDark
+                ? "border-rose-400/40 bg-rose-500/20 text-rose-200"
+                : "border-rose-300 bg-rose-50 text-rose-800"
+            }`}
+            role="alert"
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertCircle size={18} className="shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="opacity-70 hover:opacity-100"
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
 
@@ -435,6 +518,23 @@ function RecommendationInvestigationPage() {
                 </div>
               </div>
 
+              {/* Coordinates display if available */}
+              {(recommendation.latitude !== null && recommendation.latitude !== undefined) && (
+                <div
+                  className={`rounded-xl border p-3 ${
+                    isDark ? "border-white/10 bg-white/5" : "border-slate-200 bg-slate-50"
+                  }`}
+                >
+                  <p className="font-semibold uppercase tracking-wider opacity-60 flex items-center gap-1.5">
+                    <MapPin size={12} className={isDark ? "text-amber-400" : "text-amber-600"} />
+                    <span>Geographic Coordinates</span>
+                  </p>
+                  <p className="mt-1 font-mono text-xs font-semibold">
+                    Latitude: {Number(recommendation.latitude).toFixed(6)}, Longitude: {Number(recommendation.longitude).toFixed(6)}
+                  </p>
+                </div>
+              )}
+
               {/* Citizen Contact Card */}
               <div
                 className={`rounded-xl border p-4 ${
@@ -526,6 +626,7 @@ function RecommendationInvestigationPage() {
             </h2>
 
             {/* Stage Indicator & Instructions */}
+            {/* Stage Indicator & Instructions */}
             <div className="mt-5 space-y-4">
               {/* When Status is Pending / Allotted: Button to start investigation */}
               {isPendingInvestigation && (
@@ -537,7 +638,7 @@ function RecommendationInvestigationPage() {
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
-                    <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                    <AlertTriangle size={18} className="shrink-0 mt-0.5 text-amber-400" />
                     <div>
                       <h4 className="font-bold">Awaiting Field Investigation</h4>
                       <p className="mt-1 leading-relaxed opacity-85">
@@ -546,36 +647,117 @@ function RecommendationInvestigationPage() {
                     </div>
                   </div>
 
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider opacity-70 mb-1">
+                      Initial Inspection Note (Optional)
+                    </label>
+                    <textarea
+                      maxLength={1000}
+                      rows={2}
+                      value={investigationNotes}
+                      onChange={(e) => setInvestigationNotesDraft({ recommendationId: recommendation.id, value: e.target.value })}
+                      placeholder="E.g., Field site survey commenced to check utility access and road clearance."
+                      className={`w-full rounded-xl border p-2.5 text-xs outline-none transition focus:ring-2 ${
+                        isDark
+                          ? "border-white/15 bg-white/5 text-white placeholder-white/40 focus:border-cyan-400 focus:ring-cyan-400/20"
+                          : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-cyan-600 focus:ring-cyan-600/20"
+                      }`}
+                    />
+                  </div>
+
                   <button
                     type="button"
-                    disabled={saving} onClick={handleStartInvestigation}
-                    className="mt-4 w-full rounded-xl bg-cyan-600 hover:bg-cyan-500 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5"
+                    disabled={saving}
+                    onClick={handleStartInvestigation}
+                    className="mt-3 w-full rounded-xl bg-cyan-600 hover:bg-cyan-500 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 disabled:opacity-50"
                   >
-                    Start Investigation Now
+                    {saving ? "Updating..." : "Start Investigation Now"}
                   </button>
                 </div>
               )}
 
-              <label className="my-4 grid gap-2">Investigation notes
-                <textarea maxLength={1000} value={investigationNotes} onChange={e => setInvestigationNotes(e.target.value)}
-                  placeholder={recommendation.inspectionNotes || "Enter inspection findings"} className="rounded-xl border bg-transparent p-3" />
-              </label>
               {/* When Status is Under Investigation: Active investigation form */}
               {isUnderInvestigation && (
-                <div
-                  className={`rounded-xl border p-3.5 text-xs ${
-                    isDark
-                      ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
-                      : "border-cyan-200 bg-cyan-50 text-cyan-900"
-                  }`}
-                >
-                  <p className="font-bold flex items-center gap-1.5">
-                    <Clock3 size={14} className="animate-spin" />
-                    Field Investigation Active
-                  </p>
-                  <p className="mt-1 opacity-80 leading-relaxed">
-                    Verify site feasibility, foot traffic clearance, and utility connections. Enter your inspection notes below and choose to <strong>Approve & Add Facility</strong> or <strong>Reject</strong>.
-                  </p>
+                <div className="space-y-4">
+                  <div
+                    className={`rounded-xl border p-3.5 text-xs ${
+                      isDark
+                        ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+                        : "border-cyan-200 bg-cyan-50 text-cyan-900"
+                    }`}
+                  >
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Clock3 size={14} className="animate-spin" />
+                      Field Investigation Active
+                    </p>
+                    <p className="mt-1 opacity-80 leading-relaxed">
+                      Verify site feasibility, foot traffic clearance, and utility connections. Enter your inspection findings below and choose to <strong>Approve & Add Facility</strong> or <strong>Reject</strong>.
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider opacity-70">
+                        Investigation Notes & Findings
+                      </label>
+                      <span className="text-[11px] opacity-50">
+                        {investigationNotes.length}/1000
+                      </span>
+                    </div>
+                    <textarea
+                      maxLength={1000}
+                      rows={4}
+                      value={investigationNotes}
+                      onChange={(e) => setInvestigationNotesDraft({ recommendationId: recommendation.id, value: e.target.value })}
+                      placeholder="Enter on-site feasibility evaluation findings, ground conditions, utility clearances..."
+                      className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
+                        isDark
+                          ? "border-white/15 bg-white/5 text-white placeholder-white/40 focus:border-cyan-400 focus:ring-cyan-400/20"
+                          : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-cyan-600 focus:ring-cyan-600/20"
+                      }`}
+                    />
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        disabled={saving || !investigationNotes.trim()}
+                        onClick={handleSaveNotes}
+                        className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                          isDark
+                            ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20 disabled:opacity-40"
+                            : "border-cyan-600/40 bg-cyan-50 text-cyan-800 hover:bg-cyan-100 disabled:opacity-40"
+                        }`}
+                      >
+                        {saving ? "Saving..." : "Save Notes"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Two Decision Action Buttons */}
+                  <div className="grid gap-3 sm:grid-cols-2 pt-2">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={handleApproveAndAddFacility}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>{saving ? "Processing..." : "Approve & Add Facility"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => setIsRejectModalOpen(true)}
+                      className={`inline-flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition duration-200 hover:-translate-y-0.5 disabled:opacity-50 ${
+                        isDark
+                          ? "border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
+                          : "border-rose-500/40 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                      }`}
+                    >
+                      <XCircle size={16} />
+                      <span>Reject Proposal</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -595,6 +777,11 @@ function RecommendationInvestigationPage() {
                   <p className="mt-1 leading-relaxed opacity-85">
                     This civic proposal has been approved. The details are ready to be carry-forwarded to the <strong>Add Facility</strong> page to commission the amenity.
                   </p>
+                  {recommendation.reviewNotes && (
+                    <div className={`mt-2 rounded-lg border p-2 text-xs ${isDark ? "border-white/10 bg-white/5" : "border-emerald-200 bg-white/60"}`}>
+                      <strong>Approval Notes:</strong> {recommendation.reviewNotes}
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -625,15 +812,19 @@ function RecommendationInvestigationPage() {
                     <span>Proposal Rejected</span>
                   </div>
                   <p className="mt-1 leading-relaxed opacity-85">
-                    Reason: <strong>{recommendation.rejectionReason || "Site deemed unsuitable during inspection."}</strong>
+                    <strong>Rejection Rationale:</strong> {recommendation.rejectionReason || recommendation.reviewNotes || "Site deemed unsuitable during inspection."}
                   </p>
-
                   <button
                     type="button"
-                    disabled={saving} onClick={handleStartInvestigation}
-                    className="mt-3 text-xs underline font-semibold opacity-70 hover:opacity-100"
+                    disabled={saving}
+                    onClick={handleRestartInvestigation}
+                    className={`mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition disabled:opacity-50 ${
+                      isDark
+                        ? "bg-cyan-600 text-white hover:bg-cyan-500"
+                        : "bg-cyan-700 text-white hover:bg-cyan-600"
+                    }`}
                   >
-                    Reopen Investigation
+                    {saving ? "Restarting..." : "Restart Investigation"}
                   </button>
                 </div>
               )}
@@ -652,37 +843,63 @@ function RecommendationInvestigationPage() {
                     <span>Facility Commissioned & Installed</span>
                   </div>
                   <p className="mt-1 leading-relaxed opacity-85">
-                    This proposal has been converted into an active municipal facility.
+                    This proposal has been successfully converted into an active municipal facility on the public city map.
                   </p>
                 </div>
               )}
 
-              {/* Two Decision Action Buttons when Under Investigation */}
-              {isUnderInvestigation && (
-                <div className="grid gap-3 sm:grid-cols-2 pt-2">
-                  <button
-                    type="button"
-                    disabled={saving} onClick={handleApproveAndAddFacility}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 p-3 text-xs font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5"
-                  >
-                    <CheckCircle2 size={16} />
-                    <span>Approve & Add Facility</span>
-                  </button>
+              {/* Investigation History Timeline */}
+              <div className="border-t border-white/10 pt-4 mt-6">
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 flex items-center gap-2">
+                  <History size={14} className={isDark ? "text-cyan-300" : "text-cyan-700"} />
+                  <span>Activity & Investigation Timeline</span>
+                </h3>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsRejectModalOpen(true)}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition duration-200 hover:-translate-y-0.5 ${
-                      isDark 
-                        ? "border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
-                        : "border-rose-500/40 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                    }`}
-                  >
-                    <XCircle size={16} />
-                    <span>Reject Proposal</span>
-                  </button>
+                <div className="mt-3 space-y-3">
+                  {(recommendation.history || []).length > 0 ? (
+                    (recommendation.history || []).map((entry, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative flex items-start gap-3 border-l-2 pl-3 py-1 text-xs ${
+                          isDark ? "border-cyan-400/30" : "border-cyan-600/30"
+                        }`}
+                      >
+                        <span
+                          className={`absolute -left-[5px] top-2 h-2 w-2 rounded-full ${
+                            entry.status === "APPROVED"
+                              ? "bg-emerald-400"
+                              : entry.status === "REJECTED"
+                              ? "bg-rose-400"
+                              : isDark
+                              ? "bg-cyan-400"
+                              : "bg-cyan-600"
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold">{entry.action}</p>
+                          {entry.description && (
+                            <p
+                              className={`mt-1 rounded-lg border p-2 text-xs leading-relaxed ${
+                                isDark
+                                  ? "border-white/10 bg-white/5 text-white/80"
+                                  : "border-slate-200 bg-slate-50 text-slate-800"
+                              }`}
+                            >
+                              {entry.description}
+                            </p>
+                          )}
+                          <p className="mt-1 text-[11px] opacity-60">
+                            {entry.actor && <span>{entry.actor} ({entry.actor_role || "Specialist"}) • </span>}
+                            <span>{entry.formattedDate || entry.date}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs opacity-50">No activity events recorded yet.</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </section>
         </div>

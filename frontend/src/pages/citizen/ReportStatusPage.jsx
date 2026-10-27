@@ -19,7 +19,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { reportView } from "../../api/client";
+import { displayDateTime, reportView } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -55,13 +55,13 @@ function ReportStatusPage() {
     {
       step: 1,
       title: "Report Submitted",
-      date: data.date || "Logged",
+      date: displayDateTime(data.created_at),
       description: "Grievance registered in municipal civic database.",
     },
     {
       step: 2,
       title: "Under Investigation",
-      date: currentStage >= 2 ? "Assigned" : "Pending dispatch",
+      date: "Date not recorded",
       description:
         currentStage >= 2
           ? `Assigned to ${data.assignedAgency || "Local Zonal Agency"}.`
@@ -70,16 +70,20 @@ function ReportStatusPage() {
     {
       step: 3,
       title: "Resolution Submitted",
-      date: currentStage >= 3 ? "In Progress" : "Awaiting resolution evidence",
+      date: data.resolution?.submitted_at
+        ? displayDateTime(data.resolution.submitted_at)
+        : "Date not recorded",
       description:
         currentStage >= 3
-          ? "Resolution evidence is uploaded ."
+          ? "Resolution evidence was submitted for review."
           : "The agency can submit repair evidence after investigation.",
     },
     {
       step: 4,
       title: "Issue Resolved",
-      date: currentStage >= 4 ? (data.resolvedDate || "Work Completed") : "Pending resolution",
+      date: data.resolved_at
+        ? displayDateTime(data.resolved_at)
+        : "Date not recorded",
       description:
         currentStage >= 4
           ? "The issue is completely resolved."

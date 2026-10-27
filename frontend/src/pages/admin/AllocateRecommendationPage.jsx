@@ -2,21 +2,19 @@ import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
 import { recommendationView } from "../../api/client";
 import {
-  AlertCircle,
   ArrowLeft,
-  Briefcase,
   Building2,
   Calendar,
   Car,
-  Check,
   CheckCircle2,
+  Compass,
   DoorOpen,
   Droplets,
   Mail,
   MapPin,
+  Navigation,
   Phone,
   Search,
-  Trash2,
   UserCheck,
   UserRound,
   Users
@@ -59,81 +57,121 @@ const lightAuraLayers = [
 ];
 
 const FACILITY_ICONS = {
-  dustbin: Trash2,
   water: Droplets,
   toilet: DoorOpen,
   parking: Car
 };
 
+function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+  const numLat1 = Number(lat1);
+  const numLon1 = Number(lon1);
+  const numLat2 = Number(lat2);
+  const numLon2 = Number(lon2);
+  if (isNaN(numLat1) || isNaN(numLon1) || isNaN(numLat2) || isNaN(numLon2)) return null;
+
+  const R = 6371; // Earth radius in km
+  const dLat = (numLat2 - numLat1) * (Math.PI / 180);
+  const dLon = (numLon2 - numLon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(numLat1 * (Math.PI / 180)) *
+      Math.cos(numLat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
 function AllocateRecommendationPage() {
   const { recommendationId } = useParams();
+  const cleanId = String(recommendationId || "").replace(/^REC-/i, "").replace(/^0+/, "") || "0";
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
 
-  const resource = useApi("/recommendations/" + recommendationId);
+  const resource = useApi("/recommendations/" + cleanId);
   const recommendation = resource.data ? recommendationView(resource.data) : null;
-  const memberResource = useApi(recommendation?.assigned_agency ? "/admin/agency-members?agency_id=" + recommendation.assigned_agency : null);
+  const memberResource = useApi(
+    recommendation?.assigned_agency
+      ? "/admin/agency-members?agency_id=" + recommendation.assigned_agency
+      : null
+  );
   const category = recommendation?.facilityType || "";
   const agency = recommendation?.assignedAgency || {};
-  const members = (memberResource.data || []).map(m => ({ ...m, id: m.agent_id, fullName: m.full_name,
-    designation: m.role, activeCases: "Not recorded", completedCases: "Not recorded" }));
-  const [selectedMember, setSelectedMember] = useState(null);
+
+  const recLat = recommendation?.latitude ?? recommendation?.coordinates?.lat;
+  const recLng = recommendation?.longitude ?? recommendation?.coordinates?.lng;
+
+  const membersWithDistance = useMemo(() => {
+    return (memberResource.data || []).map((m) => {
+      const dist = calculateDistanceKm(recLat, recLng, m.latitude, m.longitude);
+      return {
+        ...m,
+        id: m.agent_id,
+        fullName: m.full_name,
+        designation: m.role,
+        latitude: m.latitude,
+        longitude: m.longitude,
+        distanceKm: dist,
+        activeCases: "Active Member"
+      };
+    });
+  }, [memberResource.data, recLat, recLng]);
+
+  const [allocatingMemberId, setAllocatingMemberId] = useState(null);
   const [error, setError] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
-  const [assignmentNote, setAssignmentNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Filter members by search query
   const filteredMembers = useMemo(() => {
-    if (!memberSearch.trim()) return members;
-    const q = memberSearch.toLowerCase();
-    return members.filter(
-      (m) =>
-        m.fullName.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        m.designation.toLowerCase().includes(q) ||
-        m.phone.includes(q)
+    if (!memberSearch.trim()) return membersWithDistance;
+    const q = memberSearch.trim().toLowerCase();
+    return membersWithDistance.filter(
+      (member) =>
+        [member.fullName, member.email, member.designation, member.phone]
+          .some((value) => String(value ?? "").toLowerCase().includes(q))
     );
-  }, [members, memberSearch]);
+  }, [membersWithDistance, memberSearch]);
 
-  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
+  // Sort members based on the shortest distance they are away from the recommendation location
+  const sortedMembers = useMemo(() => {
+    return [...filteredMembers].sort((a, b) => {
+      const distA = a.distanceKm !== null && a.distanceKm !== undefined ? a.distanceKm : Infinity;
+      const distB = b.distanceKm !== null && b.distanceKm !== undefined ? b.distanceKm : Infinity;
+      return distA - distB;
+    });
+  }, [filteredMembers]);
+
   if (!recommendation) {
     return (
-      <main
-        className={`admin-themed-page relative flex min-h-screen items-center justify-center p-6 ${
-          isLightMode ? "admin-light-mode" : "bg-[#100e0b]"
-        }`}
-      >
-        <div className="admin-glass-card max-w-md rounded-2xl border border-white/20 p-8 text-center text-white backdrop-blur-xl">
-          <AlertCircle size={40} className="mx-auto text-amber-300" />
-          <h2 className="mt-4 text-xl font-bold">Recommendation Not Found</h2>
-          <p className="mt-2 text-sm text-white/60">
-            The requested recommendation #{recommendationId} could not be located in the system.
-          </p>
-          <Link
-            to="/admin/recommendations"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-300/20 hover:text-white"
-          >
-            <ArrowLeft size={16} />
-            Back to All Recommendations
-          </Link>
-        </div>
+      <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState {...resource} />
       </main>
     );
   }
 
-  const FacilityIcon = FACILITY_ICONS[category] || Trash2;
+  const FacilityIcon = FACILITY_ICONS[category];
 
-  const handleAllocate = async event => {
-    event.preventDefault();
-    if (isSubmitting || !selectedMember) return;
-    setIsSubmitting(true); setError("");
+  const handleAllocate = async (member) => {
+    if (isSubmitting || !member) return;
+    setAllocatingMemberId(member.id);
+    setIsSubmitting(true);
+    setError("");
+
     try {
-      await allocateRecommendationApi(Number(recommendation.id), { agentId: selectedMember.id, notes: assignmentNote });
-      setSuccessMessage("Recommendation allocated successfully.");
-      navigate("/admin/recommendations/" + recommendation.id + "/progress");
-    } catch (error) { setError(error.message); }
-    finally { setIsSubmitting(false); }
+      await allocateRecommendationApi(Number(cleanId), {
+        agentId: member.id
+      });
+      setSuccessMessage(`Recommendation successfully allocated to ${member.fullName}.`);
+      navigate(`/admin/recommendations/${cleanId}/progress`);
+    } catch (err) {
+      setError(err.message || "Failed to allocate recommendation.");
+    } finally {
+      setIsSubmitting(false);
+      setAllocatingMemberId(null);
+    }
   };
 
   return (
@@ -169,7 +207,6 @@ function AllocateRecommendationPage() {
             <ArrowLeft size={16} aria-hidden="true" />
             Back to all recommendations
           </Link>
-
         </div>
 
         {/* Page Header */}
@@ -183,15 +220,15 @@ function AllocateRecommendationPage() {
               Allocate Agency Member
             </h1>
             <p className="mt-1 text-sm text-white/60">
-              Assign an agency specialist in <span className="font-semibold text-cyan-200">{agency.department}</span> to lead the on-site feasibility inspection.
+              Agency members are sorted by shortest distance to the proposed facility location.
             </p>
           </div>
 
           <div className="admin-glass-card flex items-center justify-center text-center gap-3 rounded-2xl border border-white/20 px-5 py-3 text-white">
             <Building2 size={20} className="text-emerald-300 shrink-0" aria-hidden="true" />
             <div className="text-left sm:text-center">
-              <p className="text-xs text-white/50">Designated Agency</p>
-              <p className="mt-0.5 text-sm font-bold truncate max-w-[200px]">{agency.name}</p>
+              <p className="text-xs text-white/50">Handling Agency</p>
+              <p className="mt-0.5 text-sm font-bold truncate max-w-[200px]">{agency.name || "Civic Agency"}</p>
             </div>
           </div>
         </div>
@@ -207,8 +244,8 @@ function AllocateRecommendationPage() {
           </div>
         )}
 
-        {/* Two Columns: Left = Recommendation Details, Right = Member Selection */}
-        <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-[1fr_1.2fr]">
+        {/* Two Columns: Left = Recommendation Details, Right = Member Selection Sorted by Shortest Distance */}
+        <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-[1fr_1.3fr]">
           {/* Left Column: Recommendation Summary Card */}
           <div className="space-y-6 min-w-0">
             <section className="admin-glass-card rounded-2xl border border-white/20 p-6 text-white shadow-xl shadow-cyan-950/20 backdrop-blur-xl">
@@ -222,9 +259,11 @@ function AllocateRecommendationPage() {
                   </h2>
                 </div>
 
-                <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-cyan-200">
-                  <FacilityIcon size={24} />
-                </div>
+                {FacilityIcon && (
+                  <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-cyan-200">
+                    <FacilityIcon size={24} />
+                  </div>
+                )}
               </div>
 
               <div className="mt-5 space-y-3.5 border-t border-white/10 pt-4 text-sm">
@@ -233,6 +272,12 @@ function AllocateRecommendationPage() {
                   <div>
                     <p className="text-xs text-white/50">Proposed Location</p>
                     <p className="font-semibold text-white">{recommendation.location}</p>
+                    {recLat !== undefined && recLng !== undefined && (
+                      <p className="mt-0.5 font-mono text-xs text-lime-300/80 flex items-center gap-1">
+                        <Compass size={12} />
+                        Lat: {recLat}, Long: {recLng}
+                      </p>
+                    )}
                     {recommendation.landmark && (
                       <p className="text-xs text-white/60">Landmark: {recommendation.landmark}</p>
                     )}
@@ -309,167 +354,146 @@ function AllocateRecommendationPage() {
             </section>
           </div>
 
-          {/* Right Column: Facility Category Members & Allocation Form */}
+          {/* Right Column: Facility Category Members (Sorted by Distance) */}
           <div className="space-y-6 min-w-0">
-            
-
-            {/* Member Selection Section */}
-            <form onSubmit={handleAllocate} className="space-y-6">
-              <div className="admin-glass-card rounded-2xl border border-white/20 p-6 text-white shadow-xl shadow-cyan-950/20 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold">Select Agency Member</h3>
-                    <p className="text-xs text-white/55">
-                      Choose the officer who will be responsible for field verification.
-                    </p>
-                  </div>
-
-                  {/* Search within matching category members */}
-                  <div className="relative sm:w-60">
-                    <Search
-                      size={15}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-                    />
-                    <input
-                      type="text"
-                      value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                      placeholder="Search member..."
-                      className="w-full rounded-xl border border-white/20 bg-white/10 py-1.5 pl-8 pr-3 text-xs text-white placeholder-white/40 outline-none focus:border-cyan-300"
-                    />
-                  </div>
+            <div className="admin-glass-card rounded-2xl border border-white/20 p-6 text-white shadow-xl shadow-cyan-950/20 backdrop-blur-xl">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">Select & Allocate Agency Member</h3>
+                  <p className="text-xs text-white/55">
+                    Showing officers sorted by shortest distance away from recommendation spot.
+                  </p>
                 </div>
 
-                {/* Member Cards Grid */}
-                <div className="mt-5 grid gap-3.5 grid-cols-1 sm:grid-cols-2">
-                  {filteredMembers.map((member) => {
-                    const isSelected = selectedMember?.id === member.id;
-                    const isCurrentAssigned =
-                      recommendation.assignedMember?.id === member.id;
+                {/* Search */}
+                <div className="relative sm:w-60">
+                  <Search
+                    size={15}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+                  />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search by name, email, role, or phone..."
+                    className="w-full rounded-xl border border-white/20 bg-white/10 py-1.5 pl-8 pr-3 text-xs text-white placeholder-white/40 outline-none focus:border-cyan-300"
+                  />
+                </div>
+              </div>
 
-                    return (
-                      <button
-                        key={member.id}
-                        type="button"
-                        onClick={() => setSelectedMember(member)}
-                        className={`group relative flex flex-col items-center justify-between rounded-xl border p-4 text-center transition-all duration-200 min-w-0 ${
-                          isSelected
-                            ? "border-cyan-300 bg-cyan-400/20 shadow-lg shadow-cyan-950/40 ring-2 ring-cyan-300/50"
-                            : "border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10"
-                        }`}
-                      >
-                        <div className="flex flex-col items-center justify-center text-center w-full min-w-0">
-                          <div className="relative mb-2">
-                            <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
-                                isSelected
-                                  ? "border-cyan-200 bg-cyan-300 text-slate-900 shadow-md shadow-cyan-400/30"
-                                  : "border-white/20 bg-white/10 text-white"
+              {/* Member Cards Grid */}
+              <div className="mt-5 grid gap-4 grid-cols-1 sm:grid-cols-2">
+                {sortedMembers.map((member, idx) => {
+                  const isCurrentAssigned =
+                    recommendation.assignedMember?.id === member.id;
+                  const isAllocatingThis =
+                    isSubmitting && allocatingMemberId === member.id;
+                  const isNearest = idx === 0 && member.distanceKm !== null;
+
+                  return (
+                    <div
+                      key={member.id}
+                      className={`group relative flex flex-col justify-between rounded-xl border p-4 text-center transition-all duration-200 min-w-0 ${
+                        isCurrentAssigned
+                          ? "border-emerald-400 bg-emerald-400/15 ring-2 ring-emerald-400/40"
+                          : isNearest
+                          ? "border-cyan-300/80 bg-cyan-400/10 shadow-lg shadow-cyan-950/40"
+                          : "border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center text-center w-full min-w-0">
+                        {/* Top Badge: Distance & Nearest Tag */}
+                        <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5 w-full">
+                          {member.distanceKm !== null && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                isNearest
+                                  ? "border border-cyan-300/40 bg-cyan-300/20 text-cyan-200"
+                                  : "border border-white/10 bg-white/10 text-white/70"
                               }`}
                             >
-                              {member.fullName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </div>
-                            {isSelected && (
-                              <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-400 text-slate-950 ring-2 ring-[#100e0b]">
-                                <Check size={10} strokeWidth={3} />
-                              </span>
-                            )}
-                          </div>
-
-                          <h4 className="text-sm font-bold text-white group-hover:text-cyan-100 truncate w-full text-center">
-                            {member.fullName}
-                          </h4>
-                          <p className="text-[11px] text-white/55 truncate w-full text-center">
-                            {member.designation}
-                          </p>
-
-                          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65 w-full">
-                            <p className="inline-flex items-center justify-center gap-1.5 min-w-0">
-                              <Mail size={12} className="text-cyan-200 shrink-0" />
-                              <span className="truncate">{member.email}</span>
-                            </p>
-                            <p className="inline-flex items-center justify-center gap-1.5 min-w-0">
-                              <Phone size={12} className="text-emerald-300 shrink-0" />
-                              <span className="truncate">{member.phone}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-3.5 flex w-full items-center justify-center flex-wrap gap-2 border-t border-white/10 pt-2.5 text-[11px] text-white/50">
-                          <span className="inline-flex items-center gap-1">
-                            <Briefcase size={11} />
-                            {member.role === "AGENCY_ADMIN" ? "Agency Lead" : "Field Member"}
-                          </span>
-                          <span>•</span>
-                          <span className="font-semibold text-cyan-200">
-                            {member.activeCases} active cases
-                          </span>
+                              <Navigation size={10} className={isNearest ? "text-cyan-300" : ""} />
+                              {member.distanceKm} km away
+                            </span>
+                          )}
+                          {isNearest && (
+                            <span className="rounded-full border border-lime-300/40 bg-lime-300/20 px-2 py-0.5 text-[10px] font-bold text-lime-300">
+                              ⭐ Nearest
+                            </span>
+                          )}
                           {isCurrentAssigned && (
-                            <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                            <span className="rounded-full bg-emerald-400/25 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
                               Current Lead
                             </span>
                           )}
                         </div>
-                      </button>
-                    );
-                  })}
 
-                  {filteredMembers.length === 0 && (
-                    <div className="col-span-2 rounded-xl border border-white/10 bg-white/5 p-8 text-center text-xs text-white/50">
-                      No members matched your search query in this department.
+                        {/* Officer Avatar */}
+                        <div className="relative mb-2">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs font-bold text-white group-hover:border-cyan-300 group-hover:text-cyan-200 transition">
+                            {member.fullName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 3)}
+                          </div>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-100 truncate w-full text-center">
+                          {member.fullName}
+                        </h4>
+                        <p className="text-[11px] text-white/55 truncate w-full text-center">
+                          {member.designation || "Field Member"}
+                        </p>
+
+                        {/* Contact details */}
+                        <div className="mt-2 flex flex-col items-center gap-1 text-xs text-white/65 w-full">
+                          <p className="inline-flex items-center justify-center gap-1.5 truncate max-w-full">
+                            <Mail size={12} className="text-cyan-200 shrink-0" />
+                            <span className="truncate">{member.email}</span>
+                          </p>
+                          <p className="inline-flex items-center justify-center gap-1.5 truncate max-w-full">
+                            <Phone size={12} className="text-emerald-300 shrink-0" />
+                            <span className="truncate">{member.phone}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Action Button: Allocate Button Inside Member Card */}
+                      <div className="mt-4 border-t border-white/10 pt-3 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleAllocate(member)}
+                          disabled={isSubmitting}
+                          className={`flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 px-3 text-xs font-bold uppercase tracking-wider shadow-md transition duration-200 ${
+                            isAllocatingThis
+                              ? "border-cyan-300 bg-cyan-300 text-slate-950 animate-pulse"
+                              : isCurrentAssigned
+                              ? "border-emerald-400/50 bg-emerald-400/20 text-emerald-200 hover:bg-emerald-400/30"
+                              : "border-cyan-300/50 bg-cyan-400/20 text-cyan-200 hover:bg-cyan-300 hover:text-slate-950"
+                          } disabled:opacity-50`}
+                        >
+                          <UserCheck size={14} />
+                          <span>
+                            {isAllocatingThis
+                              ? "Allocating..."
+                              : isCurrentAssigned
+                              ? "Re-allocate"
+                              : "Allocate Member"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
 
-                {/* Assignment Notes */}
-                <div className="mt-6 border-t border-white/10 pt-5">
-                  <label
-                    htmlFor="assignmentNote"
-                    className="block text-xs font-semibold uppercase tracking-wider text-white/70"
-                  >
-                    Field Survey Instructions / Assignment Note (Optional)
-                  </label>
-                  <textarea
-                    id="assignmentNote"
-                    rows={3}
-                    value={assignmentNote}
-                    onChange={(e) => setAssignmentNote(e.target.value)}
-                    placeholder="E.g., Conduct pedestrian flow inspection and verify water tapping clearance by next Monday..."
-                    className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 p-3 text-xs text-white placeholder-white/40 outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-300"
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                  <Link
-                    to="/admin/recommendations"
-                    className="rounded-xl border border-white/20 bg-white/5 px-5 py-2.5 text-center text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-                  >
-                    Cancel
-                  </Link>
-
-                  <button
-                    type="submit"
-                    disabled={!selectedMember || isSubmitting}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl border px-6 py-2.5 text-xs font-bold uppercase tracking-wider shadow-lg transition duration-200 ${
-                      !selectedMember || isSubmitting
-                        ? "cursor-not-allowed border-white/10 bg-white/5 text-white/30"
-                        : "border-cyan-300/70 bg-cyan-400 text-slate-950 hover:bg-cyan-300 hover:shadow-cyan-400/30"
-                    }`}
-                  >
-                    <UserCheck size={16} />
-                    {isSubmitting
-                      ? "Allocating..."
-                      : selectedMember
-                      ? `Allocate to ${selectedMember.fullName}`
-                      : "Select a Member First"}
-                  </button>
-                </div>
+                {sortedMembers.length === 0 && (
+                  <div className="col-span-2 rounded-xl border border-white/10 bg-white/5 p-8 text-center text-xs text-white/50">
+                    No agency members found matching your search query.
+                  </div>
+                )}
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </section>

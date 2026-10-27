@@ -246,11 +246,11 @@ function AllRecommendationsPage() {
         return false;
       }
 
-      const itemTime = new Date(item.date).getTime();
-      if (dateFrom && (!itemTime || itemTime < new Date(`${dateFrom}T00:00:00`).getTime())) {
+      const itemTime = new Date(item.rawDate).getTime();
+      if (dateFrom && (Number.isNaN(itemTime) || itemTime < new Date(`${dateFrom}T00:00:00`).getTime())) {
         return false;
       }
-      if (dateTo && (!itemTime || itemTime > new Date(`${dateTo}T23:59:59`).getTime())) {
+      if (dateTo && (Number.isNaN(itemTime) || itemTime > new Date(`${dateTo}T23:59:59`).getTime())) {
         return false;
       }
 
@@ -288,8 +288,8 @@ function AllRecommendationsPage() {
       let valB = b[sortKey] || "";
 
       if (sortKey === "date") {
-        const timeA = new Date(a.date).getTime() || 0;
-        const timeB = new Date(b.date).getTime() || 0;
+        const timeA = new Date(a.rawDate).getTime() || 0;
+        const timeB = new Date(b.rawDate).getTime() || 0;
         return sortDirection === "asc" ? timeA - timeB : timeB - timeA;
       }
 

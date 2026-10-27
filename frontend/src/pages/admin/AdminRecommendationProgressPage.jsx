@@ -1,6 +1,6 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { apiRequest, recommendationView } from "../../api/client";
+import { recommendationView } from "../../api/client";
 import {
   AlertCircle,
   AlertTriangle,
@@ -20,7 +20,6 @@ import {
   UserRound,
   Users
 } from "lucide-react";
-import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
@@ -73,22 +72,26 @@ const FACILITY_ICONS = {
 
 function AdminRecommendationProgressPage() {
   const { recommendationId } = useParams();
+  const cleanId = String(recommendationId || "").replace(/^REC-/i, "").replace(/^0+/, "") || "0";
   const navigate = useNavigate();
   const [isLightMode, setIsLightMode] = useAdminTheme();
 
-  const resource = useApi("/recommendations/" + recommendationId);
+  const resource = useApi("/recommendations/" + cleanId);
   const recommendation = resource.data ? recommendationView(resource.data) : null;
-  const [error, setError] = useState("");
-  const [stageDraft, setCurrentStage] = useState(null);
-  const currentStage = stageDraft ?? recommendation?.stage ?? 1;
-  const [statusDraft, setCurrentStatus] = useState(null);
-  const currentStatus = statusDraft ?? recommendation?.status ?? "PENDING";
-  const [notesDraft, setInspectionNotes] = useState(null);
-  const inspectionNotes = notesDraft ?? recommendation?.inspectionNotes ?? "";
-  const [actionMessage, setActionMessage] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const currentStage = recommendation?.stage || 1;
 
-  if (!recommendation) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
+  if (resource.loading) {
+    return (
+      <main
+        className={`admin-themed-page relative flex min-h-screen items-center justify-center p-6 ${
+          isLightMode ? "admin-light-mode" : "bg-[#100e0b]"
+        }`}
+      >
+        <ApiState {...resource} />
+      </main>
+    );
+  }
+
   if (!recommendation) {
     return (
       <main
@@ -119,23 +122,7 @@ function AdminRecommendationProgressPage() {
   const agency = recommendation.assignedAgency || {};
   const member = recommendation.assignedMember;
   const FacilityIcon = FACILITY_ICONS[category] || Trash2;
-
-  const handleSaveProgress = async event => {
-    event.preventDefault();
-    if (isSaving) return;
-    setIsSaving(true); setError("");
-    try {
-      if (currentStage === 5) throw new Error("Installation is recorded when the agency creates the approved facility.");
-      if (currentStage < 3) throw new Error("Select Investigation after assigning an officer.");
-      if (!inspectionNotes.trim()) throw new Error("Enter inspection notes.");
-      const status = currentStatus === "REJECTED" ? "REJECTED" : currentStage === 4 ? "APPROVED" : "UNDER_INVESTIGATION";
-      await apiRequest("/recommendations/" + recommendation.id, { method: "PATCH",
-        body: { status, notes: inspectionNotes.trim() } });
-      setCurrentStatus(status); setCurrentStage(null); resource.refresh();
-      setActionMessage("Progress saved successfully.");
-    } catch (error) { setError(error.message); }
-    finally { setIsSaving(false); }
-  };
+  const canAllocate = ["PENDING", "ALLOTTED"].includes(recommendation.status);
 
   return (
     <main
@@ -158,7 +145,7 @@ function AdminRecommendationProgressPage() {
       ))}
 
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
-      <ApiState error={error} />
+      <ApiState error={resource.error} />
 
       <section className={`relative z-10 mx-auto max-w-6xl ${isLightMode ? "text-slate-900" : "text-white"}`}>
         {/* Top bar */}
@@ -170,18 +157,17 @@ function AdminRecommendationProgressPage() {
             <ArrowLeft size={16} aria-hidden="true" />
             Back to all recommendations
           </Link>
-
         </div>
 
         {/* Warning if not allotted */}
-        {!member && (
+        {!member && canAllocate && (
           <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-amber-300/40 bg-amber-400/15 p-5 text-amber-100 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center">
             <div className="flex items-center gap-3.5">
               <AlertTriangle size={24} className="shrink-0 text-amber-300" />
               <div>
                 <p className="font-bold text-white">Responsibility Not Yet Allotted</p>
                 <p className="text-xs text-white/70">
-                  This recommendation is awaiting assignment to a specialist from {agency.name}.
+                  This recommendation is awaiting assignment to a specialist from {agency.name || "the designated agency"}.
                 </p>
               </div>
             </div>
@@ -232,8 +218,6 @@ function AdminRecommendationProgressPage() {
               <span className="h-2 w-2 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
               {recommendation.statusLabel}
             </span>
-
-            
           </div>
         </div>
 
@@ -262,7 +246,7 @@ function AdminRecommendationProgressPage() {
                 Responsible Agency
               </p>
               <p className="mt-0.5 truncate font-bold text-white">
-                {agency.name}
+                {agency.name || "Designated Agency"}
               </p>
             </div>
           </div>
@@ -279,27 +263,31 @@ function AdminRecommendationProgressPage() {
                 {member ? member.fullName : "Unassigned"}
               </p>
             </div>
-            <Link
-              to={`/admin/recommendations/${recommendation.id}/allocate`}
-              className="mt-0.5 inline-flex items-center justify-center text-xs font-semibold text-cyan-200 hover:text-white hover:underline shrink-0"
-            >
-              Change Officer
-            </Link>
+            {canAllocate && (
+              <Link
+                to={`/admin/recommendations/${recommendation.id}/allocate`}
+                className="mt-0.5 inline-flex items-center justify-center text-xs font-semibold text-cyan-200 hover:text-white hover:underline shrink-0"
+              >
+                {member ? "Change Officer" : "Allocate Officer"}
+              </Link>
+            )}
           </div>
         </div>
 
-        <form onSubmit={handleSaveProgress} className="my-5 rounded-xl border border-white/20 p-5 text-white">
-          <label className="grid gap-2">Inspection notes
-            <textarea maxLength={1000} value={inspectionNotes} onChange={e => setInspectionNotes(e.target.value)}
-              className="rounded-xl border bg-transparent p-3" />
-          </label>
-          <button disabled={isSaving || !member || ["INSTALLED", "REJECTED"].includes(recommendation.status)} className="mt-3 rounded-xl bg-cyan-700 px-4 py-2">Save Progress</button>
-        </form>
-        {/* Success Action Notification */}
-        {actionMessage && (
-          <div className="mt-5 flex items-center justify-center text-center gap-3 rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100">
-            <Check size={17} aria-hidden="true" />
-            {actionMessage}
+        {/* Rejection Notification if Rejected */}
+        {recommendation.status === "REJECTED" && (
+          <div className="admin-glass-card mt-6 rounded-2xl border border-rose-400/40 bg-rose-500/15 p-5 text-white backdrop-blur-xl">
+            <div className="flex items-start gap-3.5">
+              <div className="rounded-xl border border-rose-400/40 bg-rose-500/25 p-2.5 text-rose-300 shrink-0">
+                <AlertCircle size={22} />
+              </div>
+              <div>
+                <h3 className="font-bold text-rose-200 text-base">Civic Proposal Rejected</h3>
+                <p className="mt-1 text-xs text-white/85 leading-relaxed">
+                  <strong>Rejection Rationale:</strong> {recommendation.rejectionReason || recommendation.reviewNotes || "Technical feasibility study indicated location or municipal clearance constraints."}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -309,12 +297,9 @@ function AdminRecommendationProgressPage() {
             <div>
               <h2 className="text-base font-bold">Recommendation Lifecycle Progress</h2>
               <p className="text-xs text-white/55">
-                Current stage: Step {currentStage} of 5 ({STAGES[currentStage - 1].label})
+                Current stage: Step {currentStage} of 5 ({STAGES[currentStage - 1]?.label || "Submitted"})
               </p>
             </div>
-            <span className="text-xs font-semibold text-cyan-200">
-              Select Investigation or Approved to update progress. Installation is recorded by the agency.
-            </span>
           </div>
 
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
@@ -323,20 +308,14 @@ function AdminRecommendationProgressPage() {
               const isCurrent = s.stage === currentStage;
 
               return (
-                <button
+                <div
                   key={s.stage}
-                  type="button"
-                  disabled={!member || ["INSTALLED", "REJECTED"].includes(recommendation.status) || !(
-                    (s.stage === 3 && ["ALLOTTED", "UNDER_INVESTIGATION"].includes(recommendation.status)) ||
-                    (s.stage === 4 && ["UNDER_INVESTIGATION", "APPROVED"].includes(recommendation.status))
-                  )}
-                  onClick={() => setCurrentStage(s.stage)}
                   className={`group relative flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
                     isCurrent
                       ? "border-cyan-300 bg-cyan-400/20 shadow-lg shadow-cyan-950/40 ring-2 ring-cyan-300/50"
                       : isPast
-                      ? "border-emerald-300/40 bg-emerald-400/10 hover:border-emerald-300/60"
-                      : "border-white/10 bg-white/5 opacity-70 hover:opacity-100 hover:border-white/20"
+                      ? "border-emerald-300/40 bg-emerald-400/10"
+                      : "border-white/10 bg-white/5 opacity-70"
                   }`}
                 >
                   <div className="relative flex items-center justify-center">
@@ -368,13 +347,13 @@ function AdminRecommendationProgressPage() {
                       {s.desc}
                     </p>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* Two Columns: Left = Citizen Details, Right = Progress & Inspection Controls */}
+        {/* Two Columns: Left = Citizen Details, Right = Responsible Officer & Activity */}
         <div className="mt-6 grid gap-6 grid-cols-1 lg:grid-cols-2 pb-12">
           {/* Column 1: Citizen Proposal Details */}
           <section className="admin-glass-card space-y-6 rounded-2xl border border-white/20 p-5 sm:p-7 text-white shadow-xl backdrop-blur-xl min-w-0">
@@ -414,21 +393,25 @@ function AdminRecommendationProgressPage() {
 
               <div className="border-t border-white/10 pt-4 text-center">
                 <p className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-3 text-center">
-                  Citizen Contact Information
+                  Citizen Information
                 </p>
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 text-xs text-center">
                   <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
                     <span className="text-white/40 block">Name:</span>
                     <span className="font-semibold text-white truncate block">{recommendation.citizen?.name || "Not recorded"}</span>
                   </div>
-                  <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
-                    <span className="text-white/40 block">Phone:</span>
-                    <span className="font-semibold text-white truncate block">{recommendation.citizen?.phone || "9876543210"}</span>
-                  </div>
-                  <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
-                    <span className="text-white/40 block">Email:</span>
-                    <span className="font-semibold text-white truncate block">{recommendation.citizen?.email || "citizen@kolkata.gov.in"}</span>
-                  </div>
+                  {recommendation.citizen?.phone && (
+                    <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                      <span className="text-white/40 block">Phone:</span>
+                      <span className="font-semibold text-white truncate block">{recommendation.citizen.phone}</span>
+                    </div>
+                  )}
+                  {recommendation.citizen?.email && (
+                    <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                      <span className="text-white/40 block">Email:</span>
+                      <span className="font-semibold text-white truncate block">{recommendation.citizen.email}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-2.5">
@@ -474,7 +457,7 @@ function AdminRecommendationProgressPage() {
             </div>
           </section>
 
-          {/* Column 2: Assigned Officer, Field Notes & Update Controls */}
+          {/* Column 2: Assigned Responsibility & Audit History */}
           <div className="space-y-6 min-w-0">
             {/* Responsible Officer Card */}
             <section className="admin-glass-card rounded-2xl border border-white/20 p-5 sm:p-7 text-white shadow-xl backdrop-blur-xl min-w-0">
@@ -483,8 +466,6 @@ function AdminRecommendationProgressPage() {
                   <Briefcase size={20} className="text-emerald-300" />
                   Assigned Responsibility
                 </h2>
-
-                
               </div>
 
               {member ? (
@@ -505,7 +486,7 @@ function AdminRecommendationProgressPage() {
                       <div className="mt-3 grid gap-1.5 text-xs text-white/70">
                         <p className="flex items-center gap-2">
                           <Building2 size={13} className="text-emerald-300" />
-                          <span>{agency.name} ({agency.department})</span>
+                          <span>{agency.name} {agency.department ? `(${agency.department})` : ""}</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <Mail size={13} className="text-cyan-200" />
@@ -522,11 +503,9 @@ function AdminRecommendationProgressPage() {
               ) : (
                 <div className="mt-4 rounded-xl border border-dashed border-amber-300/30 bg-amber-400/5 p-5 text-center text-xs text-amber-200">
                   <AlertTriangle size={20} className="mx-auto mb-1 text-amber-300" />
-                  No officer assigned yet. Click &ldquo;Assign Officer&rdquo; above to select a member from {agency.name}.
+                  No officer assigned yet. Click &ldquo;Allocate Officer&rdquo; above to select a member from {agency.name || "the agency"}.
                 </div>
               )}
-
-             
             </section>
 
             {/* Audit History Timeline */}
@@ -537,21 +516,36 @@ function AdminRecommendationProgressPage() {
               </h2>
 
               <div className="mt-4 space-y-3">
-                {(recommendation.history || []).map((entry, idx) => (
-                  <div
-                    key={idx}
-                    className="relative flex items-start gap-3 border-l-2 border-cyan-300/30 pl-3.5 py-1 text-xs"
-                  >
+                {(recommendation.history || []).length > 0 ? (
+                  (recommendation.history || []).map((entry, idx) => (
+                    <div
+                      key={idx}
+                      className="relative flex items-start gap-3 border-l-2 border-cyan-300/30 pl-3.5 py-1 text-xs"
+                    >
+                      <span className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-cyan-300" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-white">{entry.action}</p>
+                        {entry.description && (
+                          <p className="mt-1 text-xs text-white/80 rounded-lg border border-white/10 bg-white/5 p-2 leading-relaxed break-words">
+                            {entry.description}
+                          </p>
+                        )}
+                        <p className="mt-1 text-[11px] text-white/50">
+                          {entry.actor && <span className="text-cyan-200">{entry.actor} • </span>}
+                          {entry.formattedDate || entry.date}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="relative flex items-start gap-3 border-l-2 border-cyan-300/30 pl-3.5 py-1 text-xs">
                     <span className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-cyan-300" />
                     <div>
-                      <p className="font-semibold text-white">{entry.action}</p>
-                      <p className="mt-0.5 text-[11px] text-white/50">
-                        {entry.actor && <span className="text-cyan-200">{entry.actor} • </span>}
-                        {entry.date}
-                      </p>
+                      <p className="font-semibold text-white">Proposal Registered</p>
+                      <p className="mt-0.5 text-[11px] text-white/50">{recommendation.date}</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </section>
           </div>

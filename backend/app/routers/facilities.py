@@ -11,6 +11,7 @@ from app.dependencies.facility import get_agency_facility
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
 from app.models.facility import Facility
+from app.models.facility_category import FacilityCategory
 from app.schemas.facility import (
     FacilityCategoryResponse, FacilityCreate, FacilityUpdate, FacilityResponse,
     FacilityListResponse, FacilityPhotoResponse, FacilityStatus
@@ -68,6 +69,39 @@ def list_facilities(
             "status": f.status,
             "agency_name": agency.agency_name if agency else "KMC Department",
             "photo_url": f.photo_url
+        })
+    return result
+
+
+class PublicCategoryResponse(BaseModel):
+    category_id: int
+    category_name: str
+    display_name: str
+    agency_name: Optional[str] = None
+    handling_agency: Optional[int] = None
+
+
+@router.get("/facilities/categories", response_model=List[PublicCategoryResponse])
+def get_public_categories(db: Session = Depends(get_db)):
+    """Public listing of all civic facility categories for discovery and recommendations."""
+    categories = db.query(FacilityCategory).order_by(FacilityCategory.category_id).all()
+    result = []
+    display_labels = {
+        "DUSTBIN": "Dustbin / Waste Bin",
+        "WATER_POINT": "Drinking Water Point",
+        "TOILET": "Public Toilet / Restroom",
+        "PARKING": "Parking Spot / Zone",
+    }
+    for c in categories:
+        c_name = c.category_name.upper()
+        display = display_labels.get(c_name, c.category_name.replace("_", " ").title())
+        agency = c.agency
+        result.append({
+            "category_id": c.category_id,
+            "category_name": c.category_name,
+            "display_name": display,
+            "agency_name": agency.agency_name if agency else None,
+            "handling_agency": c.handling_agency,
         })
     return result
 

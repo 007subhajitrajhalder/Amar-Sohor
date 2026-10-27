@@ -29,7 +29,7 @@ function UserDashboardPage() {
   const navigate = useNavigate();
   const { user: authUser, updateProfile } = useAuth();
   const profile = useApi("/users/me");
-  const reports = useApi("/reports");
+  const reports = useApi("/reports?submitted_by_me=true");
 
   const currentUser = profile.data || authUser;
 

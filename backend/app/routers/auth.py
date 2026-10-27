@@ -77,12 +77,14 @@ def login(
     )
 
     agency_id = None
+    agent_id = None
     if user.role in ["AGENT", "AGENCY"]:
         agent = db.query(AgencyMember).filter(
             AgencyMember.user_id == user.user_id
         ).first()
         if agent:
             agency_id = agent.agency_id
+            agent_id = agent.agent_id
 
     return {
         "access_token": access_token,
@@ -93,7 +95,8 @@ def login(
             "email": user.email,
             "phone": user.phone,
             "role": user.role,
-            "agency_id": agency_id
+            "agency_id": agency_id,
+            "agent_id": agent_id
         }
     }
 
@@ -158,12 +161,14 @@ def get_me(
     db: Session = Depends(get_db)
 ):
     agency_id = None
+    agent_id = None
     if current_user.role in ["AGENT", "AGENCY"]:
         agent = db.query(AgencyMember).filter(
             AgencyMember.user_id == current_user.user_id
         ).first()
         if agent:
             agency_id = agent.agency_id
+            agent_id = agent.agent_id
 
     return {
         "user_id": current_user.user_id,
@@ -171,5 +176,6 @@ def get_me(
         "email": current_user.email,
         "phone": current_user.phone,
         "role": current_user.role,
-        "agency_id": agency_id
+        "agency_id": agency_id,
+        "agent_id": agent_id
     }

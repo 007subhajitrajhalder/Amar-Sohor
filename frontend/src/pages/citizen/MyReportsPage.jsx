@@ -40,7 +40,7 @@ const facilityIcons = {
 
 function MyReportsPage() {
   const navigate = useNavigate();
-  const resource = useApi("/reports");
+  const resource = useApi("/reports?submitted_by_me=true");
   const reports = (resource.data || []).map(reportView);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");

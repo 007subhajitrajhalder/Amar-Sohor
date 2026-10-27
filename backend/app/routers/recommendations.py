@@ -98,11 +98,23 @@ def allocate_recommendation(
 @router.get("/", response_model=List[RecommendationResponse])
 def get_recommendations(
     user_id: Optional[int] = Query(None, description="Filter by citizen user_id"),
+    agent_id: Optional[int] = Query(None, description="Filter by assigned agent_id"),
+    submitted_by_me: bool = Query(default=False, description="Filter to recommendations submitted by the current user"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Retrieve all recommendations or filter by citizen user_id."""
-    return recommendation_service.get_all_recommendations(db=db, query=scoped_query(db, Recommendation, current_user))
+    """Retrieve all recommendations or filter by citizen user_id or agent_id."""
+    if submitted_by_me:
+        query = db.query(Recommendation).filter(
+            Recommendation.user_id == current_user.user_id
+        )
+    else:
+        query = scoped_query(db, Recommendation, current_user)
+    if user_id is not None:
+        query = query.filter(Recommendation.user_id == user_id)
+    if agent_id is not None:
+        query = query.filter(Recommendation.assigned_agent == agent_id)
+    return recommendation_service.get_all_recommendations(db=db, query=query)
 
 
 @router.get("/{recommendation_id}", response_model=RecommendationResponse)
@@ -123,16 +135,21 @@ def update_recommendation(recommendation_id: int, data: RecommendationWorkflowUp
     if current_user.role not in ("ADMIN", "AGENT", "AGENCY"):
         raise HTTPException(403, "Agency or admin access required")
     rec = visible_record(db, Recommendation, Recommendation.recommendation_id, recommendation_id, current_user)
-    if rec.status in ("INSTALLED", "REJECTED") or rec.assigned_agent is None:
+    if rec.status == "INSTALLED" or rec.assigned_agent is None:
         raise HTTPException(409, "Recommendation must be assigned and active")
     transitions = {"ALLOCATED": {"UNDER_INVESTIGATION", "REJECTED"},
         "UNDER_INVESTIGATION": {"UNDER_INVESTIGATION", "APPROVED", "REJECTED"},
-        "APPROVED": {"APPROVED"}}
+        "APPROVED": {"APPROVED"},
+        "REJECTED": {"UNDER_INVESTIGATION"}}
     if data.status not in transitions.get(rec.status, set()):
         raise HTTPException(409, "Invalid recommendation status transition")
     rec.status = data.status
-    db.add(RecommendationInvestigation(recommendation_id=rec.recommendation_id,
-        description=data.notes, verification_status=data.status if data.status in ("APPROVED", "REJECTED") else "PENDING"))
+    recommendation_service.update_recommendation_investigation(
+        db,
+        rec,
+        data.notes,
+        data.status if data.status in ("APPROVED", "REJECTED") else "PENDING"
+    )
     db.commit()
     db.refresh(rec)
     return recommendation_service.recommendation_response(rec)

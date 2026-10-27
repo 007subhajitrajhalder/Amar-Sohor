@@ -1,6 +1,6 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { recommendationView } from "../../api/client";
+import { recommendationView, getStoredUser } from "../../api/client";
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -143,8 +143,58 @@ function AssignedRecommendationsPage() {
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem("agencyTheme") !== "light"
   );
+
+  const profileResource = useApi("/users/me");
+  const currentUser = profileResource.data || getStoredUser();
+
   const resource = useApi("/recommendations");
-  const recommendations = useMemo(() => (resource.data || []).map(r => recommendationView(r)).filter(r => r.assignedMember), [resource.data]);
+  const recommendations = useMemo(() => {
+    const rawList = (resource.data || []).map((r) => recommendationView(r));
+
+    // If an agency member is logged in, show ONLY recommendations allocated to them by the admin
+    if (currentUser && currentUser.role !== "ADMIN") {
+      const myAgentId = currentUser.agent_id ? Number(currentUser.agent_id) : null;
+      const myUserId = currentUser.user_id ? Number(currentUser.user_id) : null;
+      const myEmail = (currentUser.email || "").toLowerCase().trim();
+      const myName = (currentUser.full_name || "").toLowerCase().trim();
+
+      return rawList.filter((r) => {
+        const recAgentId = r.assigned_agent
+          ? Number(r.assigned_agent)
+          : r.assignedMember?.id
+          ? Number(r.assignedMember.id)
+          : null;
+        const recUserId = r.assignedMember?.user_id
+          ? Number(r.assignedMember.user_id)
+          : r.assignedMember?.userId
+          ? Number(r.assignedMember.userId)
+          : null;
+        const recEmail = (r.assignedMember?.email || "").toLowerCase().trim();
+        const recName = (r.assignedMember?.fullName || "").toLowerCase().trim();
+
+        if (myAgentId && recAgentId && myAgentId === recAgentId) return true;
+        if (myUserId && recUserId && myUserId === recUserId) return true;
+        if (myEmail && recEmail && myEmail === recEmail) return true;
+        if (myName && recName && myName === recName) return true;
+
+        return false;
+      });
+    }
+
+    // Admin view: show all allocated recommendations
+    return rawList.filter((r) => r.assignedMember || r.assigned_agent);
+  }, [resource.data, currentUser]);
+
+  const officers = useMemo(() => {
+    const map = new Map();
+    recommendations.forEach((r) => {
+      if (r.assignedMember?.id && r.assignedMember?.fullName) {
+        map.set(r.assignedMember.id, r.assignedMember.fullName);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [recommendations]);
+
   const [selectedOfficer, setSelectedOfficer] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,16 +229,18 @@ function AssignedRecommendationsPage() {
       // Officer filter
       if (selectedOfficer !== "ALL") {
         const officerId = Number(selectedOfficer);
-        if (item.assignedMember?.id !== officerId) {
+        if (item.assignedMember?.id !== officerId && item.assigned_agent !== officerId) {
           return false;
         }
       }
 
       // Status filter
       if (selectedStatus !== "ALL") {
-        const itemStatus = (item.status || "").toUpperCase();
+        const itemStatus = (item.rawStatus || item.status || "").toUpperCase();
         if (selectedStatus === "ALLOTTED") {
-          if (itemStatus !== "ALLOTTED" && itemStatus !== "PENDING_ALLOCATION") return false;
+          if (!["ALLOTTED", "ALLOCATED", "PENDING_ALLOCATION"].includes(itemStatus)) return false;
+        } else if (selectedStatus === "APPROVED") {
+          if (!["APPROVED", "INSTALLED"].includes(itemStatus)) return false;
         } else if (itemStatus !== selectedStatus) {
           return false;
         }
@@ -213,14 +265,16 @@ function AssignedRecommendationsPage() {
   }, [recommendations, selectedOfficer, selectedStatus, searchQuery]);
 
   // Statistics
-  const pendingCount = recommendations.filter(
-    (r) => r.status === "ALLOTTED" || r.status === "PENDING_ALLOCATION"
+  const pendingCount = recommendations.filter((r) =>
+    ["ALLOTTED", "ALLOCATED", "PENDING_ALLOCATION"].includes(
+      (r.rawStatus || r.status || "").toUpperCase()
+    )
   ).length;
   const underInvestigationCount = recommendations.filter(
-    (r) => r.status === "UNDER_INVESTIGATION"
+    (r) => (r.rawStatus || r.status || "").toUpperCase() === "UNDER_INVESTIGATION"
   ).length;
-  const approvedCount = recommendations.filter(
-    (r) => r.status === "APPROVED" || r.status === "INSTALLED"
+  const approvedCount = recommendations.filter((r) =>
+    ["APPROVED", "INSTALLED"].includes((r.rawStatus || r.status || "").toUpperCase())
   ).length;
 
   return (
@@ -350,7 +404,7 @@ function AssignedRecommendationsPage() {
                 isDarkMode ? "text-white/60" : "text-slate-600"
               }`}
             >
-              Review citizen facility proposals allocated to your agency, conduct on-site feasibility investigations, and sanction new civic installations.
+              Review citizen facility proposals allocated to you by municipal administration, conduct on-site feasibility investigations, and sanction new civic installations.
             </p>
           </div>
         </div>
@@ -432,7 +486,7 @@ function AssignedRecommendationsPage() {
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Search Input */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[240px]">
               <Search
                 size={16}
                 className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 ${
@@ -460,6 +514,31 @@ function AssignedRecommendationsPage() {
                 </button>
               )}
             </div>
+
+            {/* Officer Filter Dropdown if admin and multiple officers exist */}
+            {currentUser?.role === "ADMIN" && officers.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${isDarkMode ? "text-white/60" : "text-slate-500"}`}>
+                  Officer:
+                </span>
+                <select
+                  value={selectedOfficer}
+                  onChange={(e) => setSelectedOfficer(e.target.value)}
+                  className={`rounded-xl border px-3 py-1.5 text-xs outline-none transition ${
+                    isDarkMode
+                      ? "border-white/20 bg-white/10 text-white"
+                      : "border-slate-300 bg-slate-50 text-slate-800"
+                  }`}
+                >
+                  <option value="ALL">All Officers ({officers.length})</option>
+                  {officers.map((off) => (
+                    <option key={off.id} value={off.id} className={isDarkMode ? "bg-[#16130f] text-white" : "bg-white text-slate-900"}>
+                      {off.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Status Filter Buttons */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -555,11 +634,13 @@ function AssignedRecommendationsPage() {
                     }`}
                   >
                     <p className="text-[10px] font-bold uppercase tracking-wider opacity-50 text-center">
-                      Assigned Officer
+                      {currentUser?.role === "ADMIN" ? "Assigned Officer" : "Assigned To"}
                     </p>
-                    <p className={`mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold truncate w-full text-center ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                    <p className={`mt-0.5 flex items-center justify-center gap-1 text-xs font-semibold truncate w-full text-center ${isDarkMode ? "text-cyan-300" : "text-cyan-700"}`}>
                       <ShieldCheck size={12} className={`shrink-0 ${isDarkMode ? "text-cyan-300" : "text-cyan-600"}`} />
-                      <span className="truncate">{rec.assignedMember?.fullName || "Unassigned"}</span>
+                      <span className="truncate">
+                        {currentUser?.role === "ADMIN" ? (rec.assignedMember?.fullName || "Unassigned") : "Allocated to You"}
+                      </span>
                     </p>
                   </div>
 
@@ -598,7 +679,7 @@ function AssignedRecommendationsPage() {
                     <ArrowRight size={13} />
                   </Link>
 
-                  {rec.status === "APPROVED" && (
+                  {((rec.rawStatus || rec.status || "").toUpperCase() === "APPROVED") && (
                     <Link
                       to="/agency/facilities/add"
                       state={{ recommendation: rec }}
@@ -610,6 +691,18 @@ function AssignedRecommendationsPage() {
                       <PlusCircle size={12} />
                       <span>Add the Facility</span>
                     </Link>
+                  )}
+
+                  {((rec.rawStatus || rec.status || "").toUpperCase() === "INSTALLED") && (
+                    <span
+                      title="Installed as active facility on city map"
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${
+                        isDarkMode ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-emerald-600/30 bg-emerald-50 text-emerald-800"
+                      }`}
+                    >
+                      <Sparkles size={12} />
+                      <span>Commissioned</span>
+                    </span>
                   )}
                 </div>
               </article>
@@ -626,7 +719,9 @@ function AssignedRecommendationsPage() {
               <Search size={28} className="mx-auto opacity-50" />
               <h3 className="mt-3 text-base font-bold">No allocated recommendations found</h3>
               <p className="mt-1 text-xs opacity-60">
-                Try switching the officer filter or clearing your search term.
+                {currentUser?.role === "ADMIN"
+                  ? "Try switching the officer filter or clearing your search term."
+                  : "No recommendation duties are currently assigned to your account by the administrator."}
               </p>
               <button
                 type="button"

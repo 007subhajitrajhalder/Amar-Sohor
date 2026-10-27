@@ -71,11 +71,15 @@ async def submit_report(
 def get_reports(
     user_id: Optional[int] = Query(None, description="Filter by citizen user_id"),
     mine: bool = Query(default=False, description="Filter to reports assigned to the current agent"),
+    submitted_by_me: bool = Query(default=False, description="Filter to reports submitted by the current user"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Retrieve all reports or filter by citizen user_id / assigned agent."""
-    query = scoped_query(db, Report, current_user)
+    if submitted_by_me:
+        query = db.query(Report).filter(Report.user_id == current_user.user_id)
+    else:
+        query = scoped_query(db, Report, current_user)
     if mine and current_user.role in ("AGENT", "AGENCY"):
         member = db.query(AgencyMember).filter_by(user_id=current_user.user_id).first()
         if member:

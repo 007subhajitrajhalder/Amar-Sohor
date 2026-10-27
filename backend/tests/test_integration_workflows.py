@@ -4,7 +4,7 @@ from unittest.mock import patch
 from urllib.parse import urlencode
 
 from helpers import ApiTestCase
-from app.models import Facility, User, AgencyMember, Report, Recommendation
+from app.models import Facility, User, AgencyMember, Report, Recommendation, RecommendationInvestigation
 from app.models.report_resolution_submission import ReportResolutionSubmission
 from app.routers import admin, users, recommendations
 from app.services import file_service
@@ -42,6 +42,49 @@ class IntegrationWorkflowTests(ApiTestCase):
         self.assertEqual({r["assigned_agency"] for r in own}, {1})
         self.assertEqual(self.request(3, "/reports/1")[0], 200)
         self.assertEqual(self.request(1, "/users/")[0], 403)
+
+    def test_submitted_by_me_lists_only_the_authenticated_users_records(self):
+        for user_id in (1, 3, 4):
+            self.db.add(Report(
+                report_id=6 + user_id,
+                facility_id=201,
+                user_id=user_id,
+                title=f"Report by user {user_id}",
+                description="Test report",
+                photo_url="",
+                status="PENDING",
+                assigned_agency=2
+            ))
+            self.db.add(Recommendation(
+                recommendation_id=user_id,
+                user_id=user_id,
+                category_id=11,
+                title=f"Recommendation by user {user_id}",
+                description="Test recommendation",
+                address="Test address",
+                photo_url="",
+                status="PENDING",
+                assigned_agency=2
+            ))
+        self.db.commit()
+
+        for user_id in (1, 3, 4):
+            with self.subTest(user_id=user_id):
+                report_code, reports = self.request(
+                    user_id, "/reports?submitted_by_me=true"
+                )
+                recommendation_code, recommendations = self.request(
+                    user_id, "/recommendations?submitted_by_me=true"
+                )
+                self.assertEqual(report_code, 200)
+                self.assertEqual(recommendation_code, 200)
+                self.assertTrue(reports)
+                self.assertTrue(recommendations)
+                self.assertEqual({report["user_id"] for report in reports}, {user_id})
+                self.assertEqual(
+                    {recommendation["user_id"] for recommendation in recommendations},
+                    {user_id}
+                )
 
     def test_invalid_facility_does_not_fallback_and_user_identity_cannot_be_spoofed(self):
         data = {"facility_id": 99999, "title": "Issue", "description": "A report", "user_id": 4}
@@ -86,17 +129,70 @@ class IntegrationWorkflowTests(ApiTestCase):
             content_type="application/x-www-form-urlencoded")
         self.assertEqual(code, 201)
         self.assertEqual((rec["user_id"], rec["latitude"]), (3, 0))
+        citizen = self.db.get(User, 3)
+        self.assertEqual((rec["citizen_name"], rec["citizen_email"], rec["citizen_phone"]),
+            (citizen.full_name, citizen.email, citizen.phone))
         path = "/recommendations/" + str(rec["recommendation_id"])
         self.assertEqual(self.request(2, path)[0], 404)
         self.assertEqual(self.request(1, path+"/allocate", method="POST", body={"agent_id":101})[0], 403)
         self.assertEqual(self.request(4, path+"/allocate", method="POST", body={"agent_id":102})[0], 422)
         self.assertEqual(self.request(4, path+"/allocate", method="POST", body={"agent_id":101})[0], 200)
+
+        allocation = self.db.query(RecommendationInvestigation).filter_by(
+            recommendation_id=rec["recommendation_id"]
+        ).one()
+        allocation_id = allocation.investigation_id
+        self.db.add(RecommendationInvestigation(
+            recommendation_id=rec["recommendation_id"],
+            description="Duplicate from an earlier notes save",
+            verification_status="PENDING"
+        ))
+        self.db.commit()
+
         self.assertEqual(self.request(1, path, method="PATCH", body={"status":"UNDER_INVESTIGATION","notes":"Checking site"})[0], 200)
+        investigations = self.db.query(RecommendationInvestigation).filter_by(
+            recommendation_id=rec["recommendation_id"]
+        ).all()
+        self.assertEqual(len(investigations), 1)
+        self.assertEqual(investigations[0].investigation_id, allocation_id)
+        self.assertEqual(investigations[0].description, "Checking site")
+
+        self.assertEqual(self.request(1, path, method="PATCH", body={
+            "status":"UNDER_INVESTIGATION", "notes":"Updated investigation findings"
+        })[0], 200)
+        self.db.refresh(allocation)
+        self.assertEqual(self.db.query(RecommendationInvestigation).filter_by(
+            recommendation_id=rec["recommendation_id"]
+        ).count(), 1)
+        self.assertEqual(allocation.description, "Updated investigation findings")
+
+        self.assertEqual(self.request(1, path, method="PATCH", body={
+            "status":"REJECTED", "notes":"Initial rejection rationale"
+        })[0], 200)
+        self.db.refresh(allocation)
+        self.assertEqual(allocation.verification_status, "REJECTED")
+
+        self.assertEqual(self.request(1, path, method="PATCH", body={
+            "status":"UNDER_INVESTIGATION", "notes":"Investigation restarted"
+        })[0], 200)
+        self.db.expire_all()
+        allocation = self.db.query(RecommendationInvestigation).filter_by(
+            recommendation_id=rec["recommendation_id"]
+        ).one()
+        self.assertEqual(allocation.investigation_id, allocation_id)
+        self.assertEqual(allocation.verification_status, "PENDING")
+        self.assertEqual(allocation.description, "Investigation restarted")
+
         self.assertEqual(self.request(1, path, method="PATCH", body={"status":"APPROVED","notes":"Suitable site"})[0], 200)
         payload = self.facility_payload(source_recommendation_id=rec["recommendation_id"])
-        self.assertEqual(self.request(1, "/agencies/facilities", method="POST", body=payload)[0], 201)
+        facility_code, facility = self.request(1, "/agencies/facilities", method="POST", body=payload)
+        self.assertEqual(facility_code, 201)
         self.db.expire_all()
         self.assertEqual(self.db.get(Recommendation, rec["recommendation_id"]).status, "INSTALLED")
+        installed = self.request(1, path)[1]
+        self.assertEqual(installed["installed_at"], facility["created_at"])
+        installed_event = next(event for event in installed["history"] if event["status"] == "INSTALLED")
+        self.assertEqual(installed_event["date"], installed["installed_at"])
         self.assertEqual(self.request(1, "/agencies/facilities", method="POST", body=payload)[0], 409)
 
     def test_rating_profile_and_account_access(self):
