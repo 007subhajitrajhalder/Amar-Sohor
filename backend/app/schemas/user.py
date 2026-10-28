@@ -28,5 +28,7 @@ class UserResponse(BaseModel):
     phone: str
     role: str
     created_at: datetime
+    total_reports: int = 0
+    total_recommendations: int = 0
 
     model_config = ConfigDict(from_attributes=True)

@@ -323,7 +323,7 @@ function UserRecommendationPage() {
         },
         assignedMember: null,
         reviewDepartment: backendData.review_department || backendData.agency_name,
-        reviewNotes: backendData.review_notes || "Allotted to Municipal Admin for review and allocation to designated agency member.",
+        reviewNotes: backendData.review_notes || "Allotted to Admin for review and allocation to designated agency member.",
       };
     } catch (apiErr) {
       setError(apiErr.message);
@@ -415,7 +415,7 @@ function UserRecommendationPage() {
             Recommend a New Public Facility
           </h1>
           <p className="mt-1.5 text-xs sm:text-sm text-white/60">
-            Citizens can directly suggest locations where new waste bins, drinking water coolers, public toilets, or parking spots are needed. Your proposal will be directly submitted to the Municipal Administrator for allocation to designated field agencies.
+            Citizens can directly suggest locations where new waste bins, drinking water coolers, public toilets, or parking spots are needed. Your proposal will be directly submitted to the Administrator for allocation to designated field agencies.
           </p>
 
           <ApiState error={error} />
@@ -436,7 +436,7 @@ function UserRecommendationPage() {
               </p>
 
               <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-white/70">
-                Your proposal has been logged in the Municipal Administration Registry and assigned to the review pipeline for feasibility survey.
+                Your proposal has been logged in the Administrator Registry and assigned to the review pipeline for feasibility survey.
               </p>
 
               {/* Summary card */}
@@ -451,7 +451,7 @@ function UserRecommendationPage() {
                       {submittedData.facilityLabel}
                     </span>
                     <span className="rounded-lg bg-amber-400/15 border border-amber-400/30 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
-                      ● Allotted to Municipal Admin
+                      ● Allotted to Admin
                     </span>
                   </div>
                 </div>
@@ -480,7 +480,7 @@ function UserRecommendationPage() {
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/40">Review Authority & Designated Agency</p>
                   <p className="mt-0.5 text-white/90 font-medium">
-                    Municipal Administration (Admin Queue)
+                    Administrator (Admin Queue)
                     <span className="ml-2 text-lime-300 font-semibold">
                       • {submittedData.assignedAgency?.name || "Civic Agency"}
                     </span>
@@ -910,14 +910,14 @@ function UserRecommendationPage() {
               </h4>
 
               <div className="mt-4 flex flex-col gap-4">
-                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                <a href="mailto:amarsohor@gmail.com" className="group flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
                     <Mail size={17} />
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
                     <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amersohor@gmail.com
+                      amarsohor@gmail.com
                     </p>
                   </div>
                 </a>

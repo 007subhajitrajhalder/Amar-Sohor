@@ -364,14 +364,14 @@ function MyReportsPage() {
               </h4>
 
               <div className="mt-4 flex flex-col gap-4">
-                <a href="mailto:amersohor@gmail.com" className="group flex items-center gap-3">
+                <a href="mailto:amarsohor@gmail.com" className="group flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
                     <Mail size={17} />
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
                     <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amersohor@gmail.com
+                      amarsohor@gmail.com
                     </p>
                   </div>
                 </a>

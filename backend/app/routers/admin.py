@@ -13,6 +13,17 @@ router = APIRouter(
     prefix="/admin",
     tags=["Admin"]
 )
+
+
+@router.get("/dashboard")
+def get_dashboard(
+    current_admin: User = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """Unified analytical dashboard metrics computed directly in the database."""
+    return admin_service.get_admin_dashboard_stats(db)
+
+
 @router.get("/users/{user_id}", response_model=UserResponse)
 def get_user_by_id(
     user_id: int,
@@ -29,17 +40,19 @@ def get_user_by_id(
 
     return user
 
+
 @router.get(
     "/users",
     response_model=list[UserResponse]
 )
 def get_all_users(
+    role: str | None = None,
     current_admin: User = Depends(
         require_role("ADMIN")
     ),
     db: Session = Depends(get_db)
 ):
-    return admin_service.get_all_users(db)
+    return admin_service.get_all_users(db, role=role)
 
 
 @router.post(
@@ -77,8 +90,27 @@ def create_agency_member(
 @router.get("/agencies")
 def list_agencies(current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
     from app.models.agency import Agency
-    return [{"agency_id": a.agency_id, "agency_name": a.agency_name,
-        "department_type": a.department_type, "member_count": len(a.members)} for a in db.query(Agency).all()]
+    from app.models.report import Report
+    from app.models.recommendation import Recommendation
+    from app.models.facility import Facility
+    agencies = db.query(Agency).all()
+    result = []
+    for a in agencies:
+        cat_ids = [c.category_id for c in a.facility_categories]
+        total_facilities = db.query(Facility).filter(Facility.category_id.in_(cat_ids)).count() if cat_ids else 0
+        total_reports = db.query(Report).filter(Report.assigned_agency == a.agency_id).count()
+        total_recommendations = db.query(Recommendation).filter(Recommendation.assigned_agency == a.agency_id).count()
+        result.append({
+            "agency_id": a.agency_id,
+            "agency_name": a.agency_name,
+            "department_type": a.department_type,
+            "member_count": len(a.members),
+            "total_facilities": total_facilities,
+            "total_reports": total_reports,
+            "total_recommendations": total_recommendations,
+        })
+    return result
+
 
 @router.get("/agency-members")
 def list_members(agency_id: int | None = None, current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
@@ -87,7 +119,20 @@ def list_members(agency_id: int | None = None, current_admin: User = Depends(req
     query = db.query(AgencyMember)
     if agency_id is not None:
         query = query.filter(AgencyMember.agency_id == agency_id)
-    return [format_agent_details(m) for m in query.all()]
+    from app.models.report import Report
+    from app.models.recommendation import Recommendation
+    from app.models.facility import Facility
+    members = query.all()
+    result = []
+    for m in members:
+        d = format_agent_details(m)
+        if d:
+            d["allotted_reports"] = db.query(Report).filter(Report.assigned_agent == m.agent_id).count()
+            d["allotted_recommendations"] = db.query(Recommendation).filter(Recommendation.assigned_agent == m.agent_id).count()
+            d["facilities_count"] = db.query(Facility).filter(Facility.added_by == m.agent_id).count()
+            d["allotted_facilities"] = d["facilities_count"]
+            result.append(d)
+    return result
 
 
 @router.delete("/agency-members/{agent_id}", status_code=204)

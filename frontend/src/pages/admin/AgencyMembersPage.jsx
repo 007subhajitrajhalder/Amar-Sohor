@@ -1,30 +1,38 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { apiRequest } from "../../api/client";
-import { ArrowLeft, ArrowUpDown, Mail, Phone, Search, ShieldAlert, ShieldCheck, UserMinus, UserPlus, Users, X } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Mail,
+  Phone,
+  Search,
+  UserPlus,
+  Users,
+  X,
+  Navigation,
+  ClipboardList,
+  Sparkles,
+  Building2,
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
 import AdminHeader from "./AdminHeader";
 import { useAdminTheme } from "./useAdminTheme";
-
-import {
-  useNavigate,
-  useParams
-} from "react-router-dom";
 
 const auraLayers = [
   {
     background:
       "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8) 0%, rgba(0, 45, 60, 0.5) 40%, rgba(0, 0, 0, 0) 75%)",
     mixBlendMode: "screen",
-    filter: "blur(125px)"
+    filter: "blur(125px)",
   },
   {
     background:
       "linear-gradient(to top, rgba(0, 130, 150, 0.25) 0%, rgba(0, 0, 0, 0) 35%)",
     mixBlendMode: "screen",
-    filter: "blur(50px)"
-  }
+    filter: "blur(50px)",
+  },
 ];
 
 const lightAuraLayers = [
@@ -32,157 +40,109 @@ const lightAuraLayers = [
     background:
       "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.08) 28%, rgb(218,218,211) 48%, rgb(112,166,174) 76%, rgb(69,105,122) 100%)",
     mixBlendMode: "multiply",
-    filter: "blur(90px)"
+    filter: "blur(90px)",
   },
   {
     background:
       "linear-gradient(rgba(0,0,0,0) 0%, rgba(148,190,194,0.10) 34%, rgb(214,215,209) 66%, rgb(103,159,168) 82%, rgb(65,101,119) 100%)",
     mixBlendMode: "multiply",
-    filter: "blur(90px)"
-  }
+    filter: "blur(90px)",
+  },
 ];
 
 function AgencyMembersPage() {
   const navigate = useNavigate();
-
-  /*
-    Receives agencyId from the URL:
-
-    /admin/agencies/2/members
-  */
   const { agencyId } = useParams();
 
-  const [success, setSuccess] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const [searchText, setSearchText] =
-    useState("");
   const [isLightMode, setIsLightMode] = useAdminTheme();
+  const [searchText, setSearchText] = useState("");
   const [sortOrder, setSortOrder] = useState("name");
-  const [roleFilter, setRoleFilter] = useState("all");
 
-  /*
-    Stores the member selected for deletion.
-
-    If this is null, the confirmation box
-    will remain hidden.
-  */
-  const [
-    selectedMember,
-    setSelectedMember
-  ] = useState(null);
-
-  /*
-    Temporary agency information.
-
-    Later, this information will come
-    from the backend.
-  */
-  const resource = useApi("/admin/agencies");
+  // Fetch agency metadata and members dynamically from backend
+  const agencyResource = useApi("/admin/agencies");
   const memberResource = useApi("/admin/agency-members?agency_id=" + agencyId);
-  const agencies = (resource.data || []).map(a => ({ id: a.agency_id, name: a.agency_name, department: a.department_type }));
-  const members = (memberResource.data || []).map(m => ({ ...m, id: m.agent_id, fullName: m.full_name, agencyId: m.agency_id }));
-  const [removing, setRemoving] = useState(false);
-  const selectedAgency = agencies.find(
-    (agency) => agency.id === Number(agencyId)
+
+  const selectedAgency = useMemo(() => {
+    return (agencyResource.data || []).find(
+      (a) => a.agency_id === Number(agencyId)
+    );
+  }, [agencyResource.data, agencyId]);
+
+  const members = useMemo(() => {
+    return (memberResource.data || []).map((m) => ({
+      id: m.agent_id,
+      agentId: m.agent_id,
+      userId: m.user_id,
+      fullName: m.full_name || "Civic Officer",
+      email: m.email || "Not recorded",
+      phone: m.phone || "Not recorded",
+      role: m.role || "AGENT",
+      agencyId: m.agency_id,
+      agencyName: m.agency_name || selectedAgency?.agency_name || "Agency",
+      latitude:
+        m.latitude !== null && m.latitude !== undefined
+          ? Number(m.latitude).toFixed(5)
+          : null,
+      longitude:
+        m.longitude !== null && m.longitude !== undefined
+          ? Number(m.longitude).toFixed(5)
+          : null,
+      facilitiesCount: m.facilities_count ?? m.allotted_facilities ?? 0,
+      allottedReports: m.allotted_reports || 0,
+      allottedRecommendations: m.allotted_recommendations || 0,
+    }));
+  }, [memberResource.data, selectedAgency]);
+
+  const totalAllottedReports = useMemo(
+    () => members.reduce((sum, m) => sum + m.allottedReports, 0),
+    [members]
+  );
+  const totalAllottedRecs = useMemo(
+    () => members.reduce((sum, m) => sum + m.allottedRecommendations, 0),
+    [members]
+  );
+  const totalJurisdictionFacilities = useMemo(
+    () => members.reduce((sum, m) => sum + m.facilitiesCount, 0),
+    [members]
   );
 
-  /*
-    First selects members belonging to the
-    chosen agency and then applies the search.
-  */
-  const filteredMembers = members.filter(
-    (member) => {
-      const belongsToSelectedAgency =
-        member.agencyId ===
-        Number(agencyId);
+  const filteredMembers = useMemo(() => {
+    const term = searchText.trim().toLowerCase();
+    return members
+      .filter((member) => {
+        if (!term) return true;
+        return (
+          member.fullName.toLowerCase().includes(term) ||
+          member.email.toLowerCase().includes(term) ||
+          member.phone.includes(term)
+        );
+      })
+      .sort((a, b) => {
+        if (sortOrder === "facilities") return b.facilitiesCount - a.facilitiesCount;
+        if (sortOrder === "reports") return b.allottedReports - a.allottedReports;
+        if (sortOrder === "recs") return b.allottedRecommendations - a.allottedRecommendations;
+        return a.fullName.localeCompare(b.fullName);
+      });
+  }, [members, searchText, sortOrder]);
 
-      const searchValue =
-        searchText.toLowerCase();
+  if (agencyResource.loading) {
+    return (
+      <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <ApiState loading={true} />
+      </main>
+    );
+  }
 
-      const matchesSearch =
-        member.fullName
-          .toLowerCase()
-          .includes(searchValue) ||
-        member.email
-          .toLowerCase()
-          .includes(searchValue) ||
-        member.phone.includes(searchValue);
-
-      return (
-        belongsToSelectedAgency &&
-        matchesSearch &&
-        (roleFilter === "all" || member.role === roleFilter)
-      );
-    }
-  ).sort((firstMember, secondMember) => {
-    if (sortOrder === "role") return firstMember.role.localeCompare(secondMember.role);
-    return firstMember.fullName.localeCompare(secondMember.fullName);
-  });
-
-  const agencyMembers = members.filter((member) => member.agencyId === Number(agencyId));
-  const agencyAdmins = agencyMembers.filter((member) => member.role === "AGENCY_ADMIN").length;
-
-  /*
-    Opens the delete confirmation box.
-  */
-  const handleDeleteClick = (member) => {
-    setError("");
-    setSuccess("");
-    setSelectedMember(member);
-  };
-
-  /*
-    Closes the confirmation box without
-    deleting the member.
-  */
-  const handleCancelDelete = () => {
-    setSelectedMember(null);
-  };
-
-  /*
-    Deletes the selected member from
-    the frontend member list.
-  */
-  const handleConfirmDelete = async () => {
-    if (!selectedMember || removing) return;
-    setRemoving(true); setError("");
-    try {
-      await apiRequest("/admin/agency-members/" + selectedMember.id, { method: "DELETE" });
-      setSuccess(selectedMember.fullName + " was removed successfully.");
-      setSelectedMember(null); memberResource.refresh();
-    } catch (error) { setError(error.message); }
-    finally { setRemoving(false); }
-  };
-
-  /*
-    If an incorrect agency ID is entered
-    in the URL, show this message.
-  */
-  if (resource.loading || resource.error) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /></main>;
-  if (!selectedAgency) {
+  if (!selectedAgency && !agencyResource.loading) {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#100e0b] px-5">
-        <div className="pointer-events-none absolute inset-0 blur-[125px]" style={{ background: "radial-gradient(ellipse 120% 70% at 50% 110%, rgba(0, 90, 110, 0.8), transparent 75%)", mixBlendMode: "screen" }} />
         <section className="admin-glass-card relative z-[1] rounded-2xl border border-white/20 p-8 text-center text-white shadow-2xl">
-          <h1 className="text-2xl font-bold text-red-700">
-            Agency Not Found
-          </h1>
-
-          <p className="mt-3 text-slate-600">
-            No agency was found for ID{" "}
-            {agencyId}.
-          </p>
-
+          <h1 className="text-2xl font-bold text-rose-400">Agency Not Found</h1>
+          <p className="mt-3 text-white/60">No agency found matching ID #{agencyId}.</p>
           <button
             type="button"
-            onClick={() =>
-              navigate("/admin/agencies")
-            }
-            className="mt-6 rounded-xl bg-cyan-600 px-5 py-3 font-bold text-white"
+            onClick={() => navigate("/admin/agencies")}
+            className="mt-6 rounded-xl bg-cyan-600 px-5 py-3 font-bold text-white transition hover:bg-cyan-500"
           >
             Return to Agency Management
           </button>
@@ -192,7 +152,11 @@ function AgencyMembersPage() {
   }
 
   return (
-    <main className={`admin-agency-members-page relative min-h-screen bg-[#100e0b] p-6 transition-colors duration-500 ${isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""}`}>
+    <main
+      className={`admin-agency-members-page relative min-h-screen bg-[#100e0b] p-6 transition-colors duration-500 ${
+        isLightMode ? "admin-light-mode bg-[#faf8f2]" : ""
+      }`}
+    >
       {auraLayers.map((layer, index) => (
         <div
           key={`dark-${index}`}
@@ -203,7 +167,7 @@ function AgencyMembersPage() {
             mixBlendMode: layer.mixBlendMode,
             filter: layer.filter,
             transform: "translateZ(0)",
-            opacity: isLightMode ? 0 : 1
+            opacity: isLightMode ? 0 : 1,
           }}
         />
       ))}
@@ -218,282 +182,240 @@ function AgencyMembersPage() {
             mixBlendMode: layer.mixBlendMode,
             filter: layer.filter,
             transform: "translateZ(0)",
-            opacity: isLightMode ? 1 : 0
+            opacity: isLightMode ? 1 : 0,
           }}
         />
       ))}
+
       <AdminHeader isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
-      <ApiState {...resource} /><ApiState {...memberResource} />
+      <ApiState {...agencyResource} />
+      <ApiState {...memberResource} />
+
       <section className="admin-agency-members-content admin-dashboard-welcome relative z-[1] mx-auto w-full max-w-6xl">
-        {/* Back button */}
-        <div className="admin-dashboard-reveal flex items-center justify-between gap-4" style={{ "--dashboard-delay": "80ms" }}>
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/admin/agencies")
-          }
-          className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
-        >
-          <ArrowLeft size={16} aria-hidden="true" /> Back to Agency Management
-        </button>
+        {/* Back Link */}
+        <div className="admin-dashboard-reveal flex items-center justify-between gap-4">
+          <Link
+            to="/admin/agencies"
+            className="admin-back-link inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 transition hover:text-white"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Back to Agency Management</span>
+          </Link>
         </div>
 
-        {/* Page heading */}
-        <div className="admin-dashboard-reveal mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end" style={{ "--dashboard-delay": "180ms" }}>
+        {/* Page Heading and Selected Agency Card */}
+        <div className="admin-dashboard-reveal mt-5 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            
-
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
-              Agency Members
-            </h1>
-
-            <p className="mt-3 text-white/60">
-              View or remove members belonging
-              to the selected agency.
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Agency Members</h1>
+            <p className="mt-2 text-sm text-white/60">
+              Department roster and field duty allocations for{" "}
+              <strong className="text-white font-semibold">{selectedAgency.agency_name}</strong>.
             </p>
           </div>
 
           <div className="admin-glass-card w-full max-w-sm rounded-2xl border border-white/20 px-6 py-4 text-white shadow-xl md:min-w-[18rem]">
-            <p className="text-sm text-white/50">
-              Selected Agency
-            </p>
-
-            <h2 className="mt-1 text-lg font-bold">
-              {selectedAgency.name}
-            </h2>
-
-            <p className="mt-1 text-sm text-cyan-200">
-              {selectedAgency.department}
-            </p>
+            <p className="text-xs uppercase tracking-wider text-white/50">Jurisdiction Agency</p>
+            <h2 className="mt-1 text-lg font-bold">{selectedAgency.agency_name}</h2>
+            <p className="mt-0.5 text-xs font-medium text-cyan-300">{selectedAgency.department_type}</p>
           </div>
         </div>
 
-        <div className="admin-dashboard-reveal mt-8 grid gap-4 sm:grid-cols-3" style={{ "--dashboard-delay": "280ms" }}>
+        {/* Dynamic Analytical Summary Cards */}
+        <div className="admin-dashboard-reveal mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
-            <div className="flex items-center justify-between"><p className="text-sm text-white/60">Total members</p><Users size={18} className="text-cyan-200" aria-hidden="true" /></div>
-            <p className="mt-3 text-3xl font-bold">{agencyMembers.length}</p>
-            <p className="mt-1 text-xs text-white/50">Assigned to this agency</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/60">Active Officers</p>
+              <Users size={18} className="text-cyan-200" aria-hidden="true" />
+            </div>
+            <p className="mt-3 text-3xl font-bold">{members.length}</p>
+            <p className="mt-1 text-xs text-white/50">Field team members</p>
           </div>
+
           <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
-            <div className="flex items-center justify-between"><p className="text-sm text-white/60">Agency admins</p><ShieldCheck size={18} className="text-amber-200" aria-hidden="true" /></div>
-            <p className="mt-3 text-3xl font-bold">{agencyAdmins}</p>
-            <p className="mt-1 text-xs text-white/50">With management access</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/60">Facilities in Charge</p>
+              <Building2 size={18} className="text-emerald-300" aria-hidden="true" />
+            </div>
+            <p className="mt-3 text-3xl font-bold text-emerald-300">{totalJurisdictionFacilities}</p>
+            <p className="mt-1 text-xs text-emerald-200/70">Under officer jurisdiction</p>
           </div>
+
           <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
-            <div className="flex items-center justify-between"><p className="text-sm text-white/60">Showing now</p><Search size={18} className="text-emerald-300" aria-hidden="true" /></div>
-            <p className="mt-3 text-3xl font-bold">{filteredMembers.length}</p>
-            <p className="mt-1 text-xs text-white/50">Matches your search</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/60">Complaints Allotted</p>
+              <ClipboardList size={18} className="text-amber-300" aria-hidden="true" />
+            </div>
+            <p className="mt-3 text-3xl font-bold text-amber-300">{totalAllottedReports}</p>
+            <p className="mt-1 text-xs text-amber-200/70">Assigned investigations</p>
+          </div>
+
+          <div className="admin-glass-card rounded-2xl border border-white/20 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/60">Proposals Allotted</p>
+              <Sparkles size={18} className="text-cyan-300" aria-hidden="true" />
+            </div>
+            <p className="mt-3 text-3xl font-bold text-cyan-200">{totalAllottedRecs}</p>
+            <p className="mt-1 text-xs text-cyan-200/70">Feasibility assessments</p>
           </div>
         </div>
 
-        <div className="admin-dashboard-reveal mt-8 flex items-center justify-between gap-4" style={{ "--dashboard-delay": "380ms" }}>
-          <h2 className="text-xl font-bold text-white">Member directory</h2>
-          <button type="button" onClick={() => navigate("/admin/agency-members/add")} className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/30 bg-cyan-300/10 px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/70 hover:bg-cyan-300/20 hover:text-white">
-            <UserPlus size={16} aria-hidden="true" />
-            Add member
-          </button>
-        </div>
-
-        {/* Messages */}
-        {success && (
-          <div className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-4 font-bold text-emerald-200">
-            {success}
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-6 rounded-xl border border-red-300/20 bg-red-300/10 p-4 font-bold text-red-200">
-            {error}
-          </div>
-        )}
-
-        {/* Search and count */}
-        <section className="admin-dashboard-reveal admin-glass-card mt-7 rounded-2xl border border-white/20 p-5 text-white shadow-xl" style={{ "--dashboard-delay": "460ms" }}>
+        {/* Action bar and Search */}
+        <section className="admin-dashboard-reveal admin-glass-card mt-7 rounded-2xl border border-white/20 p-5 text-white shadow-xl">
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
             <div className="relative">
-            <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/45" aria-hidden="true" />
-            <input
-              type="text"
-              value={searchText}
-              onChange={(event) =>
-                setSearchText(
-                  event.target.value
-                )
-              }
-              placeholder="Search member by name, email or phone"
-              className="w-full rounded-xl border border-white/20 bg-white/10 p-3 pl-11 text-white outline-none backdrop-blur-xl placeholder:text-white/40 focus:border-cyan-200/70"
-            />
-            {searchText && (
-              <button type="button" onClick={() => setSearchText("")} aria-label="Clear member search" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 transition hover:text-white">
-                <X size={16} aria-hidden="true" />
-              </button>
-            )}
+              <Search
+                size={17}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/45"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder="Search member by name, email, or phone number..."
+                className="w-full rounded-xl border border-white/20 bg-white/10 p-3 pl-11 pr-10 text-white outline-none backdrop-blur-xl placeholder:text-white/40 focus:border-cyan-200/70"
+              />
+              {searchText && (
+                <button
+                  type="button"
+                  onClick={() => setSearchText("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
             <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto">
-              <div className="member-count-badge flex items-center justify-center gap-2 rounded-xl px-4 py-3 sm:justify-start">
-                <Users size={16} aria-hidden="true" />
-                <span className="text-sm font-semibold">
-                  Members
-                </span>
-                <strong className="member-count-value">{filteredMembers.length}</strong>
-              </div>
-              <button type="button" onClick={() => setSortOrder((currentOrder) => currentOrder === "name" ? "role" : "name")} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/15 hover:text-white sm:justify-start" aria-label="Change member sort order">
-                <ArrowUpDown size={16} aria-hidden="true" />
-                {sortOrder === "name" ? "A-Z" : "Role"}
-              </button>
-            </div>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-white/45">Filter role</span>
-            {[["all", "All members"], ["AGENT", "Agency members"], ["AGENCY_ADMIN", "Agency admins"]].map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setRoleFilter(value)} aria-pressed={roleFilter === value} className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${roleFilter === value ? "border-cyan-200/60 bg-cyan-300/15 text-cyan-100" : "border-white/15 bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Member list */}
-        <section className="admin-dashboard-reveal mt-6 grid gap-4" style={{ "--dashboard-delay": "540ms" }}>
-          {filteredMembers.map((member) => (
-            <article
-              key={member.id}
-              className="admin-glass-card group flex flex-col justify-between gap-5 rounded-2xl border border-white/20 p-6 text-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-cyan-950/40 sm:flex-row sm:items-center"
-            >
-              <div className="flex items-start gap-4">
-                {/* Member profile icon */}
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-cyan-200/30 bg-cyan-300/15 text-xl font-bold text-cyan-100">
-                  {member.fullName
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-
-                <div>
-                  <h2 className="text-xl font-bold">
-                    {member.fullName}
-                  </h2>
-
-                  <a href={`mailto:${member.email}`} className="mt-1 block text-sm text-white/60 transition hover:text-cyan-200">
-                    <Mail size={14} className="mr-1.5 inline text-cyan-200/70" aria-hidden="true" />
-                    {member.email}
-                  </a>
-
-                  <a href={`tel:${member.phone}`} className="mt-1 block text-sm text-white/60 transition hover:text-cyan-200">
-                    <Phone size={14} className="mr-1.5 inline text-cyan-200/70" aria-hidden="true" />
-                    {member.phone}
-                  </a>
-
-                  <span
-                    className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-bold ${
-                      member.role ===
-                      "AGENCY_ADMIN"
-                        ? "bg-violet-300/15 text-violet-200"
-                        : "bg-cyan-300/15 text-cyan-200"
-                    }`}
-                  >
-                    {formatRole(member.role)}
-                  </span>
-                </div>
-              </div>
-
               <button
                 type="button"
                 onClick={() =>
-                  handleDeleteClick(member)
+                  setSortOrder((current) => {
+                    if (current === "name") return "facilities";
+                    if (current === "facilities") return "reports";
+                    if (current === "reports") return "recs";
+                    return "name";
+                  })
                 }
-                className="admin-danger-action inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white transition"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-xs font-semibold text-white/70 transition hover:bg-white/15 hover:text-white"
+                aria-label="Sort members"
               >
-                <UserMinus size={16} aria-hidden="true" />
-                Delete Member
+                <ArrowUpDown size={15} aria-hidden="true" />
+                <span>
+                  {sortOrder === "name"
+                    ? "Sort: Name (A-Z)"
+                    : sortOrder === "facilities"
+                    ? "Sort: Most Facilities"
+                    : sortOrder === "reports"
+                    ? "Sort: Most Reports"
+                    : "Sort: Most Proposals"}
+                </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/agency-members/add?agencyId=${agencyId}`)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200/30 bg-cyan-400/20 px-4 py-3 text-xs font-bold text-cyan-100 transition hover:border-cyan-200/70 hover:bg-cyan-400/30"
+              >
+                <UserPlus size={15} aria-hidden="true" />
+                <span>Add Member</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Member Cards List */}
+        <section className="admin-dashboard-reveal mt-6 grid gap-4">
+          {filteredMembers.map((member) => (
+            <article
+              key={member.id}
+              className="admin-glass-card group flex flex-col justify-between gap-5 rounded-2xl border border-white/20 p-5 text-white shadow-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-cyan-950/40 md:flex-row md:items-center md:p-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {/* Member Avatar */}
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/30 bg-cyan-300/15 text-xl font-bold text-cyan-100 shadow-inner">
+                  {member.fullName.charAt(0).toUpperCase()}
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h2 className="text-xl font-bold tracking-tight text-white">{member.fullName}</h2>
+                    <span className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-2.5 py-0.5 text-xs font-semibold text-cyan-200">
+                      Officer ID: #{member.agentId}
+                    </span>
+                  </div>
+
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/70">
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="inline-flex items-center gap-1.5 transition hover:text-cyan-200"
+                    >
+                      <Mail size={13} className="text-cyan-300" aria-hidden="true" />
+                      <span>{member.email}</span>
+                    </a>
+
+                    <a
+                      href={`tel:${member.phone}`}
+                      className="inline-flex items-center gap-1.5 transition hover:text-cyan-200"
+                    >
+                      <Phone size={13} className="text-cyan-300" aria-hidden="true" />
+                      <span>{member.phone}</span>
+                    </a>
+
+                    <span className="inline-flex items-center gap-1.5 text-white/60">
+                      <Navigation size={13} className="text-emerald-300" aria-hidden="true" />
+                      <span>
+                        {member.latitude && member.longitude
+                          ? `Coords: ${member.latitude}, ${member.longitude}`
+                          : "Coords: Not recorded"}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Allotted Duties Badges */}
+              <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-4 md:border-t-0 md:pt-0">
+                <div className="min-w-[100px] rounded-xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-2.5 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-300">
+                    <Building2 size={15} />
+                    <span className="text-lg font-bold">{member.facilitiesCount}</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] font-semibold text-white/60">Facilities</p>
+                </div>
+
+                <div className="min-w-[100px] rounded-xl border border-amber-300/25 bg-amber-400/10 px-4 py-2.5 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-amber-300">
+                    <ClipboardList size={15} />
+                    <span className="text-lg font-bold">{member.allottedReports}</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] font-semibold text-white/60">Reports Allotted</p>
+                </div>
+
+                <div className="min-w-[100px] rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-4 py-2.5 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-cyan-200">
+                    <Sparkles size={15} />
+                    <span className="text-lg font-bold">{member.allottedRecommendations}</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] font-semibold text-white/60">Proposals Allotted</p>
+                </div>
+              </div>
             </article>
           ))}
 
           {filteredMembers.length === 0 && (
             <div className="admin-glass-card rounded-2xl border border-white/20 p-10 text-center text-white shadow-xl">
               <Users size={30} className="mx-auto text-cyan-200/70" aria-hidden="true" />
-
-              <h2 className="mt-4 text-xl font-bold">
-                No Members Found
-              </h2>
-
-              <p className="mt-2 text-white/60">
-                This agency has no matching
-                registered members.
+              <h2 className="mt-4 text-xl font-bold">No Members Found</h2>
+              <p className="mt-2 text-sm text-white/60">
+                This agency has no matching registered field members.
               </p>
             </div>
           )}
         </section>
       </section>
-
-      {/* Delete confirmation popup */}
-      {selectedMember && (
-        <div className="admin-removal-overlay fixed inset-0 z-[100] flex min-h-screen items-center justify-center px-5" role="presentation">
-          <section className="admin-removal-dialog admin-glass-card w-full max-w-md rounded-2xl border border-white/25 p-7 text-white shadow-2xl shadow-black/40" role="dialog" aria-modal="true" aria-labelledby="delete-member-title">
-            <div className="admin-removal-icon flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-red-200">
-              <ShieldAlert size={24} aria-hidden="true" />
-            </div>
-
-            <h2 id="delete-member-title" className="mt-5 text-2xl font-bold">
-              Delete Agency Member?
-            </h2>
-
-            <p className="mt-3 leading-7 text-white/60">
-              Are you sure you want to remove{" "}
-              <strong>
-                {selectedMember.fullName}
-              </strong>{" "}
-              from{" "}
-              <strong>
-                {selectedAgency.name}
-              </strong>
-              ?
-            </p>
-
-            <p className="mt-3 text-sm text-red-600">
-              The member will no longer be able
-              to access the agency portal.
-            </p>
-
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={handleCancelDelete}
-                className="admin-removal-cancel rounded-xl border border-white/20 px-5 py-3 font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={removing} onClick={handleConfirmDelete}
-                className="admin-danger-action admin-confirm-remove inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 font-bold text-white"
-              >
-                <UserMinus size={16} aria-hidden="true" />
-                Yes, Delete Member
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </main>
   );
-}
-
-/*
-  Converts:
-
-  AGENCY_MEMBER → Agency Member
-  AGENCY_ADMIN  → Agency Admin
-*/
-function formatRole(role) {
-  return role
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase()
-    );
 }
 
 export default AgencyMembersPage;
