@@ -12,7 +12,7 @@ const ABOUT_SLIDES = [
     label: "Dustbins",
   },
   {
-    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfsuwzx9U20OJuaKZltIF1F_ozwHOKTnwb_w2rth42a50PjH53siPP70Y&s=10",
+    url: "https://static.vecteezy.com/system/resources/thumbnails/070/255/438/small/smiling-woman-in-business-attire-fills-plastic-bottle-with-water-from-modern-water-cooler-in-bright-office-space-with-large-windows-and-green-plants-creating-refreshing-moment-free-photo.jpeg",
     label: "Water Dispensers",
   },
   {
