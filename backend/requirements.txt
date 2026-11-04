@@ -11,3 +11,6 @@ PyJWT==2.15.1
 python-multipart==0.0.32
 starlette>=0.37.0
 Pillow
+torch
+torchvision
+scikit-learn
