@@ -17,7 +17,8 @@ from torchvision.models import (
 # --------------------------------------------------
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DATASET_DIR = SCRIPT_DIR.parent / "dataset" / "split_v2"
+# Use the corrected dataset
+DATASET_DIR = SCRIPT_DIR.parent / "dataset" / "split_v3"
 MODEL_DIR = SCRIPT_DIR.parent / "models"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -52,7 +53,7 @@ train_dataset = ImageFolder(
 )
 
 validation_dataset = ImageFolder(
-    root=DATASET_DIR / "validation",
+    root=DATASET_DIR / "val",
     transform=image_transform,
 )
 
@@ -190,7 +191,7 @@ for epoch in range(EPOCHS):
     if validation_accuracy > best_validation_accuracy:
         best_validation_accuracy = validation_accuracy
 
-        checkpoint_path = MODEL_DIR / "mobilenetv3_amar_sohor.pth"
+        checkpoint_path = MODEL_DIR / "mobilenetv3_amar_sohor_v2.pth"
 
         torch.save(
             {

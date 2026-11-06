@@ -1,0 +1,37 @@
+filename,split,source_review,original_class,corrected_class,reason
+Garbage_Bin_overflow_00964.jpg,train,training_audit.csv,broken_bin,irrelevant_image,"Informational public flyer graphic poster ('BROKEN LID? Replace your lids for FREE'), not a field photograph of a broken bin."
+Garbage_Bin_overflow_01451.jpg,train,training_audit.csv,broken_bin,irrelevant_image,"Cropped informational graphic flyer banner ('BROKEN LID? Replace your lids for FREE'), not a field photograph."
+Garbage_Bin_overflow_00327.jpg,train,training_audit.csv,irrelevant_image,overflowing_dustbin,Large wall of black garbage bags piled along commercial city sidewalk awaiting municipal collection.
+Garbage_Bin_overflow_00432.jpg,train,training_audit.csv,irrelevant_image,overflowing_dustbin,Row of discarded containers and waste dumped on concrete ledge above outdoor drainage ditch requiring cleanup.
+Garbage_Bin_overflow_00975.jpg,train,training_audit.csv,irrelevant_image,overflowing_dustbin,"Illegal roadside fly-tipping with dumped wooden furniture, boards, and bulk waste along street hedge."
+Garbage_Bin_overflow_01214.jpg,train,training_audit.csv,irrelevant_image,overflowing_dustbin,Multiple black trash bags sitting on outdoor brick sidewalk curb requiring municipal collection.
+Garbage_Bin_overflow_01825.jpg,train,training_audit.csv,normal_bin,broken_bin,Plastic dumpster has a large jagged chunk broken off top rim and a severe vertical body crack.
+Garbage_Bin_overflow_00303.jpg,train,training_audit.csv,normal_bin,overflowing_dustbin,Surveillance view showing popped bin lid with trash bags and rotten food waste/litter scattered over ground and platform.
+Garbage_Bin_overflow_00782.jpg,train,training_audit.csv,overflowing_dustbin,irrelevant_image,"Freeway traffic collision scene with flipped vehicle, emergency response vehicles, and highway debris."
+Garbage_Bin_overflow_01019.jpg,train,training_audit.csv,overflowing_dustbin,broken_bin,"Red residential wheelie bin with broken/missing left wheel and damaged base, unable to stand upright and leaning on pole."
+Garbage_Bin_overflow_00178.jpg,test,misclassified_images_reviewed.csv,normal_bin,overflowing_dustbin,"Large trash bag protrudes far above the rim, preventing the lid from closing."
+Garbage_Bin_overflow_01156.jpg,test,misclassified_images_reviewed.csv,normal_bin,overflowing_dustbin,Trash bags and loose garbage are scattered across the ground around the public bin.
+Garbage_Bin_overflow_01400.jpg,test,misclassified_images_reviewed.csv,normal_bin,irrelevant_image,3D digital clipart graphic rather than a real photograph of a municipal bin.
+Garbage_Bin_overflow_01679.jpg,test,misclassified_images_reviewed.csv,normal_bin,broken_bin,Severe structural crack fractures through the top rim beside the handle mount.
+Garbage_Bin_overflow_01765.jpg,test,misclassified_images_reviewed.csv,normal_bin,broken_bin,Lifting trunnion mount is smashed inward and the upper rim is damaged.
+Garbage_Bin_overflow_01957.jpg,test,misclassified_images_reviewed.csv,normal_bin,irrelevant_image,"Miniature plastic toy dustbin on craft felt, not a real municipal bin."
+Garbage_Bin_overflow_00063.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Row of street dumpsters in snow are empty and intact with zero overflow.
+Garbage_Bin_overflow_00320.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Yellow wheelie bins all have closed lids with no overflow or scattered trash.
+Garbage_Bin_overflow_00334.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Group of yellow bins at night all have closed lids with clean surroundings.
+Garbage_Bin_overflow_00368.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,"Fly-tipped sofa, mattress, and appliances dumped on sidewalk with no dustbin."
+Garbage_Bin_overflow_00539.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Bins on the collection hoist are empty and partially full with no overflow.
+Garbage_Bin_overflow_00556.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Bins on the truck lift are only half full with no overflow.
+Garbage_Bin_overflow_00581.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Trash is contained within the bins below the rim line without spilling over.
+Garbage_Bin_overflow_00618.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,broken_bin,"Plastic wheelie bin is crushed, melted, and structurally destroyed."
+Garbage_Bin_overflow_00619.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Row of yellow bins on street at night all have closed lids with no overflow.
+Garbage_Bin_overflow_01066.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,broken_bin,Blue wheelie bin is cracked and repaired with yellow duct tape on repair truck.
+Garbage_Bin_overflow_01175.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,Neatly stacked cardboard recycling boxes on sidewalk with no dustbin present.
+Garbage_Bin_overflow_01209.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,Expansive open landfill mountain of plastic bottles with no dustbin present.
+Garbage_Bin_overflow_01227.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,"Empty, functional blue recycling bin being picked up by truck mechanical arm."
+Garbage_Bin_overflow_01255.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,"3D digital clipart rendering on white background, not a real photograph."
+Garbage_Bin_overflow_01287.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,Studio stock photo of a woman kneeling next to a trash bag with no dustbin.
+Garbage_Bin_overflow_01369.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,Crushed white car wreckage in a junkyard with no dustbin present.
+Garbage_Bin_overflow_01881.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,irrelevant_image,Fly-tipped broken armchair and foam cushion beside dumpster wall; no bin overflow.
+Garbage_Bin_overflow_01917.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,broken_bin,"Perforated metal park trash bin is crushed, bent, and structurally destroyed."
+Garbage_Bin_overflow_01942.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,"Clean, intact row of color-coded recycling dumpsters with no overflow."
+Garbage_Bin_overflow_01954.jpg,test,misclassified_images_reviewed.csv,overflowing_dustbin,normal_bin,Row of three recycling bins all have closed lids with no overflow.
