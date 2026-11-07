@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy import String, cast, func, or_, select
@@ -9,9 +10,31 @@ from app.models.report_resolution_submission import ReportResolutionSubmission
 from app.services.agency_service import get_facility_in_charge, format_agent_details
 from app.schemas.report import ResolvedReportResponse, ResolvedReportDetail, ResolvedReportListResponse
 
-def report_response(report):
+def report_response(report, ai_result=None):
     facility, agency, member = report.facility, report.agency, report.assigned_member
     evidence = sorted(report.resolution_submissions, key=lambda r: r.resolution_id, reverse=True)
+
+    ai_validated = False
+    ai_status = None
+    ai_prediction = None
+    ai_confidence = None
+
+    if ai_result:
+        ai_validated = ai_result.get("ai_validated", False)
+        ai_status = ai_result.get("ai_status")
+        ai_prediction = ai_result.get("ai_prediction")
+        ai_confidence = ai_result.get("ai_confidence")
+    elif report.investigation_notes and "[AI Validation:" in report.investigation_notes:
+        m = re.search(r"\[AI Validation:\s*(\w+)\s*-\s*([^()]+)\s*\(([\d\.]+)%\s*confidence\)\]", report.investigation_notes)
+        if m:
+            ai_validated = True
+            ai_status = m.group(1).upper()
+            ai_prediction = m.group(2).strip().lower().replace(" ", "_")
+            try:
+                ai_confidence = float(m.group(3)) / 100.0
+            except ValueError:
+                ai_confidence = None
+
     return {
         "report_id": report.report_id, "facility_id": report.facility_id,
         "facility_name": facility.facility_name, "facility_address": facility.address,
@@ -27,6 +50,10 @@ def report_response(report):
         "assigned_member": format_agent_details(member),
         "agency_notes": report.investigation_notes,
         "stage": 4 if report.status == "RESOLVED" else 3 if evidence and evidence[0].verification_status == "PENDING" else 2 if report.status == "UNDER_INVESTIGATION" else 1,
+        "ai_validated": ai_validated,
+        "ai_status": ai_status,
+        "ai_prediction": ai_prediction,
+        "ai_confidence": ai_confidence,
         "created_at": report.created_at, "resolved_at": report.resolved_at,
         "resolution": None if not evidence else {
             "resolution_id": evidence[0].resolution_id, "photo_url": evidence[0].resolution_photo,
@@ -35,22 +62,31 @@ def report_response(report):
         }
     }
 
-def create_report(db, facility_id, user_id, title, description, photo_url):
+def create_report(db, facility_id, user_id, title, description, photo_url, ai_result=None):
     facility = db.get(Facility, facility_id)
     if facility is None:
         raise HTTPException(404, "Facility not found")
     if not title.strip() or not description.strip() or len(title.strip()) > 200:
-        raise HTTPException(422, "A title (1?200 characters) and description are required")
+        raise HTTPException(422, "A title (1–200 characters) and description are required")
     agency, member = get_facility_in_charge(db, facility_id)
     if agency is None:
         raise HTTPException(409, "Facility has no managing agency")
+
+    investigation_notes = None
+    if ai_result and ai_result.get("ai_validated"):
+        pred_label = (ai_result.get("ai_prediction") or "").replace("_", " ").title()
+        conf_pct = (ai_result.get("ai_confidence") or 0.0) * 100
+        status_label = ai_result.get("ai_status") or "ACCEPTED"
+        investigation_notes = f"[AI Validation: {status_label} - {pred_label} ({conf_pct:.1f}% confidence)]"
+
     report = Report(facility_id=facility_id, user_id=user_id, title=title.strip(),
         description=description.strip(), photo_url=photo_url, status="PENDING",
-        assigned_agency=agency.agency_id, assigned_agent=member.agent_id if member else None)
+        assigned_agency=agency.agency_id, assigned_agent=member.agent_id if member else None,
+        investigation_notes=investigation_notes)
     db.add(report)
     db.commit()
     db.refresh(report)
-    return report_response(report)
+    return report_response(report, ai_result=ai_result)
 
 def get_all_reports(db: Session, user_id: Optional[int] = None, query=None):
     query = query if query is not None else db.query(Report)

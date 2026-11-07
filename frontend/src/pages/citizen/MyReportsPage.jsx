@@ -14,6 +14,7 @@ import {
   Phone,
   Plus,
   Search,
+  Sparkles,
   Trash2,
   Car,
 } from "lucide-react";
@@ -269,6 +270,11 @@ function MyReportsPage() {
                           {report.facilityCategoryLabel && (
                             <span className="rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/70">
                               {report.facilityCategoryLabel}
+                            </span>
+                          )}
+                          {(report.aiValidated || report.agencyNotes?.includes("[AI Validation:")) && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                              <Sparkles size={11} /> AI Validated
                             </span>
                           )}
                         </div>

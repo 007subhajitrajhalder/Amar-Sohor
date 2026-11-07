@@ -134,6 +134,14 @@ export async function submitReportApi({ facilityId, title, description, photoFil
   return apiRequest("/reports", { method: "POST", body });
 }
 
+export async function validateReportImageApi({ facilityId, photoFile, photoUrl }) {
+  const body = new FormData();
+  body.append("facility_id", facilityId);
+  if (photoFile instanceof File) body.append("photo", photoFile);
+  else if (photoUrl) body.append("photo_url", photoUrl);
+  return apiRequest("/reports/validate-image", { method: "POST", body });
+}
+
 export async function submitRecommendationApi(values) {
   const body = new FormData();
   const names = { facilityType: "facility_type", categoryId: "category_id" };
@@ -192,6 +200,10 @@ export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_na
   status: statusLabel(r.status), date: displayDate(r.created_at), rawDate: r.created_at, resolvedDate: displayDate(r.resolved_at),
   photoUrl: mediaUrl(r.photo_url), assignedAgency: r.agency_name, assignedOfficer: r.assigned_officer,
   assignedMember: r.assigned_member, agencyNotes: r.agency_notes,
+  aiValidated: r.ai_validated,
+  aiStatus: r.ai_status,
+  aiPrediction: r.ai_prediction,
+  aiConfidence: r.ai_confidence,
   resolutionPhotoUrl: mediaUrl(r.resolution?.photo_url),
   resolutionStatus: r.resolution?.verification_status,
   resolutionDescription: r.resolution?.description,

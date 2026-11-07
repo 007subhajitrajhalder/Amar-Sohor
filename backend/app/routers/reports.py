@@ -1,3 +1,5 @@
+import base64
+import logging
 from typing import List, Optional
 from datetime import date, datetime, timezone
 from fastapi import HTTPException
@@ -5,6 +7,7 @@ from app.dependencies.auth import get_current_user, require_user, get_current_ag
 from app.dependencies.access import scoped_query, visible_record
 from app.models.user import User
 from app.models.agency_member import AgencyMember
+from app.models.facility import Facility
 from app.models.report_resolution_submission import ReportResolutionSubmission
 from app.schemas.report import ReportWorkflowUpdate
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query
@@ -16,9 +19,13 @@ from app.dependencies.report import get_agency_resolved_report
 from app.models.agency import Agency
 from app.models.report import Report
 from app.schemas.report import (
-    ReportResponse, ResolvedReportDetail, ResolvedReportListResponse
+    ReportResponse, ResolvedReportDetail, ResolvedReportListResponse,
+    ReportImageValidationResponse
 )
 from app.services import report_service, file_service
+from app.services.ai_service import classify_image
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     tags=["Reports & Grievances"]
@@ -28,6 +35,81 @@ router = APIRouter(
 # ==========================================
 # Citizen Grievance Endpoints (/reports)
 # ==========================================
+
+@router.post("/reports/validate-image", response_model=ReportImageValidationResponse)
+async def validate_report_image(
+    facility_id: int = Form(...),
+    photo: Optional[UploadFile] = File(None),
+    photo_url: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user)
+):
+    """
+    Validate an uploaded image for a facility report using AI.
+    Applies specifically to dustbin facilities to verify overflow or damage.
+    """
+    facility = db.get(Facility, facility_id)
+    if facility is None:
+        raise HTTPException(404, "Facility not found")
+
+    cat_name = facility.category.category_name.lower() if facility.category else ""
+    is_dustbin = any(k in cat_name for k in ["dustbin", "waste", "garbage", "trash"])
+
+    if not is_dustbin:
+        return {
+            "is_dustbin": False,
+            "status": "NOT_APPLICABLE",
+            "predicted_class": None,
+            "confidence": None,
+            "message": "AI validation is only active for dustbin facilities."
+        }
+
+    photo_bytes = None
+    if photo and photo.filename:
+        photo_bytes = await photo.read()
+    elif photo_url and photo_url.startswith("data:image/"):
+        try:
+            _, encoded = photo_url.split(",", 1)
+            photo_bytes = base64.b64decode(encoded)
+        except Exception:
+            photo_bytes = None
+
+    if not photo_bytes:
+        raise HTTPException(400, "Please upload or select an image file to validate.")
+
+    try:
+        result = classify_image(photo_bytes)
+        pred_class = result["predicted_class"]
+        conf = result["confidence"]
+
+        if pred_class in ("overflowing_dustbin", "broken_bin"):
+            label = "Overflowing Dustbin" if pred_class == "overflowing_dustbin" else "Broken / Damaged Bin"
+            return {
+                "is_dustbin": True,
+                "status": "ACCEPTED",
+                "predicted_class": pred_class,
+                "confidence": conf,
+                "message": f"Valid dustbin issue detected: {label} ({conf * 100:.1f}% confidence)."
+            }
+        elif pred_class == "normal_bin":
+            return {
+                "is_dustbin": True,
+                "status": "REJECTED",
+                "predicted_class": pred_class,
+                "confidence": conf,
+                "message": f"Validation Rejected: The dustbin appears clean and intact with no overflow or damage detected ({conf * 100:.1f}% confidence). Please attach a photo clearly showing the problem."
+            }
+        else:
+            return {
+                "is_dustbin": True,
+                "status": "REJECTED",
+                "predicted_class": pred_class,
+                "confidence": conf,
+                "message": f"Validation Rejected: The photo does not appear to show a dustbin or waste management problem ({conf * 100:.1f}% confidence). Please attach a clear photo of the civic issue."
+            }
+    except Exception as exc:
+        raise HTTPException(400, f"Unable to validate image: {str(exc)}")
+
 
 @router.post("/reports", response_model=ReportResponse, status_code=201)
 @router.post("/reports/", response_model=ReportResponse, status_code=201)
@@ -44,7 +126,62 @@ async def submit_report(
     """
     Submit a citizen grievance/report for a specific facility.
     The report routes directly to the agency member who registered this facility.
+    For dustbin facilities, the attached photograph is validated by AI.
     """
+    facility = db.get(Facility, facility_id)
+    if facility is None:
+        raise HTTPException(404, "Facility not found")
+
+    cat_name = facility.category.category_name.lower() if facility.category else ""
+    is_dustbin = any(k in cat_name for k in ["dustbin", "waste", "garbage", "trash"])
+
+    photo_bytes = None
+    if photo and photo.filename:
+        photo_bytes = await photo.read()
+        await photo.seek(0)
+    elif photo_url and photo_url.startswith("data:image/"):
+        try:
+            _, encoded = photo_url.split(",", 1)
+            photo_bytes = base64.b64decode(encoded)
+        except Exception:
+            photo_bytes = None
+
+    ai_result = None
+    if is_dustbin:
+        if not photo_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail="A valid photograph is required for dustbin grievance validation."
+            )
+        try:
+            res = classify_image(photo_bytes)
+            pred_class = res["predicted_class"]
+            conf = res["confidence"]
+
+            if pred_class in ("overflowing_dustbin", "broken_bin"):
+                ai_result = {
+                    "ai_validated": True,
+                    "ai_status": "ACCEPTED",
+                    "ai_prediction": pred_class,
+                    "ai_confidence": conf
+                }
+            elif pred_class == "normal_bin":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"AI Validation Rejected: The dustbin appears intact and normal with no overflow or damage detected ({conf * 100:.1f}% confidence). Please upload a photograph clearly showing the overflow or defect to submit this report."
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"AI Validation Rejected: The uploaded photograph does not appear to show a dustbin or waste problem (classified as irrelevant with {conf * 100:.1f}% confidence). Please upload a genuine photo of the dustbin issue."
+                )
+        except HTTPException:
+            raise
+        except ValueError as val_err:
+            raise HTTPException(status_code=400, detail=str(val_err))
+        except Exception as e:
+            logger.warning(f"AI validation runtime error: {e}")
+
     final_photo_url = ""
 
     if photo and photo.filename:
@@ -60,7 +197,8 @@ async def submit_report(
         user_id=effective_user_id,
         title=title,
         description=description,
-        photo_url=final_photo_url
+        photo_url=final_photo_url,
+        ai_result=ai_result
     )
 
     return created_report

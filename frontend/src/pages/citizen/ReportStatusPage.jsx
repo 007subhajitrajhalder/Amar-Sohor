@@ -13,6 +13,7 @@ import {
   Mail,
   Phone,
   ShieldCheck,
+  Sparkles,
   Trash2,
   Car,
 } from "lucide-react";
@@ -228,6 +229,27 @@ function ReportStatusPage() {
               </div>
 
               <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
+                {(data.aiValidated || data.agencyNotes?.includes("[AI Validation:")) && (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                        <Sparkles size={14} /> AI Validated Complaint
+                      </div>
+                      {data.aiConfidence && (
+                        <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[11px] font-mono text-emerald-300 font-semibold">
+                          {(data.aiConfidence * 100).toFixed(1)}% confidence
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-emerald-200 font-medium">
+                      Detected problem: <strong className="text-white capitalize">{data.aiPrediction?.replace("_", " ") || "Overflowing / Damaged Bin"}</strong>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-emerald-300/70">
+                      Verified by Amar Sohor AI Model V2 before routing to municipal authorities.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/35">Issue Title</p>
                   <p className="mt-0.5 text-sm sm:text-base font-semibold text-white">{data.title}</p>

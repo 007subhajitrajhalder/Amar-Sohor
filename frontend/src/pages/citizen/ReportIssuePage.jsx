@@ -19,7 +19,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
 import { facilityView } from "../../api/client";
-import { submitReportApi, API_BASE_URL } from "../../api/client";
+import { submitReportApi, validateReportImageApi, API_BASE_URL } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -30,6 +30,8 @@ function ReportIssuePage() {
 
   const resource = useApi(facilityId ? "/facilities/" + facilityId : null);
   const facility = resource.data ? facilityView(resource.data) : null;
+  const isDustbin = facility?.category === "dustbin";
+
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,7 +42,10 @@ function ReportIssuePage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
 
-  const handlePhotoChange = (e) => {
+  const [aiValidating, setAiValidating] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -56,17 +61,41 @@ function ReportIssuePage() {
 
     setPhotoFile(file);
     setPhotoName(file.name);
+    setAiResult(null);
+
     const reader = new FileReader();
     reader.onload = () => {
       setPhotoPreview(reader.result);
     };
     reader.readAsDataURL(file);
+
+    // If this is a dustbin facility, automatically run AI validation
+    if (facility && isDustbin) {
+      setAiValidating(true);
+      setError("");
+      try {
+        const valRes = await validateReportImageApi({
+          facilityId: facility.id,
+          photoFile: file,
+        });
+        setAiResult(valRes);
+      } catch (valErr) {
+        setAiResult({
+          status: "REJECTED",
+          message: valErr.message || "Failed to validate image.",
+        });
+      } finally {
+        setAiValidating(false);
+      }
+    }
   };
 
   const handleRemovePhoto = () => {
     setPhotoPreview(null);
     setPhotoName("");
     setPhotoFile(null);
+    setAiResult(null);
+    setAiValidating(false);
   };
 
   const handleSubmit = async (e) => {
@@ -84,6 +113,16 @@ function ReportIssuePage() {
 
     if (!photoPreview) {
       alert("Please upload a complaint photograph before submitting.");
+      return;
+    }
+
+    if (isDustbin && aiResult?.status === "REJECTED") {
+      alert(aiResult.message || "Cannot submit report: The uploaded photograph was rejected by AI validation.");
+      return;
+    }
+
+    if (aiValidating) {
+      alert("Please wait for AI image validation to finish before submitting.");
       return;
     }
 
@@ -127,6 +166,10 @@ function ReportIssuePage() {
         agencyNotes:
           backendData.agency_notes ||
           "Your grievance has been lodged and directed to the agency member in charge of this facility for on-site inspection and repairs.",
+        aiValidated: backendData.ai_validated ?? (aiResult?.status === "ACCEPTED"),
+        aiStatus: backendData.ai_status ?? aiResult?.status,
+        aiPrediction: backendData.ai_prediction ?? aiResult?.predicted_class,
+        aiConfidence: backendData.ai_confidence ?? aiResult?.confidence,
       };
     } catch (apiErr) {
       setError(apiErr.message);
@@ -281,6 +324,27 @@ function ReportIssuePage() {
                   </div>
                 )}
 
+                {submittedData.aiValidated && (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                        <Sparkles size={14} /> AI Verification Result: Accepted
+                      </div>
+                      {submittedData.aiConfidence && (
+                        <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[11px] font-mono text-emerald-300 font-semibold">
+                          {(submittedData.aiConfidence * 100).toFixed(1)}% confidence
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-emerald-200/90 font-medium">
+                      Verified issue: <strong className="text-white capitalize">{submittedData.aiPrediction?.replace("_", " ")}</strong>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-emerald-300/70">
+                      Validated by Amar Sohor AI Model V2 before routing to municipal authorities.
+                    </p>
+                  </div>
+                )}
+
                 {submittedData.photoPreview && (
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/40 mb-1.5">Attached Photograph</p>
@@ -431,15 +495,89 @@ function ReportIssuePage() {
                     />
                   </label>
                 )}
+                {/* AI Validation Feedback for Dustbin Facilities */}
+                {isDustbin && photoPreview && (
+                  <div className="mt-2.5">
+                    {aiValidating && (
+                      <div className="flex items-center gap-3 rounded-xl border border-lime-300/30 bg-lime-300/10 p-3 text-xs text-lime-300 animate-pulse">
+                        <Sparkles size={16} className="animate-spin text-lime-300 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-white">AI Analyzing Complaint Photograph...</p>
+                          <p className="text-white/60">Checking for dustbin overflow or structural damage using Model V2</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!aiValidating && aiResult?.status === "ACCEPTED" && (
+                      <div className="flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300">
+                          <CheckCircle2 size={15} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-emerald-300 uppercase tracking-wide">
+                              AI Validation: Accepted
+                            </span>
+                            {aiResult.confidence && (
+                              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono text-emerald-300 font-semibold">
+                                {(aiResult.confidence * 100).toFixed(1)}% confidence
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-emerald-100 font-medium">
+                            {aiResult.message}
+                          </p>
+                          <p className="mt-1 text-[11px] text-emerald-300/70">
+                            Verified genuine civic issue. Ready for municipal routing.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!aiValidating && aiResult?.status === "REJECTED" && (
+                      <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-300">
+                          <AlertTriangle size={15} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-rose-300 uppercase tracking-wide">
+                              AI Validation: Rejected
+                            </span>
+                            {aiResult.confidence && (
+                              <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-mono text-rose-300 font-semibold">
+                                {(aiResult.confidence * 100).toFixed(1)}% confidence
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-rose-100 font-medium">
+                            {aiResult.message}
+                          </p>
+                          <p className="mt-1 text-[11px] text-rose-300/80">
+                            Please click "Remove" above and select a clear photograph showing an overflowing dustbin or a damaged bin.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
+                disabled={isSubmitting || aiValidating || (isDustbin && aiResult?.status === "REJECTED")}
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
-                <span>{isSubmitting ? "Routing to Municipal Agency..." : "Submit Grievance Report"}</span>
+                <span>
+                  {isSubmitting
+                    ? "Routing to Municipal Agency..."
+                    : aiValidating
+                    ? "AI Validating Photograph..."
+                    : isDustbin && aiResult?.status === "REJECTED"
+                    ? "AI Validation Rejected — Provide Valid Photo"
+                    : "Submit Grievance Report"}
+                </span>
                 <Send size={16} className={isSubmitting ? "animate-pulse" : ""} />
               </button>
 

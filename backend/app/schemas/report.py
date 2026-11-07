@@ -33,12 +33,22 @@ class ReportResponse(BaseModel):
     stage: int = 1
     ai_validated: bool | None = None
     ai_status: str | None = None
+    ai_prediction: str | None = None
+    ai_confidence: float | None = None
     created_at: datetime
     resolved_at: datetime | None = None
     citizen_name: str | None = None
     citizen_email: str | None = None
     citizen_phone: str | None = None
     resolution: Dict[str, Any] | None = None
+
+
+class ReportImageValidationResponse(BaseModel):
+    is_dustbin: bool
+    status: Literal["ACCEPTED", "REJECTED", "NOT_APPLICABLE"]
+    predicted_class: Optional[str] = None
+    confidence: Optional[float] = None
+    message: str
 
 
 class ResolvedReportResponse(BaseModel):
