@@ -23,7 +23,7 @@ from app.schemas.report import (
     ReportImageValidationResponse
 )
 from app.services import report_service, file_service
-from app.services.ai_service import classify_image
+from app.services.ai_service import classify_image, classify_dustbin_image, classify_toilet_image
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,8 @@ async def validate_report_image(
 ):
     """
     Validate an uploaded image for a facility report using AI.
-    Applies specifically to dustbin facilities to verify overflow or damage.
+    Applies to dustbin facilities (overflow / broken bin) and
+    public toilet facilities (dirty / broken toilet or urinal).
     """
     facility = db.get(Facility, facility_id)
     if facility is None:
@@ -54,14 +55,17 @@ async def validate_report_image(
 
     cat_name = facility.category.category_name.lower() if facility.category else ""
     is_dustbin = any(k in cat_name for k in ["dustbin", "waste", "garbage", "trash"])
+    is_toilet = any(k in cat_name for k in ["toilet", "washroom", "restroom", "urinal", "lavatory"])
 
-    if not is_dustbin:
+    if not is_dustbin and not is_toilet:
         return {
             "is_dustbin": False,
+            "is_toilet": False,
+            "facility_type": "other",
             "status": "NOT_APPLICABLE",
             "predicted_class": None,
             "confidence": None,
-            "message": "AI validation is only active for dustbin facilities."
+            "message": "AI validation is only active for dustbin and public toilet facilities."
         }
 
     photo_bytes = None
@@ -78,35 +82,86 @@ async def validate_report_image(
         raise HTTPException(400, "Please upload or select an image file to validate.")
 
     try:
-        result = classify_image(photo_bytes)
-        pred_class = result["predicted_class"]
-        conf = result["confidence"]
+        if is_dustbin:
+            result = classify_dustbin_image(photo_bytes)
+            pred_class = result["predicted_class"]
+            conf = result["confidence"]
 
-        if pred_class in ("overflowing_dustbin", "broken_bin"):
-            label = "Overflowing Dustbin" if pred_class == "overflowing_dustbin" else "Broken / Damaged Bin"
-            return {
-                "is_dustbin": True,
-                "status": "ACCEPTED",
-                "predicted_class": pred_class,
-                "confidence": conf,
-                "message": f"Valid dustbin issue detected: {label} ({conf * 100:.1f}% confidence)."
-            }
-        elif pred_class == "normal_bin":
-            return {
-                "is_dustbin": True,
-                "status": "REJECTED",
-                "predicted_class": pred_class,
-                "confidence": conf,
-                "message": f"Validation Rejected: The dustbin appears clean and intact with no overflow or damage detected ({conf * 100:.1f}% confidence). Please attach a photo clearly showing the problem."
-            }
+            if pred_class in ("overflowing_dustbin", "broken_bin"):
+                label = "Overflowing Dustbin" if pred_class == "overflowing_dustbin" else "Broken / Damaged Bin"
+                return {
+                    "is_dustbin": True,
+                    "is_toilet": False,
+                    "facility_type": "dustbin",
+                    "status": "ACCEPTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Valid dustbin issue detected: {label} ({conf * 100:.1f}% confidence)."
+                }
+            elif pred_class == "normal_bin":
+                return {
+                    "is_dustbin": True,
+                    "is_toilet": False,
+                    "facility_type": "dustbin",
+                    "status": "REJECTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Validation Rejected: The dustbin appears clean and intact with no overflow or damage detected ({conf * 100:.1f}% confidence). Please attach a photo clearly showing the problem."
+                }
+            else:
+                return {
+                    "is_dustbin": True,
+                    "is_toilet": False,
+                    "facility_type": "dustbin",
+                    "status": "REJECTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Validation Rejected: The photo does not appear to show a dustbin or waste management problem ({conf * 100:.1f}% confidence). Please attach a clear photo of the civic issue."
+                }
         else:
-            return {
-                "is_dustbin": True,
-                "status": "REJECTED",
-                "predicted_class": pred_class,
-                "confidence": conf,
-                "message": f"Validation Rejected: The photo does not appear to show a dustbin or waste management problem ({conf * 100:.1f}% confidence). Please attach a clear photo of the civic issue."
+            # is_toilet
+            result = classify_toilet_image(photo_bytes)
+            pred_class = result["predicted_class"]
+            conf = result["confidence"]
+
+            toilet_accepted_labels = {
+                "dirty_public_toilet": "Dirty Public Toilet",
+                "dirty_public_urinal": "Dirty Public Urinal",
+                "broken_public_toilet": "Broken / Damaged Public Toilet",
+                "broken_public_urinal": "Broken / Damaged Public Urinal",
             }
+
+            if pred_class in toilet_accepted_labels:
+                label = toilet_accepted_labels[pred_class]
+                return {
+                    "is_dustbin": False,
+                    "is_toilet": True,
+                    "facility_type": "toilet",
+                    "status": "ACCEPTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Valid public sanitation issue detected: {label} ({conf * 100:.1f}% confidence)."
+                }
+            elif pred_class in ("clean_public_toilet", "clean_public_urinal"):
+                return {
+                    "is_dustbin": False,
+                    "is_toilet": True,
+                    "facility_type": "toilet",
+                    "status": "REJECTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Validation Rejected: The public toilet/urinal appears clean and in good condition with no hygiene or defect issues detected ({conf * 100:.1f}% confidence). Please attach a photo clearly showing the problem."
+                }
+            else:
+                return {
+                    "is_dustbin": False,
+                    "is_toilet": True,
+                    "facility_type": "toilet",
+                    "status": "REJECTED",
+                    "predicted_class": pred_class,
+                    "confidence": conf,
+                    "message": f"Validation Rejected: The photo does not appear to show a public toilet or urinal issue ({conf * 100:.1f}% confidence). Please attach a clear photo of the civic issue."
+                }
     except Exception as exc:
         raise HTTPException(400, f"Unable to validate image: {str(exc)}")
 
@@ -126,7 +181,7 @@ async def submit_report(
     """
     Submit a citizen grievance/report for a specific facility.
     The report routes directly to the agency member who registered this facility.
-    For dustbin facilities, the attached photograph is validated by AI.
+    For dustbin and public toilet facilities, the attached photograph is validated by AI.
     """
     facility = db.get(Facility, facility_id)
     if facility is None:
@@ -134,6 +189,7 @@ async def submit_report(
 
     cat_name = facility.category.category_name.lower() if facility.category else ""
     is_dustbin = any(k in cat_name for k in ["dustbin", "waste", "garbage", "trash"])
+    is_toilet = any(k in cat_name for k in ["toilet", "washroom", "restroom", "urinal", "lavatory"])
 
     photo_bytes = None
     if photo and photo.filename:
@@ -154,7 +210,7 @@ async def submit_report(
                 detail="A valid photograph is required for dustbin grievance validation."
             )
         try:
-            res = classify_image(photo_bytes)
+            res = classify_dustbin_image(photo_bytes)
             pred_class = res["predicted_class"]
             conf = res["confidence"]
 
@@ -174,6 +230,41 @@ async def submit_report(
                 raise HTTPException(
                     status_code=400,
                     detail=f"AI Validation Rejected: The uploaded photograph does not appear to show a dustbin or waste problem (classified as irrelevant with {conf * 100:.1f}% confidence). Please upload a genuine photo of the dustbin issue."
+                )
+        except HTTPException:
+            raise
+        except ValueError as val_err:
+            raise HTTPException(status_code=400, detail=str(val_err))
+        except Exception as e:
+            logger.warning(f"AI validation runtime error: {e}")
+
+    elif is_toilet:
+        if not photo_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail="A valid photograph is required for public toilet grievance validation."
+            )
+        try:
+            res = classify_toilet_image(photo_bytes)
+            pred_class = res["predicted_class"]
+            conf = res["confidence"]
+
+            if pred_class in ("dirty_public_toilet", "dirty_public_urinal", "broken_public_toilet", "broken_public_urinal"):
+                ai_result = {
+                    "ai_validated": True,
+                    "ai_status": "ACCEPTED",
+                    "ai_prediction": pred_class,
+                    "ai_confidence": conf
+                }
+            elif pred_class in ("clean_public_toilet", "clean_public_urinal"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"AI Validation Rejected: The public toilet/urinal appears clean and in good condition with no hygiene or defect issues detected ({conf * 100:.1f}% confidence). Please upload a photograph clearly showing the issue to submit this report."
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"AI Validation Rejected: The uploaded photograph does not appear to show a public toilet or urinal issue (classified as irrelevant with {conf * 100:.1f}% confidence). Please upload a genuine photo of the civic issue."
                 )
         except HTTPException:
             raise

@@ -4,3 +4,4 @@ dist/
 frontend/test-results/
 frontend/playwright-report/
 frontend/.integration-state.json
+backend/ai_validation/raw/saafai_new_img/

@@ -31,6 +31,8 @@ function ReportIssuePage() {
   const resource = useApi(facilityId ? "/facilities/" + facilityId : null);
   const facility = resource.data ? facilityView(resource.data) : null;
   const isDustbin = facility?.category === "dustbin";
+  const isToilet = facility?.category === "toilet";
+  const requiresAiValidation = isDustbin || isToilet;
 
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
@@ -69,8 +71,8 @@ function ReportIssuePage() {
     };
     reader.readAsDataURL(file);
 
-    // If this is a dustbin facility, automatically run AI validation
-    if (facility && isDustbin) {
+    // If this is a dustbin or public toilet facility, automatically run AI validation
+    if (facility && requiresAiValidation) {
       setAiValidating(true);
       setError("");
       try {
@@ -116,7 +118,7 @@ function ReportIssuePage() {
       return;
     }
 
-    if (isDustbin && aiResult?.status === "REJECTED") {
+    if (requiresAiValidation && aiResult?.status === "REJECTED") {
       alert(aiResult.message || "Cannot submit report: The uploaded photograph was rejected by AI validation.");
       return;
     }
@@ -340,7 +342,7 @@ function ReportIssuePage() {
                       Verified issue: <strong className="text-white capitalize">{submittedData.aiPrediction?.replace("_", " ")}</strong>
                     </p>
                     <p className="mt-0.5 text-[11px] text-emerald-300/70">
-                      Validated by Amar Sohor AI Model V2 before routing to municipal authorities.
+                      Validated by Amar Sohor AI before routing to municipal authorities.
                     </p>
                   </div>
                 )}
@@ -495,15 +497,19 @@ function ReportIssuePage() {
                     />
                   </label>
                 )}
-                {/* AI Validation Feedback for Dustbin Facilities */}
-                {isDustbin && photoPreview && (
+                {/* AI Validation Feedback for Dustbin & Toilet Facilities */}
+                {requiresAiValidation && photoPreview && (
                   <div className="mt-2.5">
                     {aiValidating && (
                       <div className="flex items-center gap-3 rounded-xl border border-lime-300/30 bg-lime-300/10 p-3 text-xs text-lime-300 animate-pulse">
                         <Sparkles size={16} className="animate-spin text-lime-300 shrink-0" />
                         <div>
                           <p className="font-semibold text-white">AI Analyzing Complaint Photograph...</p>
-                          <p className="text-white/60">Checking for dustbin overflow or structural damage using Model V2</p>
+                          <p className="text-white/60">
+                            {isDustbin
+                              ? "Checking for dustbin overflow or structural damage using Model V2"
+                              : "Checking for public toilet sanitation, hygiene, or structural damage using AI Model"}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -554,7 +560,9 @@ function ReportIssuePage() {
                             {aiResult.message}
                           </p>
                           <p className="mt-1 text-[11px] text-rose-300/80">
-                            Please click "Remove" above and select a clear photograph showing an overflowing dustbin or a damaged bin.
+                            {isDustbin
+                              ? 'Please click "Remove" above and select a clear photograph showing an overflowing dustbin or a damaged bin.'
+                              : 'Please click "Remove" above and select a clear photograph showing a dirty or damaged public toilet/urinal.'}
                           </p>
                         </div>
                       </div>
@@ -566,7 +574,7 @@ function ReportIssuePage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting || aiValidating || (isDustbin && aiResult?.status === "REJECTED")}
+                disabled={isSubmitting || aiValidating || (requiresAiValidation && aiResult?.status === "REJECTED")}
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
                 <span>
@@ -574,7 +582,7 @@ function ReportIssuePage() {
                     ? "Routing to Municipal Agency..."
                     : aiValidating
                     ? "AI Validating Photograph..."
-                    : isDustbin && aiResult?.status === "REJECTED"
+                    : requiresAiValidation && aiResult?.status === "REJECTED"
                     ? "AI Validation Rejected — Provide Valid Photo"
                     : "Submit Grievance Report"}
                 </span>

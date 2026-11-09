@@ -44,7 +44,9 @@ class ReportResponse(BaseModel):
 
 
 class ReportImageValidationResponse(BaseModel):
-    is_dustbin: bool
+    is_dustbin: bool = False
+    is_toilet: Optional[bool] = False
+    facility_type: Optional[str] = None
     status: Literal["ACCEPTED", "REJECTED", "NOT_APPLICABLE"]
     predicted_class: Optional[str] = None
     confidence: Optional[float] = None
