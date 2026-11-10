@@ -187,7 +187,12 @@ export const displayDateTime = value => {
 
 export const facilityView = f => ({ ...f, id: f.facility_id, name: f.facility_name,
   category: categoryKey(f.category_name), categoryLabel: f.category_name, agency: f.agency_name,
-  status: statusLabel(f.status), imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id });
+  status: statusLabel(f.status), rawStatus: f.status,
+  hasActiveReport: Boolean(f.has_active_report),
+  activeReportId: f.active_report_id,
+  activeReportTitle: f.active_report_title,
+  activeReportStatus: f.active_report_status,
+  imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id });
 
 export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_name,
   facilityAddress: r.facility_address, facilityCategory: categoryKey(r.facility_category),

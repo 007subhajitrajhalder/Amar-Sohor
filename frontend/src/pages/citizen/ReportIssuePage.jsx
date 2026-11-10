@@ -33,6 +33,13 @@ function ReportIssuePage() {
   const isDustbin = facility?.category === "dustbin";
   const isToilet = facility?.category === "toilet";
   const requiresAiValidation = isDustbin || isToilet;
+  const isFacilityLocked = Boolean(
+    facility?.hasActiveReport ||
+    facility?.rawStatus === "UNDER_REPAIR" ||
+    facility?.rawStatus === "SUSPENDED" ||
+    facility?.status === "Under Repair" ||
+    facility?.status === "Suspended"
+  );
 
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
@@ -115,6 +122,11 @@ function ReportIssuePage() {
 
     if (!photoPreview) {
       alert("Please upload a complaint photograph before submitting.");
+      return;
+    }
+
+    if (isFacilityLocked) {
+      alert("Reporting Locked: An active grievance is already in progress, or this facility is currently under repair/suspended.");
       return;
     }
 
@@ -407,6 +419,62 @@ function ReportIssuePage() {
                     {facility.categoryLabel || "Public Facility"}
                   </span>
                 </div>
+
+                {/* Facility Lock / Active Report Warning Banners */}
+                {facility.hasActiveReport && (
+                  <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs text-amber-200">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold uppercase tracking-wider text-amber-300">
+                          Active Grievance In Progress (Ticket Flooding Protection)
+                        </span>
+                        {facility.activeReportId && (
+                          <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-mono text-amber-200 font-semibold">
+                            Report #{facility.activeReportId}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-white/90">
+                        An active report {facility.activeReportTitle ? (<>(<strong>"{facility.activeReportTitle}"</strong>)</>) : null} has already been submitted for this facility and is currently <strong>{facility.activeReportStatus?.replace('_', ' ') || 'under investigation'}</strong>.
+                      </p>
+                      <p className="text-amber-300/80 text-[11px]">
+                        Municipal agencies are actively addressing this facility. To prevent duplicate tickets, new grievance submissions are paused until this issue is resolved.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {(facility.rawStatus === "UNDER_REPAIR" || facility.status === "Under Repair") && (
+                  <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-blue-500/40 bg-blue-500/10 p-3.5 text-xs text-blue-200">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-blue-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-bold uppercase tracking-wider text-blue-300">
+                        Facility Currently Under Repair
+                      </span>
+                      <p className="text-white/90">
+                        Municipal personnel and agency contractors are actively carrying out repairs at this site.
+                      </p>
+                      <p className="text-blue-300/80 text-[11px]">
+                        New grievance reports cannot be lodged while repair operations are active.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {(facility.rawStatus === "SUSPENDED" || facility.status === "Suspended") && (
+                  <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-200">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-bold uppercase tracking-wider text-rose-300">
+                        Facility Currently Suspended
+                      </span>
+                      <p className="text-white/90">
+                        This facility is currently suspended from public service and cannot accept grievance submissions.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Issue Title */}
@@ -574,12 +642,14 @@ function ReportIssuePage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting || aiValidating || (requiresAiValidation && aiResult?.status === "REJECTED")}
+                disabled={isSubmitting || isFacilityLocked || aiValidating || (requiresAiValidation && aiResult?.status === "REJECTED")}
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
                 <span>
                   {isSubmitting
                     ? "Routing to Municipal Agency..."
+                    : isFacilityLocked
+                    ? "Submissions Locked for this Facility"
                     : aiValidating
                     ? "AI Validating Photograph..."
                     : requiresAiValidation && aiResult?.status === "REJECTED"

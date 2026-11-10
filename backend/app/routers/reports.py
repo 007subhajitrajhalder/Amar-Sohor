@@ -1,7 +1,7 @@
 import base64
 import logging
 from typing import List, Optional
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from fastapi import HTTPException
 from app.dependencies.auth import get_current_user, require_user, get_current_agent_member
 from app.dependencies.access import scoped_query, visible_record
@@ -20,10 +20,13 @@ from app.models.agency import Agency
 from app.models.report import Report
 from app.schemas.report import (
     ReportResponse, ResolvedReportDetail, ResolvedReportListResponse,
-    ReportImageValidationResponse
+    ReportImageValidationResponse, ResolutionValidationResponse
 )
 from app.services import report_service, file_service
-from app.services.ai_service import classify_image, classify_dustbin_image, classify_toilet_image
+from app.services.ai_service import (
+    classify_image, classify_dustbin_image, classify_toilet_image,
+    verify_resolution_evidence
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +56,88 @@ async def validate_report_image(
     if facility is None:
         raise HTTPException(404, "Facility not found")
 
+    # 1. Citizen Rate Limiting (Cooldown): Max 5 report submissions per citizen per hour
+    one_hour_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1)
+    recent_reports_count = db.query(Report).filter(
+        Report.user_id == current_user.user_id,
+        Report.created_at >= one_hour_ago
+    ).count()
+    if recent_reports_count >= 5:
+        raise HTTPException(
+            status_code=429,
+            detail="Submission Cooldown: You have reached the maximum limit of 5 grievance reports within the past hour. Please wait before submitting another report."
+        )
+
+    # 2. Facility Operational Status Check
+    if facility.status == "UNDER_REPAIR":
+        raise HTTPException(
+            status_code=409,
+            detail="Reporting Locked: This facility is currently Under Repair. Municipal personnel are already actively working on repairs on-site."
+        )
+    elif facility.status == "SUSPENDED":
+        raise HTTPException(
+            status_code=409,
+            detail="Reporting Locked: This facility is currently Suspended from civic operations."
+        )
+
+    # 3. Active Unresolved Report Check (Duplicate / Ticket Flooding Prevention)
+    active_report = db.query(Report).filter(
+        Report.facility_id == facility_id,
+        Report.status != "RESOLVED"
+    ).order_by(Report.report_id.desc()).first()
+    if active_report:
+        status_disp = active_report.status.replace("_", " ").title()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Duplicate Report: An active grievance (Report #{active_report.report_id}: '{active_report.title}') "
+                f"is already {status_disp} for this facility. "
+                "To prevent ticket flooding, new reports cannot be lodged until the current issue is resolved."
+            )
+        )
+
     cat_name = facility.category.category_name.lower() if facility.category else ""
     is_dustbin = any(k in cat_name for k in ["dustbin", "waste", "garbage", "trash"])
     is_toilet = any(k in cat_name for k in ["toilet", "washroom", "restroom", "urinal", "lavatory"])
+
+    # 1. Facility Operational Status Check
+    if facility.status == "UNDER_REPAIR":
+        return {
+            "is_dustbin": is_dustbin,
+            "is_toilet": is_toilet,
+            "facility_type": "toilet" if is_toilet else "dustbin",
+            "status": "REJECTED",
+            "predicted_class": None,
+            "confidence": None,
+            "message": "Reporting Locked: This facility is currently marked as Under Repair. Agency personnel are actively working on-site."
+        }
+    elif facility.status == "SUSPENDED":
+        return {
+            "is_dustbin": is_dustbin,
+            "is_toilet": is_toilet,
+            "facility_type": "toilet" if is_toilet else "dustbin",
+            "status": "REJECTED",
+            "predicted_class": None,
+            "confidence": None,
+            "message": "Reporting Locked: This facility is currently Suspended from civic operations."
+        }
+
+    # 2. Active Unresolved Report Check (Duplicate / Ticket Flooding Prevention)
+    active_report = db.query(Report).filter(
+        Report.facility_id == facility_id,
+        Report.status != "RESOLVED"
+    ).order_by(Report.report_id.desc()).first()
+    if active_report:
+        status_disp = active_report.status.replace("_", " ").title()
+        return {
+            "is_dustbin": is_dustbin,
+            "is_toilet": is_toilet,
+            "facility_type": "toilet" if is_toilet else "dustbin",
+            "status": "REJECTED",
+            "predicted_class": None,
+            "confidence": None,
+            "message": f"Active Grievance In Progress: Report #{active_report.report_id} ('{active_report.title}') is already {status_disp} for this facility. New submissions are temporarily paused until resolved."
+        }
 
     if not is_dustbin and not is_toilet:
         return {
@@ -411,6 +493,62 @@ def update_report_workflow(
     return report_service.report_response(report)
 
 
+@router.post("/reports/{report_id}/validate-resolution", response_model=ResolutionValidationResponse)
+async def validate_report_resolution(
+    report_id: int,
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Validate an uploaded resolution photo against the original complaint photo and
+    facility cleanliness criteria using AI (deep feature similarity + classification).
+    """
+    report = db.get(Report, report_id)
+    if not report:
+        raise HTTPException(404, "Report not found")
+
+    category_name = report.facility.category.category_name if report.facility and report.facility.category else ""
+    category_lower = category_name.lower()
+    is_toilet = any(k in category_lower for k in ["toilet", "washroom", "restroom", "urinal"])
+    is_dustbin = any(k in category_lower for k in ["bin", "dustbin", "waste", "garbage"])
+
+    if not (is_dustbin or is_toilet):
+        return {
+            "status": "NOT_APPLICABLE",
+            "facility_type": category_name or "general",
+            "predicted_class": None,
+            "cleanliness_confidence": None,
+            "scene_similarity": None,
+            "is_duplicate": False,
+            "scene_matched": True,
+            "message": "AI validation is not mandatory for this facility category.",
+            "audit_note": None
+        }
+
+    try:
+        after_bytes = await photo.read()
+        await photo.seek(0)
+    except Exception as exc:
+        raise HTTPException(400, f"Unable to read resolution image: {str(exc)}")
+
+    before_bytes = None
+    if report.photo_url:
+        before_bytes = file_service.read_photo_bytes(report.photo_url)
+
+    facility_type = "toilet" if is_toilet else "dustbin"
+    try:
+        result = verify_resolution_evidence(
+            after_bytes=after_bytes,
+            before_bytes=before_bytes,
+            facility_type=facility_type
+        )
+        return result
+    except Exception as exc:
+        logger.error("AI resolution verification error: %s", exc)
+        raise HTTPException(400, f"Unable to validate resolution image: {str(exc)}")
+
+
 @router.post("/reports/{report_id}/resolutions", response_model=ReportResponse, status_code=201)
 async def submit_resolution(
     report_id: int, description: str = Form(..., min_length=1, max_length=5000),
@@ -424,12 +562,42 @@ async def submit_resolution(
         raise HTTPException(409, "Start an investigation before submitting resolution evidence")
     if completion_date > datetime.now(timezone.utc).date() or not description.strip():
         raise HTTPException(422, "Provide a description and a completion date that is not in the future")
+
+    # AI Resolution Validation
+    category_name = report.facility.category.category_name if report.facility and report.facility.category else ""
+    category_lower = category_name.lower()
+    is_toilet = any(k in category_lower for k in ["toilet", "washroom", "restroom", "urinal"])
+    is_dustbin = any(k in category_lower for k in ["bin", "dustbin", "waste", "garbage"])
+
+    ai_audit_note = None
+    if is_dustbin or is_toilet:
+        try:
+            after_bytes = await photo.read()
+            await photo.seek(0)
+            before_bytes = file_service.read_photo_bytes(report.photo_url) if report.photo_url else None
+            facility_type = "toilet" if is_toilet else "dustbin"
+            ai_res = verify_resolution_evidence(
+                after_bytes=after_bytes,
+                before_bytes=before_bytes,
+                facility_type=facility_type
+            )
+            if ai_res.get("status") == "REJECTED":
+                raise HTTPException(400, ai_res.get("message", "AI resolution validation failed."))
+            ai_audit_note = ai_res.get("audit_note")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning("AI resolution validation warning: %s", exc)
+
     url = file_service.save_upload_file(photo, "resolutions")
     db.add(ReportResolutionSubmission(report_id=report_id, agent_id=member.agent_id,
         resolution_photo=url, description=description.strip(), completion_date=completion_date,
         verification_status="APPROVED"))
     report.status = "RESOLVED"
     report.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    if ai_audit_note:
+        existing_notes = report.investigation_notes or ""
+        report.investigation_notes = (existing_notes + f"\n[Resolution AI Verification: {ai_audit_note}]").strip()
     db.commit()
     db.refresh(report)
     return report_service.report_response(report)

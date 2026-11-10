@@ -53,6 +53,18 @@ class ReportImageValidationResponse(BaseModel):
     message: str
 
 
+class ResolutionValidationResponse(BaseModel):
+    status: Literal["ACCEPTED", "REJECTED", "NOT_APPLICABLE"]
+    facility_type: Optional[str] = None
+    predicted_class: Optional[str] = None
+    cleanliness_confidence: Optional[float] = None
+    scene_similarity: Optional[float] = None
+    is_duplicate: bool = False
+    scene_matched: bool = True
+    message: str
+    audit_note: Optional[str] = None
+
+
 class ResolvedReportResponse(BaseModel):
     report_id: int
     facility_id: int

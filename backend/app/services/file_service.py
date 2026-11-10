@@ -121,3 +121,53 @@ def save_base64_or_url_photo(photo_str: str, subfolder: str) -> str:
             raise HTTPException(422, "Invalid photo data") from exc
 
     return photo_str
+
+
+def read_photo_bytes(photo_ref: str) -> str | bytes | None:
+    """
+    Given a photo URL or relative path (e.g. /uploads/reports/... or data:image/...),
+    loads and returns the raw image bytes.
+    """
+    if not photo_ref:
+        return None
+
+    # Base64 data URI
+    if photo_ref.startswith("data:image/"):
+        try:
+            _, encoded = photo_ref.split(",", 1)
+            return base64.b64decode(encoded)
+        except Exception:
+            return None
+
+    # Strip leading slash for relative matching
+    clean_path = photo_ref.lstrip("/")
+
+    # Relative uploads path
+    if clean_path.startswith("uploads/"):
+        rel_subpath = clean_path[len("uploads/"):]
+        target = Path(UPLOAD_ROOT) / rel_subpath
+        if target.exists() and target.is_file():
+            return target.read_bytes()
+
+    # Direct UPLOAD_ROOT match
+    fallback_path = Path(UPLOAD_ROOT) / clean_path
+    if fallback_path.exists() and fallback_path.is_file():
+        return fallback_path.read_bytes()
+
+    # Direct filesystem path
+    direct_path = Path(photo_ref)
+    if direct_path.exists() and direct_path.is_file():
+        return direct_path.read_bytes()
+
+    # Remote URL
+    if photo_ref.startswith("http://") or photo_ref.startswith("https://"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(photo_ref, headers={"User-Agent": "AmarSohorAI/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.read()
+        except Exception:
+            return None
+
+    return None
+

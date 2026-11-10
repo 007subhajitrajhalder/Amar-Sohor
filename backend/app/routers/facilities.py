@@ -12,6 +12,7 @@ from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
 from app.models.facility import Facility
 from app.models.facility_category import FacilityCategory
+from app.models.report import Report
 from app.schemas.facility import (
     FacilityCategoryResponse, FacilityCreate, FacilityUpdate, FacilityResponse,
     FacilityListResponse, FacilityPhotoResponse, FacilityStatus
@@ -40,6 +41,10 @@ class FacilityOut(BaseModel):
     status: str
     agency_name: Optional[str] = None
     photo_url: Optional[str] = None
+    has_active_report: bool = False
+    active_report_id: Optional[int] = None
+    active_report_title: Optional[str] = None
+    active_report_status: Optional[str] = None
 
 
 @router.get("/facilities", response_model=List[FacilityOut])
@@ -114,6 +119,11 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Facility #{facility_id} not found")
     cat = f.category
     agency = cat.agency if cat else None
+    active_report = db.query(Report).filter(
+        Report.facility_id == f.facility_id,
+        Report.status != "RESOLVED"
+    ).order_by(Report.report_id.desc()).first()
+
     return {
         "facility_id": f.facility_id,
         "facility_name": f.facility_name,
@@ -124,7 +134,11 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
         "address": f.address,
         "status": f.status,
         "agency_name": agency.agency_name if agency else "KMC Department",
-        "photo_url": f.photo_url
+        "photo_url": f.photo_url,
+        "has_active_report": active_report is not None,
+        "active_report_id": active_report.report_id if active_report else None,
+        "active_report_title": active_report.title if active_report else None,
+        "active_report_status": active_report.status if active_report else None,
     }
 
 
