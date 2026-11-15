@@ -1,3 +1,5 @@
+"""ORM entity for citizen-submitted facility recommendations and agency review."""
+
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, TIMESTAMP, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class Recommendation(Base):
+    """Persist recommendation status, assignment, and installation data used by recommendation routes."""
+
     __tablename__ = "recommendations"
 
     recommendation_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

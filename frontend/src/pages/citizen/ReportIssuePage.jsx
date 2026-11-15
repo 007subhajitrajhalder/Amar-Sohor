@@ -30,9 +30,12 @@ function ReportIssuePage() {
 
   const resource = useApi(facilityId ? "/facilities/" + facilityId : null);
   const facility = resource.data ? facilityView(resource.data) : null;
-  const isDustbin = facility?.category === "dustbin";
-  const isToilet = facility?.category === "toilet";
-  const requiresAiValidation = isDustbin || isToilet;
+  const catStr = (facility?.category || "") + " " + (facility?.facilityType || "");
+  const isDustbin = facility?.category === "dustbin" || /bin|dustbin|waste|garbage/i.test(catStr);
+  const isToilet = facility?.category === "toilet" || /toilet|washroom|restroom|urinal/i.test(catStr);
+  const isWater = /water|tap|drinking|dispenser|fountain/i.test(catStr);
+  const isParking = /parking|carpark|garage/i.test(catStr);
+  const requiresAiValidation = isDustbin || isToilet || isWater || isParking;
   const isFacilityLocked = Boolean(
     facility?.hasActiveReport ||
     facility?.rawStatus === "UNDER_REPAIR" ||
@@ -421,7 +424,24 @@ function ReportIssuePage() {
                 </div>
 
                 {/* Facility Lock / Active Report Warning Banners */}
-                {facility.hasActiveReport && (
+                {facility.hasActiveReport && facility.activeReportStatus === "REJECTED" && (
+                  <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs text-amber-200">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-bold uppercase tracking-wider text-amber-300">
+                        Submissions Cooldown (Anti-Spam Protection)
+                      </span>
+                      <p className="text-white/90">
+                        A recent grievance for this facility was reviewed and closed within the last 24 hours.
+                      </p>
+                      <p className="text-amber-300/80 text-[11px]">
+                        To prevent report flooding and repeated submissions, reporting for this facility will automatically reopen after a 24-hour cooldown.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {facility.hasActiveReport && facility.activeReportStatus !== "REJECTED" && (
                   <div className="mt-2.5 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs text-amber-200">
                     <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
                     <div className="space-y-1">

@@ -1,3 +1,5 @@
+"""Public registration and credential-recovery endpoints plus authenticated identity."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -32,6 +34,7 @@ def register(
     user_data: RegisterRequest,
     db: Session = Depends(get_db)
 ):
+    """Register a public citizen account; called by frontend RegisterPage."""
     result = auth_service.register_user(
         db,
         user_data
@@ -60,6 +63,7 @@ def login(
     user_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
+    """Authenticate an account and issue a token; called by frontend LoginPage."""
     user = auth_service.login_user(
         db,
         user_data
@@ -109,6 +113,7 @@ def check_forgot_password_email(
     payload: CheckEmailRequest,
     db: Session = Depends(get_db)
 ):
+    """Check that a recovery email belongs to an account; called by ForgotPasswordPage."""
     exists = auth_service.check_email_exists(db, payload.email)
     if not exists:
         raise HTTPException(
@@ -129,6 +134,7 @@ def reset_password(
     payload: ResetPasswordRequest,
     db: Session = Depends(get_db)
 ):
+    """Set a password through the recovery flow; called by ResetPasswordPage."""
     if not payload.otp or len(payload.otp.strip()) != 6:
         raise HTTPException(
             status_code=400,
@@ -160,6 +166,7 @@ def get_me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Return the authenticated account identity and agency membership identifiers."""
     agency_id = None
     agent_id = None
     if current_user.role in ["AGENT", "AGENCY"]:

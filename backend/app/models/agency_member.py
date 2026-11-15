@@ -1,3 +1,5 @@
+"""ORM entity linking an agency's staff member to a user account."""
+
 from sqlalchemy import Column, Integer, DECIMAL, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -5,6 +7,8 @@ from app.database.base import Base
 
 
 class AgencyMember(Base):
+    """Store agency assignment and location for staff used in admin, facility, and report workflows."""
+
     __tablename__ = "agency_members"
 
     agent_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

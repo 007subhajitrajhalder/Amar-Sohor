@@ -1,3 +1,5 @@
+"""Endpoints for the signed-in agency's dashboard and scoped workload."""
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -32,6 +34,6 @@ def get_agency_dashboard(
     current_agency: Agency = Depends(get_current_agency),
     current_agent: AgencyMember = Depends(get_current_agent_member)
 ) -> AgencyDashboardResponse:
-    """Return agency overview counts and the report workflow distribution."""
+    """Return agency overview and report counts; called by AgencyDashboardPage and AssignedReportsPage."""
     agent = current_agent if mine else None
     return agency_service.get_agency_dashboard(db, current_agency, agent=agent)

@@ -1,3 +1,5 @@
+"""ORM entity for reports filed about facilities and processed by agency staff."""
+
 from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, DateTime, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class Report(Base):
+    """Persist a facility report and its workflow state for the reports API."""
+
     __tablename__ = "reports"
 
     report_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -25,7 +29,7 @@ class Report(Base):
     description = Column(Text, nullable=False)
     photo_url = Column(String(1000), nullable=False)
     status = Column(
-        Enum("PENDING", "UNDER_INVESTIGATION", "RESOLVED"),
+        Enum("PENDING", "UNDER_INVESTIGATION", "RESOLVED", "REJECTED"),
         nullable=False,
         default="PENDING",
         index=True
@@ -60,4 +64,3 @@ class Report(Base):
     agency = relationship("Agency", back_populates="reports")
     assigned_member = relationship("AgencyMember", foreign_keys=[assigned_agent])
     resolution_submissions = relationship("ReportResolutionSubmission", back_populates="report", cascade="all, delete-orphan")
-

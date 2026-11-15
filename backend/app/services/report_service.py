@@ -1,3 +1,5 @@
+"""Create, serialize, and list civic grievances for the /reports and agency resolved-reports APIs."""
+
 import re
 from typing import Optional
 from fastapi import HTTPException
@@ -11,6 +13,7 @@ from app.services.agency_service import get_facility_in_charge, format_agent_det
 from app.schemas.report import ResolvedReportResponse, ResolvedReportDetail, ResolvedReportListResponse
 
 def report_response(report, ai_result=None):
+    """Serialize a grievance, assignment, resolution evidence, and AI validation details for the reports API."""
     facility, agency, member = report.facility, report.agency, report.assigned_member
     evidence = sorted(report.resolution_submissions, key=lambda r: r.resolution_id, reverse=True)
 
@@ -63,6 +66,7 @@ def report_response(report, ai_result=None):
     }
 
 def create_report(db, facility_id, user_id, title, description, photo_url, ai_result=None):
+    """Create a citizen grievance for POST /reports after resolving its managing agency and facility member."""
     facility = db.get(Facility, facility_id)
     if facility is None:
         raise HTTPException(404, "Facility not found")
@@ -89,18 +93,21 @@ def create_report(db, facility_id, user_id, title, description, photo_url, ai_re
     return report_response(report, ai_result=ai_result)
 
 def get_all_reports(db: Session, user_id: Optional[int] = None, query=None):
+    """List grievances for reports-router endpoints using an optional user or access-scoped query."""
     query = query if query is not None else db.query(Report)
     if user_id is not None:
         query = query.filter(Report.user_id == user_id)
     return [report_response(r) for r in query.order_by(Report.created_at.desc()).all()]
 
 def get_report_by_id(db, report_id):
+    """Return a serialized grievance for a reports-router detail endpoint."""
     report = db.get(Report, report_id)
     if report is None:
         raise HTTPException(404, "Report not found")
     return report_response(report)
 
 def resolved_report_response(report: Report) -> ResolvedReportResponse:
+    """Build the compact resolved-grievance item used by agency resolved-report listings."""
     return ResolvedReportResponse(
         report_id=report.report_id,
         facility_id=report.facility_id,
@@ -116,7 +123,8 @@ def list_resolved_reports(
     db: Session, agency_id: int, search: str | None = None,
     limit: int = 50, offset: int = 0, agent_id: int | None = None
 ) -> ResolvedReportListResponse:
-    filters = [Report.assigned_agency == agency_id, Report.status == "RESOLVED"]
+    """Search and paginate an agency's resolved and rejected grievances for the agency reports API."""
+    filters = [Report.assigned_agency == agency_id, Report.status.in_(["RESOLVED", "REJECTED"])]
     if agent_id is not None:
         filters.append(
             or_(
@@ -158,14 +166,13 @@ def list_resolved_reports(
 
 
 def get_resolved_report_details(db: Session, report: Report) -> ResolvedReportDetail:
-    # Pending/rejected evidence and evidence from other agencies must not
-    # appear as the accepted resolution of this agency's report.
+    """Return resolved or rejected grievance details with the latest evidence or rejection notes."""
     resolution = db.scalar(
         select(ReportResolutionSubmission)
         .join(AgencyMember, ReportResolutionSubmission.agent_id == AgencyMember.agent_id)
         .where(
             ReportResolutionSubmission.report_id == report.report_id,
-            ReportResolutionSubmission.verification_status == "APPROVED",
+            ReportResolutionSubmission.verification_status.in_(["APPROVED", "REJECTED"]),
             AgencyMember.agency_id == report.assigned_agency
         )
         .order_by(
@@ -178,6 +185,8 @@ def get_resolved_report_details(db: Session, report: Report) -> ResolvedReportDe
         **resolved_report_response(report).model_dump(),
         description=report.description,
         photo_url=report.photo_url,
-        resolution_photo_url=resolution.resolution_photo if resolution else None,
-        resolution_submitted_at=resolution.submitted_at if resolution else None
+        resolution_photo_url=resolution.resolution_photo if (resolution and resolution.resolution_photo) else None,
+        resolution_submitted_at=resolution.submitted_at if resolution else None,
+        resolution_description=resolution.description if resolution else None,
+        verification_status=resolution.verification_status if resolution else None
     )

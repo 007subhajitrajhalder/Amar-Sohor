@@ -1,3 +1,5 @@
+"""Register users, authenticate credentials, and reset passwords for the /auth API router."""
+
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -7,6 +9,7 @@ from app.models.user import User
 
 
 def register_user(db: Session, user_data):
+    """Register a citizen account for POST /auth/register, returning duplicate-field markers when needed."""
     clean_email = user_data.email.strip().lower()
     clean_phone = user_data.phone.strip()
     clean_name = user_data.full_name.strip()
@@ -61,6 +64,7 @@ def register_user(db: Session, user_data):
 
 
 def login_user(db: Session, user_data):
+    """Verify login credentials for POST /auth/login and return the matching user or None."""
     clean_email = user_data.email.strip().lower()
 
     # Find user by email
@@ -88,6 +92,7 @@ def login_user(db: Session, user_data):
 
 
 def check_email_exists(db: Session, email: str) -> bool:
+    """Check the account email used by POST /auth/forgot-password/check-email."""
     clean_email = email.strip().lower()
     statement = select(User).where(User.email == clean_email)
     result = db.execute(statement)
@@ -95,6 +100,7 @@ def check_email_exists(db: Session, email: str) -> bool:
 
 
 def reset_user_password(db: Session, email: str, new_password: str) -> bool:
+    """Update an account password for POST /auth/reset-password and report whether the account exists."""
     clean_email = email.strip().lower()
     statement = select(User).where(User.email == clean_email)
     result = db.execute(statement)

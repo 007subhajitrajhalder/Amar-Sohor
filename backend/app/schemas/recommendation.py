@@ -1,9 +1,13 @@
+"""Contracts describing recommendation submission and agency review API workflows."""
+
 from datetime import datetime
 from typing import Optional, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class RecommendationCreate(BaseModel):
+    """Describe fields for a citizen recommendation submission."""
+
     category_id: Optional[int] = None
     facility_type: Optional[str] = None
     title: str
@@ -17,6 +21,8 @@ class RecommendationCreate(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
+    """Represent a recommendation and its assignment and review data in API responses."""
+
     model_config = ConfigDict(from_attributes=True)
 
     recommendation_id: int
@@ -51,12 +57,16 @@ class RecommendationResponse(BaseModel):
 
 
 class AllocateRecommendationPayload(BaseModel):
+    """Describe the agent and optional notes submitted when allocating a recommendation."""
+
     agent_id: Optional[int] = None
     agent_email: Optional[str] = None
     notes: Optional[str] = None
 
 
 class RecommendationWorkflowUpdate(BaseModel):
+    """Validate status and notes for recommendation investigation or decision updates."""
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     status: Literal["UNDER_INVESTIGATION", "APPROVED", "REJECTED"]
     notes: str = Field(min_length=1, max_length=1000)

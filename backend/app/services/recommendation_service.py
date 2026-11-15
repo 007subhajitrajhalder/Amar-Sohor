@@ -1,3 +1,5 @@
+"""Create and process public-facility proposals for the /recommendations API router."""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -10,6 +12,7 @@ from app.models.user import User
 from app.services.agency_service import format_agent_details
 
 def recommendation_response(rec):
+    """Serialize a recommendation and its assignment and investigation history for API responses."""
     category, agency, member = rec.category, rec.agency, rec.assigned_member
     history = sorted(rec.investigations, key=lambda item: item.investigation_id)
     installed_facility = rec.installed_facility if rec.status == "INSTALLED" else None
@@ -75,6 +78,7 @@ def recommendation_response(rec):
 
 
 def update_recommendation_investigation(db, rec, description, verification_status):
+    """Record the latest allocation or investigation update used by recommendation workflow endpoints."""
     investigations = sorted(rec.investigations, key=lambda item: item.investigation_id)
     if investigations:
         investigation = investigations[0]
@@ -92,6 +96,7 @@ def update_recommendation_investigation(db, rec, description, verification_statu
 
 
 def resolve_category_id(db, value):
+    """Resolve a category identifier or supported facility-type alias submitted to the recommendations API."""
     if isinstance(value, int):
         category = db.get(FacilityCategory, value)
     else:
@@ -104,6 +109,7 @@ def resolve_category_id(db, value):
 
 def create_recommendation(db, user_id, title, description, address, category_id_or_type=None,
     latitude=None, longitude=None, landmark=None, photo_url=""):
+    """Create a citizen facility proposal for POST /recommendations."""
     category_id = resolve_category_id(db, category_id_or_type)
     category = db.get(FacilityCategory, category_id)
     if not title.strip() or len(title.strip()) > 200 or not description.strip() or not address.strip():
@@ -121,6 +127,7 @@ def create_recommendation(db, user_id, title, description, address, category_id_
     return recommendation_response(rec)
 
 def allocate_recommendation(db, recommendation_id, agent_id_or_identifier, notes=None):
+    """Assign a pending proposal to an agency member for POST /recommendations/{id}/allocate."""
     rec = db.get(Recommendation, recommendation_id)
     if rec is None:
         raise HTTPException(404, "Recommendation not found")
@@ -144,6 +151,7 @@ def allocate_recommendation(db, recommendation_id, agent_id_or_identifier, notes
     return recommendation_response(rec)
 
 def get_all_recommendations(db, user_id=None, query=None):
+    """Return serialized recommendations for GET /recommendations using the router's access-scoped query."""
     query = query if query is not None else db.query(Recommendation)
     if user_id is not None:
         query = query.filter(Recommendation.user_id == user_id)
@@ -151,6 +159,7 @@ def get_all_recommendations(db, user_id=None, query=None):
     return [recommendation_response(r) for r in query.order_by(Recommendation.created_at.desc()).all()]
 
 def get_recommendation_by_id(db, recommendation_id):
+    """Return one serialized recommendation or a not-found API error for a requested identifier."""
     rec = db.get(Recommendation, recommendation_id)
     if rec is None:
         raise HTTPException(404, "Recommendation not found")

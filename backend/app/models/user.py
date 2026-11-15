@@ -1,3 +1,5 @@
+"""ORM entity for accounts used across authentication and application workflows."""
+
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class User(Base):
+    """Persist account identity and role data used by auth, user, and admin routes."""
+
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

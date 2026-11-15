@@ -1,10 +1,12 @@
+"""Response contracts for agency API workflows, consumed by backend routers and services."""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 
 class AgencyDashboardStatistics(BaseModel):
-    """Counts for the four overview cards on AgencyDashboardPage."""
+    """Summarize pending, investigating, resolved reports, and managed facilities."""
 
     pending: int = Field(ge=0)
     under_investigation: int = Field(ge=0)
@@ -15,7 +17,7 @@ class AgencyDashboardStatistics(BaseModel):
 
 
 class AgencyReportStatusDistribution(BaseModel):
-    """One report workflow status, including its share of all agency reports."""
+    """Represent one report status and its share in the agency dashboard response."""
 
     status: Literal["PENDING", "UNDER_INVESTIGATION", "RESOLVED"]
     title: str
@@ -26,7 +28,7 @@ class AgencyReportStatusDistribution(BaseModel):
 
 
 class AgencyDashboardResponse(BaseModel):
-    """Agency identity, overview statistics, and report status analysis."""
+    """Shape the agency dashboard API response assembled by the agencies router."""
 
     agency_id: int = Field(gt=0)
     agency_name: str

@@ -1,3 +1,5 @@
+"""ORM entity for user ratings attached to facilities."""
+
 from sqlalchemy import Column, Integer, String, TIMESTAMP, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class Rating(Base):
+    """Persist a user's facility rating for the facility ratings API workflow."""
+
     __tablename__ = "ratings"
 
     rating_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

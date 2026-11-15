@@ -1,4 +1,5 @@
 import AuthGate from "./components/AuthGate";
+import ChatbotWidget from "./components/ChatbotWidget";
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 
@@ -45,6 +46,7 @@ import AdminRecommendationProgressPage from "./pages/admin/AdminRecommendationPr
 
 function App() {
   return (
+    <>
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<HomePage />} />
@@ -183,6 +185,8 @@ function App() {
         element={<AuthGate role="ADMIN"><AdminRecommendationProgressPage /></AuthGate>}
       />
     </Routes>
+    <ChatbotWidget />
+    </>
   );
 }
 

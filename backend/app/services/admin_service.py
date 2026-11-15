@@ -1,3 +1,5 @@
+"""Admin user, agency-member, and dashboard operations used by the /admin API router."""
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +16,7 @@ def create_agency_member(
     db: Session,
     user_data: CreateAgencyMemberRequest
 ):
+    """Create an agency-member account for the POST /admin/agency-members endpoint."""
     if db.get(Agency, user_data.agency_id) is None:
         raise HTTPException(404, "Agency not found")
 
@@ -61,6 +64,7 @@ def create_agency_member(
 
 
 def get_all_users(db: Session, role: str | None = None):
+    """Return admin-facing user summaries for GET /admin/users, optionally filtered by role."""
     query = db.query(User)
     if role:
         query = query.filter(User.role == role)
@@ -81,6 +85,7 @@ def get_all_users(db: Session, role: str | None = None):
 
 
 def get_user_by_id(db: Session, user_id: int):
+    """Return one admin-facing user summary for GET /admin/users/{user_id}."""
     u = db.query(User).filter(User.user_id == user_id).first()
     if not u:
         return None
@@ -97,6 +102,7 @@ def get_user_by_id(db: Session, user_id: int):
 
 
 def get_admin_dashboard_stats(db: Session):
+    """Aggregate user, agency, facility, report, and recommendation metrics for GET /admin/dashboard."""
     from sqlalchemy import or_
     from app.models.facility import Facility
     from app.models.report import Report

@@ -1,9 +1,13 @@
+"""Contracts describing report submission, staff review, and resolution API workflows."""
+
 from datetime import datetime
 from typing import Optional, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReportCreate(BaseModel):
+    """Describe fields for a citizen report submitted about a facility."""
+
     facility_id: int
     title: str
     description: str
@@ -12,6 +16,8 @@ class ReportCreate(BaseModel):
 
 
 class ReportResponse(BaseModel):
+    """Represent a report and related facility, assignment, and resolution data."""
+
     model_config = ConfigDict(from_attributes=True)
 
     report_id: int
@@ -44,6 +50,8 @@ class ReportResponse(BaseModel):
 
 
 class ReportImageValidationResponse(BaseModel):
+    """Return the result of validating an image submitted with a report."""
+
     is_dustbin: bool = False
     is_toilet: Optional[bool] = False
     facility_type: Optional[str] = None
@@ -54,6 +62,8 @@ class ReportImageValidationResponse(BaseModel):
 
 
 class ResolutionValidationResponse(BaseModel):
+    """Return automated and duplicate-check results for submitted resolution evidence."""
+
     status: Literal["ACCEPTED", "REJECTED", "NOT_APPLICABLE"]
     facility_type: Optional[str] = None
     predicted_class: Optional[str] = None
@@ -66,27 +76,35 @@ class ResolutionValidationResponse(BaseModel):
 
 
 class ResolvedReportResponse(BaseModel):
+    """Represent a resolved or rejected report in the reports router's listing response."""
+
     report_id: int
     facility_id: int
     facility_name: str
     title: str
-    status: Literal["RESOLVED"]
+    status: Literal["RESOLVED", "REJECTED"]
     created_at: datetime
     resolved_at: datetime | None = Field(
-        description="Actual completion time; null for legacy records without one"
+        description="Actual completion or rejection time; null for legacy records without one"
     )
 
 
 class ResolvedReportDetail(ResolvedReportResponse):
+    """Add report description and resolution evidence metadata to a resolved report."""
+
     description: str
     photo_url: str
     resolution_photo_url: str | None
     resolution_submitted_at: datetime | None = Field(
         description="Latest approved evidence submission time, not the completion time"
     )
+    resolution_description: str | None = None
+    verification_status: str | None = None
 
 
 class ResolvedReportListResponse(BaseModel):
+    """Wrap paginated resolved reports returned by the reports API."""
+
     items: list[ResolvedReportResponse]
     total: int
     limit: int
@@ -94,7 +112,13 @@ class ResolvedReportListResponse(BaseModel):
 
 
 class ReportWorkflowUpdate(BaseModel):
+    """Validate report status, staff notes, and assignment changes from agency routes."""
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    status: Literal["PENDING", "UNDER_INVESTIGATION", "RESOLVED"] | None = None
+    status: Literal["PENDING", "UNDER_INVESTIGATION", "RESOLVED", "REJECTED"] | None = None
     notes: str | None = Field(default=None, max_length=5000)
     assigned_agent: int | None = Field(default=None, gt=0)
+
+
+class ReportRejectRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=5000)

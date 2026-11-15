@@ -1,3 +1,5 @@
+"""Authenticated citizen recommendations and scoped admin/agency workflows."""
+
 from typing import List, Optional
 from fastapi import HTTPException
 from app.dependencies.auth import get_current_user, require_user, require_admin
@@ -37,10 +39,11 @@ async def submit_recommendation(
     current_user: User = Depends(require_user)
 ):
     """
-    Submit a citizen recommendation for a new public facility.
+    Submit an authenticated citizen recommendation for a new public facility.
     The recommendation is allotted to the Municipal Admin with status PENDING,
     where the Admin will allocate it to a designated agency member for feasibility study.
     Images are uploaded via python-multipart and marked approved.
+    Called by frontend UserRecommendationPage.
     """
     final_photo_url = ""
 
@@ -79,8 +82,8 @@ def allocate_recommendation(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Admin allocation endpoint:
-    Allocates a pending citizen recommendation to a designated agency member.
+    Allocate a pending citizen recommendation to an agency member as an administrator.
+    Called by frontend AllocateRecommendationPage.
     """
     target_agent = payload.agent_id if payload.agent_id is not None else payload.agent_email
     if target_agent is None:
@@ -103,7 +106,11 @@ def get_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Retrieve all recommendations or filter by citizen user_id or agent_id."""
+    """List recommendations visible to the signed-in role.
+
+    Called by AllRecommendationsPage, AssignedRecommendationsPage, and
+    MyRecommendationsPage.
+    """
     if submitted_by_me:
         query = db.query(Recommendation).filter(
             Recommendation.user_id == current_user.user_id
@@ -123,7 +130,11 @@ def get_recommendation_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Retrieve details and progress of a specific facility recommendation."""
+    """Return a recommendation visible to the signed-in user.
+
+    Called by RecommendationStatusPage, AdminRecommendationProgressPage,
+    AllocateRecommendationPage, and RecommendationInvestigationPage.
+    """
     rec = visible_record(db, Recommendation, Recommendation.recommendation_id, recommendation_id, current_user)
     return recommendation_service.recommendation_response(rec)
 
@@ -132,6 +143,7 @@ def get_recommendation_by_id(
 @router.patch("/{recommendation_id}", response_model=RecommendationResponse)
 def update_recommendation(recommendation_id: int, data: RecommendationWorkflowUpdate,
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Update workflow status or notes on an assigned recommendation; called by RecommendationInvestigationPage."""
     if current_user.role not in ("ADMIN", "AGENT", "AGENCY"):
         raise HTTPException(403, "Agency or admin access required")
     rec = visible_record(db, Recommendation, Recommendation.recommendation_id, recommendation_id, current_user)

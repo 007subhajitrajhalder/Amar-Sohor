@@ -1,3 +1,5 @@
+"""ORM entity for staff evidence submitted during report resolution."""
+
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Date, Text, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class ReportResolutionSubmission(Base):
+    """Persist resolution evidence and its review status for report-resolution routes."""
+
     __tablename__ = "report_resolution_submissions"
 
     resolution_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -21,7 +25,7 @@ class ReportResolutionSubmission(Base):
         nullable=False,
         index=True
     )
-    resolution_photo = Column(String(1000), nullable=False)
+    resolution_photo = Column(String(1000), nullable=True, default="")
     description = Column(Text, nullable=True)
     completion_date = Column(Date, nullable=True)
     submitted_at = Column(

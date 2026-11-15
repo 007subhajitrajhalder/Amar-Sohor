@@ -1,3 +1,6 @@
+from datetime import datetime, timezone, timedelta
+"""Public facility discovery and reviews, plus agency-only facility management."""
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
@@ -29,6 +32,8 @@ router = APIRouter(
 # ==========================================
 
 class FacilityOut(BaseModel):
+    """Public facility details, including any active grievance summary."""
+
     model_config = ConfigDict(from_attributes=True)
 
     facility_id: int
@@ -53,7 +58,7 @@ def list_facilities(
     category_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Public listing of civic facilities for citizen map discovery and reporting."""
+    """List public facilities, optionally by category; called by frontend MapViewPage."""
     query = db.query(Facility)
     if category_id:
         query = query.filter(Facility.category_id == category_id)
@@ -79,6 +84,8 @@ def list_facilities(
 
 
 class PublicCategoryResponse(BaseModel):
+    """Category labels and handling-agency data exposed to public clients."""
+
     category_id: int
     category_name: str
     display_name: str
@@ -88,7 +95,7 @@ class PublicCategoryResponse(BaseModel):
 
 @router.get("/facilities/categories", response_model=List[PublicCategoryResponse])
 def get_public_categories(db: Session = Depends(get_db)):
-    """Public listing of all civic facility categories for discovery and recommendations."""
+    """List public facility categories; called by frontend UserRecommendationPage."""
     categories = db.query(FacilityCategory).order_by(FacilityCategory.category_id).all()
     result = []
     display_labels = {
@@ -113,7 +120,7 @@ def get_public_categories(db: Session = Depends(get_db)):
 
 @router.get("/facilities/{facility_id}", response_model=FacilityOut)
 def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
-    """Public detail for a specific facility."""
+    """Return public facility details; called by FacilityDetailsPage and ReportIssuePage."""
     f = db.query(Facility).filter(Facility.facility_id == facility_id).first()
     if not f:
         raise HTTPException(status_code=404, detail=f"Facility #{facility_id} not found")
@@ -121,8 +128,19 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
     agency = cat.agency if cat else None
     active_report = db.query(Report).filter(
         Report.facility_id == f.facility_id,
-        Report.status != "RESOLVED"
+        Report.status.in_(["PENDING", "UNDER_INVESTIGATION"])
     ).order_by(Report.report_id.desc()).first()
+
+    one_day_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+    recent_rejected = None
+    if not active_report:
+        recent_rejected = db.query(Report).filter(
+            Report.facility_id == f.facility_id,
+            Report.status == "REJECTED",
+            Report.resolved_at >= one_day_ago
+        ).order_by(Report.report_id.desc()).first()
+
+    target_report = active_report or recent_rejected
 
     return {
         "facility_id": f.facility_id,
@@ -135,10 +153,10 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
         "status": f.status,
         "agency_name": agency.agency_name if agency else "KMC Department",
         "photo_url": f.photo_url,
-        "has_active_report": active_report is not None,
-        "active_report_id": active_report.report_id if active_report else None,
-        "active_report_title": active_report.title if active_report else None,
-        "active_report_status": active_report.status if active_report else None,
+        "has_active_report": target_report is not None,
+        "active_report_id": target_report.report_id if target_report else None,
+        "active_report_title": target_report.title if target_report else None,
+        "active_report_status": target_report.status if target_report else None,
     }
 
 
@@ -147,6 +165,7 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
 # ==========================================
 
 def _facility_error(exc: ValueError) -> HTTPException:
+    """Translate facility-service write errors into corresponding HTTP errors."""
     if isinstance(exc, facility_service.FacilityNotFound):
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, facility_service.FacilityConflict):
@@ -166,7 +185,7 @@ def get_facility_categories(
     agency: Agency = Depends(get_current_agency),
     db: Session = Depends(get_db)
 ):
-    """Only categories managed by the signed-in agency may be selected."""
+    """List agency-managed categories for AddFacilityPage, EditFacilityPage, and FacilityManagementPage."""
     return facility_service.get_categories(db, agency.agency_id)
 
 
@@ -175,7 +194,7 @@ async def upload_facility_photo(
     photo: UploadFile = File(...),
     agency: Agency = Depends(get_current_agency)
 ):
-    """Upload a PNG, JPEG, or WEBP photo (maximum 10 MB) before saving the form."""
+    """Upload an agency facility photo; called by AddFacilityPage and EditFacilityPage."""
     try:
         url = await file_service.save_facility_photo(photo, agency.agency_id)
     except file_service.ImageTooLarge as exc:
@@ -197,6 +216,7 @@ def get_facilities(
     agent: AgencyMember = Depends(get_current_agent_member),
     db: Session = Depends(get_db)
 ):
+    """List agency-managed facilities with filters; called by frontend FacilityManagementPage."""
     agent_id = agent.agent_id if mine else None
     return facility_service.list_facilities(
         db, agency.agency_id, search, category_id, status, limit, offset, agent_id=agent_id
@@ -210,6 +230,7 @@ def add_facility(
     agent: AgencyMember = Depends(get_current_agent_member),
     db: Session = Depends(get_db)
 ):
+    """Create a facility for the signed-in agency and member; called by AddFacilityPage."""
     try:
         return facility_service.create_facility(db, agency, agent, data)
     except WRITE_ERRORS as exc:
@@ -218,6 +239,7 @@ def add_facility(
 
 @router.get("/agencies/facilities/{facility_id}", response_model=FacilityResponse)
 def get_agency_facility_by_id(facility: Facility = Depends(get_agency_facility)):
+    """Return a facility visible to the signed-in agency; called by EditFacilityPage."""
     return facility_service.facility_response(facility)
 
 
@@ -228,6 +250,7 @@ def edit_facility(
     agency: Agency = Depends(get_current_agency),
     db: Session = Depends(get_db)
 ):
+    """Update an agency-managed facility; called by EditFacilityPage."""
     try:
         return facility_service.update_facility(db, agency, facility, data)
     except WRITE_ERRORS as exc:
@@ -239,6 +262,7 @@ def delete_facility(
     facility: Facility = Depends(get_agency_facility),
     db: Session = Depends(get_db)
 ):
+    """Delete an agency-managed facility; called by FacilityManagementPage."""
     try:
         facility_service.delete_facility(db, facility)
     except WRITE_ERRORS as exc:
@@ -246,11 +270,14 @@ def delete_facility(
 
 
 class RatingInput(BaseModel):
+    """Review text and a one-to-five star score for a public facility."""
+
     title: str
     rating: int
 
 @router.get("/facilities/{facility_id}/ratings")
 def list_ratings(facility_id: int, db: Session = Depends(get_db)):
+    """List public reviews for a facility; called by frontend FacilityDetailsPage."""
     from app.models.rating import Rating
     if db.get(Facility, facility_id) is None:
         raise HTTPException(404, "Facility not found")
@@ -263,6 +290,7 @@ def add_rating(facility_id: int, data: RatingInput,
     user = Depends(require_user),
     db: Session = Depends(get_db)
 ):
+    """Add an authenticated user's facility review; called by FacilityDetailsPage."""
     from app.models.rating import Rating
     if db.get(Facility, facility_id) is None:
         raise HTTPException(404, "Facility not found")

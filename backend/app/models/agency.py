@@ -1,3 +1,5 @@
+"""ORM entity for agencies that manage facility categories and service workflows."""
+
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
@@ -5,6 +7,8 @@ from app.database.base import Base
 
 
 class Agency(Base):
+    """Persist an agency referenced by admin management and agency dashboard routes."""
+
     __tablename__ = "agencies"
 
     agency_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

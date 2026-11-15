@@ -142,3 +142,23 @@ normal backup. The migration can resume after a partial application.
 and agency isolation, CRUD, validation, filters/pagination, uploads, history
 protection, actual approval criteria, and atomic recommendation installation.
 For real Edge -> HTTP -> MariaDB tests, use the frontend instructions.
+
+## Document-based chatbot
+
+The public `POST /chatbot/chat` endpoint accepts
+`{"message": "How do I report an issue?"}` and returns an answer with the
+knowledge-document sections used as sources. It uses the local Ollama models
+`qwen3:1.7b` for answers and `nomic-embed-text` for document/query embeddings.
+Start Ollama and pull both models if they are not already installed:
+
+```powershell
+ollama pull qwen3:1.7b
+ollama pull nomic-embed-text
+```
+
+The chatbot retrieves from Markdown guides in `app/chatbot/knowledge/`, caches
+their embeddings in memory per backend process, and does not query the live
+database or complaint records. The Ollama URL and model names can be overridden
+with `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, and `OLLAMA_EMBEDDING_MODEL`.
+Ollama/model failures are returned as HTTP 503; no external model provider is
+used.

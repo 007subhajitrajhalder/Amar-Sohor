@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Nov 11, 2026 at 07:43 AM
+-- Generation Time: Nov 15, 2026 at 06:39 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -610,10 +610,10 @@ CREATE TABLE `facilities` (
 INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitude`, `longitude`, `address`, `added_by`, `status`, `created_at`, `photo_url`, `additional_notes`, `source_recommendation_id`) VALUES
 (1, 'College Street Public Toilet', 2, 22.5744000, 88.3629000, 'College Street, Kolkata', 520, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/f39c30e948434488a38dc507b1add9a1.jpg', NULL, NULL),
 (2, 'Gariahat Community Dustbin', 1, 22.5186000, 88.3653000, 'Gariahat, Kolkata', 999, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/1/5528f52159914e85909743e7c11f5c03.jpg', NULL, NULL),
-(3, 'Sealdah Drinking Water Point', 3, 22.5674000, 88.3712000, 'Sealdah, Kolkata', 522, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
-(4, 'New Market Parking Area', 4, 22.5601000, 88.3527000, 'New Market, Kolkata', 524, 'OPEN', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(3, 'Sealdah Drinking Water Point', 3, 22.5674000, 88.3712000, 'Sealdah, Kolkata', 522, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/3/00000000000000000000000000000003.jpg', NULL, NULL),
+(4, 'New Market Parking Area', 4, 22.5601000, 88.3527000, 'New Market, Kolkata', 524, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/4/00000000000000000000000000000004.png', NULL, NULL),
 (5, 'Park Street Dustbin', 1, 22.5511000, 88.3524000, 'Park Street, Kolkata', 519, 'OPEN', '2026-10-14 07:44:07', '/uploads/facilities/209614434f7240f5b11cdd938bfce176.jpg', NULL, NULL),
-(6, 'Howrah Parking Zone', 4, 22.5855000, 88.3426000, 'Howrah Station Area, Howrah', 525, 'UNDER_REPAIR', '2026-10-14 07:44:07', NULL, NULL, NULL),
+(6, 'Howrah Parking Zone', 4, 22.5855000, 88.3426000, 'Howrah Station Area, Howrah', 525, 'UNDER_REPAIR', '2026-10-14 07:44:07', '/uploads/facilities/4/00000000000000000000000000000006.png', NULL, NULL),
 (7, 'Esplanade Community Dustbin', 1, 22.5641800, 88.3427300, 'Esplanade, Kolkata, West Bengal', 9, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-001.jpg', NULL, NULL),
 (8, 'College Street Public Toilet', 2, 22.5741900, 88.3625200, 'College Street, Kolkata, West Bengal', 19, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-002.jpg', NULL, NULL),
 (9, 'Gariahat Drinking Water Point', 3, 22.5186000, 88.3651100, 'Gariahat, Kolkata, West Bengal', 29, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/3-003.jpg', NULL, NULL),
@@ -675,7 +675,7 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `category_id`, `latitu
 (67, 'Bansdroni Community Dustbin', 1, 22.4715800, 88.3671900, 'Bansdroni, Kolkata, West Bengal', 111, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/1-061.jpg', NULL, NULL),
 (68, 'Narendrapur Public Toilet', 2, 22.4417900, 88.3933800, 'Narendrapur, Kolkata, West Bengal', 121, 'OPEN', '2026-10-14 06:30:00', '/uploads/facilities/2-062.jpg', NULL, NULL),
 (69, 'my facility', 1, 22.5760000, 88.3690000, 'nabapally thakurpukur', 999, 'OPEN', '2026-10-26 13:43:14', '/uploads/facilities/1/d643ebd5945f44a2aa42f081b4c15bab.jpg', NULL, NULL),
-(70, 'a dustbin is required', 1, 22.4682000, 88.3286000, 'kolkata', 999, 'SUSPENDED', '2026-10-27 18:17:12', 'http://localhost:8000/uploads/recommendations/c8212faf6bd64525a961e56e029e5fa8.jpg', 'done', 8);
+(70, 'a dustbin is required', 1, 22.4682000, 88.3286000, 'kolkata', 999, 'OPEN', '2026-10-27 18:17:12', 'http://localhost:8000/uploads/recommendations/c8212faf6bd64525a961e56e029e5fa8.jpg', 'done', 8);
 
 -- --------------------------------------------------------
 
@@ -747,7 +747,8 @@ INSERT INTO `recommendations` (`recommendation_id`, `user_id`, `category_id`, `t
 (4, 11, 1, 'Need New Segregated Waste Bins', 'Heavy footfall near Shyambazar tram terminus leads to waste littering.', 22.6042000, 88.3734000, 'Shyambazar 5-point crossing, Kolkata (Landmark: Near Netaji Statue)', '/uploads/recommendations/test_rec.jpg', 'ALLOCATED', 1, '2026-10-14 08:22:29', 518),
 (7, 529, 1, 'need dustbin', 'bad smell', NULL, NULL, 'kolkata', '/uploads/recommendations/10aa0b28da8649f6bc3370a39c0afe59.jpg', 'PENDING', 1, '2026-10-27 12:56:24', NULL),
 (8, 529, 1, 'a dustbin is required', 'bad and foul smell', 22.4682000, 88.3286000, 'kolkata', '/uploads/recommendations/c8212faf6bd64525a961e56e029e5fa8.jpg', 'INSTALLED', 1, '2026-10-27 13:00:18', 999),
-(9, 529, 4, 'too much traffic', 'too much jam', 22.4682000, 88.3286000, 'thakurpukur', '/uploads/recommendations/9907b5b83e0041faae9056fa04dbd4d3.jpg', 'PENDING', 4, '2026-10-27 13:01:44', NULL);
+(9, 529, 4, 'too much traffic', 'too much jam', 22.4682000, 88.3286000, 'thakurpukur', '/uploads/recommendations/9907b5b83e0041faae9056fa04dbd4d3.jpg', 'PENDING', 4, '2026-10-27 13:01:44', NULL),
+(10, 529, 1, 'bad dustbin', 'very bad place', 22.4682000, 88.3286000, 'Lat: 22.468200, Long: 88.328600', '/uploads/recommendations/1f3dfa50ffe3472ea2a7bf06baa3967f.jpg', 'REJECTED', 1, '2026-11-15 07:10:56', 999);
 
 -- --------------------------------------------------------
 
@@ -768,7 +769,8 @@ CREATE TABLE `recommendation_investigations` (
 --
 
 INSERT INTO `recommendation_investigations` (`investigation_id`, `recommendation_id`, `description`, `submitted_at`, `verification_status`) VALUES
-(1, 8, 'Investigation started', '2026-10-27 12:45:34', 'APPROVED');
+(1, 8, 'Investigation started', '2026-10-27 12:45:34', 'APPROVED'),
+(8, 10, 'very bad', '2026-11-15 01:43:15', 'REJECTED');
 
 -- --------------------------------------------------------
 
@@ -783,7 +785,7 @@ CREATE TABLE `reports` (
   `title` varchar(200) NOT NULL,
   `description` text NOT NULL,
   `photo_url` varchar(1000) NOT NULL,
-  `status` enum('PENDING','UNDER_INVESTIGATION','RESOLVED') NOT NULL DEFAULT 'PENDING',
+  `status` enum('PENDING','UNDER_INVESTIGATION','RESOLVED','REJECTED') NOT NULL DEFAULT 'PENDING',
   `assigned_agency` int(10) UNSIGNED NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `assigned_agent` int(10) UNSIGNED DEFAULT NULL,
@@ -802,7 +804,9 @@ INSERT INTO `reports` (`report_id`, `facility_id`, `user_id`, `title`, `descript
 (55, 67, 529, 'sdfsdfsdf', 'sdfsdfsdf', '', 'UNDER_INVESTIGATION', 1, '2026-10-26 13:29:44', 999, NULL, NULL),
 (56, 24, 529, 'very bad', 'wak thu', '/uploads/reports/ea265c3d5c224feb8ae86ccdeeed2603.jpg', 'PENDING', 2, '2026-10-26 14:04:19', 163, NULL, NULL),
 (57, 5, 529, 'overflowing', 'bad smell', '/uploads/reports/00b83cc4d7dc49728e9e75cb4462fcbe.jpg', 'PENDING', 1, '2026-11-06 08:13:57', 519, NULL, '[AI Validation: ACCEPTED - Overflowing Dustbin (75.2% confidence)]'),
-(59, 69, 529, 'dustbin overflowing', 'very bad dustbins', '/uploads/reports/1e07f33ccec54e8bbd5c251cca171669.jpg', 'UNDER_INVESTIGATION', 1, '2026-11-10 08:18:26', 999, NULL, '[AI Validation: ACCEPTED - Broken Bin (41.4% confidence)]');
+(59, 69, 529, 'dustbin overflowing', 'very bad dustbins', '/uploads/reports/1e07f33ccec54e8bbd5c251cca171669.jpg', 'UNDER_INVESTIGATION', 1, '2026-11-10 08:18:26', 999, NULL, '[AI Validation: ACCEPTED - Broken Bin (41.4% confidence)]'),
+(60, 70, 529, 'such bad', 'bad', '/uploads/reports/5a8d049fd638463caf4d6e5c45da22ab.jpg', 'RESOLVED', 1, '2026-11-15 07:39:50', 999, '2026-11-15 08:02:38', '[AI Validation: ACCEPTED - Broken Bin (41.4% confidence)]\n[Resolution AI Verification: AI Assessment: Overflowing Dustbin (39.2% confidence, Scene Match: 27.3%)]'),
+(61, 70, 529, 'bad', 'bad', '/uploads/reports/6ac0cce512414992ad2460ba2ce4638a.jpg', 'UNDER_INVESTIGATION', 1, '2026-11-15 08:11:51', 999, NULL, '[AI Validation: ACCEPTED - Overflowing Dustbin (90.4% confidence)]');
 
 -- --------------------------------------------------------
 
@@ -814,7 +818,7 @@ CREATE TABLE `report_resolution_submissions` (
   `resolution_id` int(10) UNSIGNED NOT NULL,
   `report_id` int(10) UNSIGNED NOT NULL,
   `agent_id` int(10) UNSIGNED NOT NULL,
-  `resolution_photo` varchar(1000) NOT NULL,
+  `resolution_photo` varchar(1000) DEFAULT '',
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `verification_status` enum('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
   `description` text DEFAULT NULL,
@@ -828,7 +832,8 @@ CREATE TABLE `report_resolution_submissions` (
 INSERT INTO `report_resolution_submissions` (`resolution_id`, `report_id`, `agent_id`, `resolution_photo`, `submitted_at`, `verification_status`, `description`, `completion_date`) VALUES
 (1, 1, 9, '/uploads/resolutions/6465f8c16ca64f09b7d7edc66a4f0079.png', '2026-10-26 13:07:39', 'PENDING', 'Repaired the reported facility on site. All issues resolved.', '2026-10-26'),
 (3, 1, 9, '/uploads/resolutions/dcdc9124202d4b5db35c9f23b40e6fee.png', '2026-10-26 13:27:31', 'APPROVED', 'Fixed leak and replaced tap. Everything verified operational.', '2026-10-26'),
-(4, 3, 999, '/uploads/resolutions/b813a5cae5af451fb70489abae6d73df.jpg', '2026-10-26 13:31:29', 'APPROVED', 'done', '2026-10-26');
+(4, 3, 999, '/uploads/resolutions/b813a5cae5af451fb70489abae6d73df.jpg', '2026-10-26 13:31:29', 'APPROVED', 'done', '2026-10-26'),
+(7, 60, 999, '/uploads/resolutions/a66f8833f44f4e98a5ba255345ababc2.jpg', '2026-11-15 08:02:38', 'APPROVED', 'done bro\n\n[AI Assessment: Overflowing Dustbin (39.2% confidence, Scene Match: 27.3%)]', '2026-10-28');
 
 -- --------------------------------------------------------
 
@@ -1503,25 +1508,25 @@ ALTER TABLE `ratings`
 -- AUTO_INCREMENT for table `recommendations`
 --
 ALTER TABLE `recommendations`
-  MODIFY `recommendation_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `recommendation_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `recommendation_investigations`
 --
 ALTER TABLE `recommendation_investigations`
-  MODIFY `investigation_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `investigation_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `reports`
 --
 ALTER TABLE `reports`
-  MODIFY `report_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `report_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `report_resolution_submissions`
 --
 ALTER TABLE `report_resolution_submissions`
-  MODIFY `resolution_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `resolution_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `users`

@@ -1,3 +1,5 @@
+"""Store and retrieve facility, recommendation, report, and resolution images for their API routers."""
+
 import os
 import uuid
 import base64
@@ -14,14 +16,19 @@ MAX_FACILITY_PHOTO_SIZE = 10 * 1024 * 1024
 
 
 class InvalidImage(ValueError):
+    """Represent an unsupported or mismatched image format during upload validation."""
+
     pass
 
 
 class ImageTooLarge(ValueError):
+    """Represent an uploaded facility image that exceeds the configured size limit."""
+
     pass
 
 
 def _image_extension(data: bytes, content_type: str | None) -> str:
+    """Validate image bytes and content type before a router stores an upload."""
     if data.startswith(b"\x89PNG\r\n\x1a\n") and data[12:16] == b"IHDR":
         extension, expected_type = "png", "image/png"
     elif data.startswith(b"\xff\xd8\xff"):
@@ -36,6 +43,7 @@ def _image_extension(data: bytes, content_type: str | None) -> str:
 
 
 def _write_photo(path: Path, data: bytes):
+    """Write validated facility-photo bytes to a new file for the facilities router."""
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("xb") as output:
@@ -48,6 +56,7 @@ def _write_photo(path: Path, data: bytes):
 
 
 async def save_facility_photo(photo: UploadFile, agency_id: int) -> str:
+    """Save a facility photo uploaded through POST /agencies/facilities/photos."""
     data = bytearray()
     try:
         while chunk := await photo.read(1024 * 1024):

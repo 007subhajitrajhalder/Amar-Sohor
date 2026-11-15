@@ -68,7 +68,9 @@ function UploadResolutionPage() {
   const facilityCategory = report?.facility_category || "";
   const isToilet = /toilet|washroom|restroom|urinal/i.test(facilityCategory);
   const isDustbin = /bin|dustbin|waste|garbage/i.test(facilityCategory);
-  const requiresAiValidation = isToilet || isDustbin;
+  const isWater = /water|tap|drinking|dispenser|fountain/i.test(facilityCategory);
+  const isParking = /parking|carpark|garage/i.test(facilityCategory);
+  const requiresAiValidation = isToilet || isDustbin || isWater || isParking;
   const originalPhotoUrl = report?.photo_url ? mediaUrl(report.photo_url) : null;
 
   const handlePhotoChange = async (event) => {

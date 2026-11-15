@@ -4,6 +4,8 @@ Aligned with project workflow:
 1. Report grievances route directly to the agency member who registered the facility (facility.added_by).
 2. Facility recommendations are allotted to the Municipal Admin, who allocates them to designated agency members.
 3. Agency dashboard provides overview metrics and complaint status distribution.
+The /agencies/dashboard API uses this module; report and recommendation services also use its
+facility-routing and agency-member formatting helpers, and the admin router uses member formatting.
 """
 from typing import Optional, Tuple, List, Dict, Any
 from sqlalchemy import func, select, or_

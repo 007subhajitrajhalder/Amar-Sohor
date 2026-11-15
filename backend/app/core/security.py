@@ -1,3 +1,9 @@
+"""Password and access-token primitives used by authentication workflows.
+
+User creation stores bcrypt password hashes, while the login route issues JWTs
+that the authentication dependencies validate on protected API requests.
+"""
+
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -24,6 +30,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 
 def hash_password(password: str) -> str:
+    """Hash a new account password for storage, enforcing bcrypt's byte limit."""
     encoded = password.encode("utf-8")
     if len(encoded) > 72:
         raise ValueError("Password exceeds bcrypt 72 byte limit")
@@ -34,6 +41,7 @@ def verify_password(
     plain_password: str,
     hashed_password: str
 ) -> bool:
+    """Check a login password against its stored bcrypt hash."""
     try:
         encoded = plain_password.encode("utf-8")
         if len(encoded) > 72:
@@ -52,6 +60,7 @@ def create_access_token(
     user_id: int,
     role: str
 ) -> str:
+    """Create the signed, expiring JWT returned after successful login."""
 
     expire = (
         datetime.now(timezone.utc)

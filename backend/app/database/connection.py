@@ -1,3 +1,9 @@
+"""Configure the SQLAlchemy engine and request-scoped database sessions.
+
+Connection settings come from environment variables; FastAPI routes use
+``get_db`` to acquire a session for their database work and close it afterward.
+"""
+
 import os
 
 from dotenv import load_dotenv
@@ -32,6 +38,7 @@ SessionLocal = sessionmaker(
 
 
 def get_db():
+    """Yield a database session to a request and close it when the request ends."""
     db = SessionLocal()
     try:
         yield db

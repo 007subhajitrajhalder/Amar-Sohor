@@ -1,3 +1,5 @@
+"""Export ORM entities for registration with the application's database layer."""
+
 from app.models.user import User
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember

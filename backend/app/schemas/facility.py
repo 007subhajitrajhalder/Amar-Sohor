@@ -1,3 +1,5 @@
+"""Request and response contracts for public and agency facility API workflows."""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -15,6 +17,8 @@ LOCAL_PHOTO_PATTERN = re.compile(
 
 
 class FacilityFields(BaseModel):
+    """Validate shared facility details used by agency create and update operations."""
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     facility_name: str = Field(min_length=1, max_length=150)
@@ -29,11 +33,13 @@ class FacilityFields(BaseModel):
     @field_validator("status", mode="before")
     @classmethod
     def normalize_status(cls, value):
+        """Normalize string facility statuses to the API's uppercase underscore form."""
         return value.strip().upper().replace(" ", "_") if isinstance(value, str) else value
 
     @field_validator("photo_url")
     @classmethod
     def validate_photo_url(cls, value):
+        """Allow local facility uploads or credential-free HTTP URLs within the length limit."""
         if not value:
             return None
         if LOCAL_PHOTO_PATTERN.fullmatch(value):
@@ -48,14 +54,18 @@ class FacilityFields(BaseModel):
 
 
 class FacilityCreate(FacilityFields):
+    """Validate facility creation payloads handled by the agency facilities router."""
+
     source_recommendation_id: int | None = Field(default=None, gt=0)
 
 
 class FacilityUpdate(FacilityFields):
-    """Required form fields replace their values; omitted photo/notes are preserved."""
+    """Validate agency facility updates; omitted photo and notes are preserved."""
 
 
 class FacilityCategoryResponse(BaseModel):
+    """Represent a category returned by agency facility-category routes."""
+
     model_config = ConfigDict(from_attributes=True)
 
     category_id: int
@@ -63,6 +73,8 @@ class FacilityCategoryResponse(BaseModel):
 
 
 class FacilityResponse(BaseModel):
+    """Describe one facility returned by public or agency facility endpoints."""
+
     facility_id: int
     facility_name: str
     category_id: int
@@ -79,6 +91,8 @@ class FacilityResponse(BaseModel):
 
 
 class FacilityStatistics(BaseModel):
+    """Summarize facility status counts included in agency facility listings."""
+
     total: int
     open: int
     under_repair: int
@@ -87,6 +101,8 @@ class FacilityStatistics(BaseModel):
 
 
 class FacilityListResponse(BaseModel):
+    """Wrap a paginated agency facility listing with totals and status statistics."""
+
     items: list[FacilityResponse]
     total: int = Field(description="Number matching the current filters")
     limit: int
@@ -95,4 +111,6 @@ class FacilityListResponse(BaseModel):
 
 
 class FacilityPhotoResponse(BaseModel):
+    """Return the URL produced by the agency facility-photo upload route."""
+
     photo_url: str

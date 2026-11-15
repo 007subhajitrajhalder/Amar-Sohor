@@ -14,6 +14,26 @@ function ReportInvestigationPage() {
   const status = statusLabel(resource.data?.status);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectPhoto, setRejectPhoto] = useState(null);
+  const [rejectPhotoPreview, setRejectPhotoPreview] = useState(null);
+
+  const aiConf = resource.data?.ai_confidence != null ? resource.data.ai_confidence : null;
+  const aiPred = (resource.data?.ai_prediction || "").toLowerCase();
+  const isGoodFacility =
+    aiPred.includes("clean") ||
+    aiPred.includes("normal") ||
+    aiPred.includes("functional") ||
+    aiPred.includes("valid") ||
+    [
+      "normal_bin",
+      "clean_public_toilet",
+      "clean_public_urinal",
+      "functional_drinking_water",
+      "valid_public_parking",
+    ].includes(aiPred);
+  const isHighConfBadFacility = aiConf !== null && aiConf >= 0.50 && !isGoodFacility;
 
   const [isDark, setIsDark] = useState(
     localStorage.getItem("agencyTheme") !== "light"
@@ -60,6 +80,37 @@ function ReportInvestigationPage() {
 
   const handleGoToResolution = () => {
     navigate("/agency/reports/" + reportId + "/resolution");
+  };
+
+  const handleRejectReport = async () => {
+    if (!rejectReason.trim()) {
+      setError("Please provide a reason for rejecting this report.");
+      return;
+    }
+    if (isHighConfBadFacility && !rejectPhoto) {
+      setError("An on-site inspection proof photograph is required to reject a report with an AI-verified defect (AI score >= 50%).");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("reason", rejectReason.trim());
+      if (rejectPhoto) {
+        formData.append("photo", rejectPhoto);
+      }
+      await apiRequest("/reports/" + reportId + "/reject", {
+        method: "POST",
+        body: formData,
+      });
+      navigate("/agency/reports", {
+        state: { message: `Report #${reportId} has been rejected and documented in Previously Solved Reports.` },
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
   if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white">
         <ApiState error={error} /><ApiState {...resource} /><Link to="/agency/reports">Assigned Reports</Link></main>;
@@ -247,6 +298,19 @@ function ReportInvestigationPage() {
                   </p>
                 </div>
 
+                {resource.data.agency_notes && (
+                  <div className={`rounded-xl border p-3.5 ${
+                    isDark ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" : "border-cyan-200 bg-cyan-50 text-cyan-900"
+                  }`}>
+                    <p className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                      AI Validation Score & Investigation Notes
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {resource.data.agency_notes}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <p
                     className={`text-sm ${
@@ -317,6 +381,132 @@ function ReportInvestigationPage() {
                   >
                     Upload Resolution
                   </button>
+                )}
+
+                {/* Defect verified with high confidence: Photo Proof Required notice */}
+                {isHighConfBadFacility && (status === "Pending" || status === "Under Investigation") && (
+                  <div className={`rounded-xl border p-3 text-xs ${
+                    isDark ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-900"
+                  }`}>
+                    <span className="font-bold uppercase tracking-wider block mb-1">
+                      ⚠️ Rejection Requires On-Site Photo Proof (AI Score: {(aiConf * 100).toFixed(1)}% ≥ 50%)
+                    </span>
+                    The AI validated a facility defect ({resource.data?.ai_prediction?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}) with high confidence. To reject this complaint, you must provide on-site photographic evidence demonstrating the actual condition, which will be verified and scored by AI.
+                  </div>
+                )}
+
+                {/* Good facility or low confidence AI notes */}
+                {isGoodFacility && (status === "Pending" || status === "Under Investigation") && (
+                  <div className={`rounded-xl border p-2.5 text-xs ${
+                    isDark ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  }`}>
+                    <span className="font-bold block mb-0.5">✅ Facility Classified in Good Condition</span>
+                    The AI pre-screened this facility as {resource.data?.ai_prediction?.replace(/_/g, " ")}. You may reject this report if field inspection confirms no repair is necessary.
+                  </div>
+                )}
+
+                {!isGoodFacility && aiConf !== null && aiConf < 0.50 && (status === "Pending" || status === "Under Investigation") && (
+                  <div className={`rounded-xl border p-2.5 text-xs ${
+                    isDark ? "border-rose-500/30 bg-rose-500/10 text-rose-200" : "border-rose-200 bg-rose-50 text-rose-900"
+                  }`}>
+                    <span className="font-bold block mb-0.5">⚠️ Low AI Confidence ({(aiConf * 100).toFixed(1)}% &lt; 50%)</span>
+                    AI confidence is below the 50% borderline threshold. You may reject this report if on-site inspection shows no defect.
+                  </div>
+                )}
+
+                {(status === "Pending" || status === "Under Investigation") && (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setRejectModalOpen(true)}
+                    className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 font-bold text-rose-300 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-500/20"
+                  >
+                    Reject Report
+                  </button>
+                )}
+
+                {rejectModalOpen && (
+                  <div className={`mt-3 rounded-2xl border p-4 space-y-3 ${
+                    isDark ? "border-rose-500/30 bg-rose-950/20" : "border-rose-200 bg-rose-50"
+                  }`}>
+                    <p className="text-sm font-bold text-rose-400">
+                      Confirm Report Rejection
+                    </p>
+                    <p className={`text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                      {isHighConfBadFacility
+                        ? "This report has an AI-verified facility defect. An on-site photographic proof is required to document why this report is being rejected. The image will be validated and scored by the AI validation module."
+                        : "The original complaint photo will be documented in the resolution records alongside your rejection reason. Please provide a clear explanation for rejecting this report."}
+                    </p>
+
+                    {/* Inspection Proof Photo Upload for Verified Defects */}
+                    {isHighConfBadFacility && (
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          Inspection Proof Photograph <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setRejectPhoto(file);
+                              setRejectPhotoPreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          className={`w-full rounded-xl border p-2 text-xs ${
+                            isDark ? "border-white/10 bg-black/40 text-white" : "border-slate-300 bg-white text-slate-900"
+                          }`}
+                        />
+                        {rejectPhotoPreview && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <img src={rejectPhotoPreview} alt="Rejection proof preview" className="max-h-28 rounded-lg border border-white/10" />
+                            <button
+                              type="button"
+                              onClick={() => { setRejectPhoto(null); setRejectPhotoPreview(null); }}
+                              className="text-xs text-rose-400 hover:underline"
+                            >
+                              Remove photo
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <textarea
+                      rows={3}
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="e.g. Facility inspected on-site; equipment found intact and clean. False complaint / duplicate."
+                      className={`w-full rounded-xl border p-2.5 text-xs outline-none focus:ring-2 ${
+                        isDark
+                          ? "border-white/10 bg-black/40 text-white placeholder-white/30 focus:ring-rose-500/40"
+                          : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-rose-500/40"
+                      }`}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectModalOpen(false);
+                          setRejectReason("");
+                          setRejectPhoto(null);
+                          setRejectPhotoPreview(null);
+                        }}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold border border-white/10 hover:bg-white/10"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving || !rejectReason.trim() || (isHighConfBadFacility && !rejectPhoto)}
+                        onClick={handleRejectReport}
+                        className="rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50"
+                      >
+                        {saving ? "Rejecting & Validating..." : "Confirm & Reject"}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </section>

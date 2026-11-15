@@ -1,3 +1,5 @@
+"""Classify civic-facility images and verify repair evidence for the reports API router."""
+
 import io
 import logging
 from pathlib import Path
@@ -21,6 +23,8 @@ DEVICE = torch.device("cpu")
 AI_MODELS_DIR = Path(__file__).resolve().parents[2] / "ai_validation" / "models"
 DUSTBIN_MODEL_PATH = AI_MODELS_DIR / "mobilenetv3_amar_sohor_v2.pth"
 TOILET_MODEL_PATH = AI_MODELS_DIR / "mobilenetv3_toilets.pth"
+WATER_MODEL_PATH = AI_MODELS_DIR / "mobilenetv3_drinking_water.pth"
+PARKING_MODEL_PATH = AI_MODELS_DIR / "mobilenetv3_parking.pth"
 
 # Cached instances
 _dustbin_model = None
@@ -31,12 +35,21 @@ _toilet_model = None
 _toilet_transform = None
 _toilet_class_names = None
 
+_water_model = None
+_water_transform = None
+_water_class_names = None
+
+_parking_model = None
+_parking_transform = None
+_parking_class_names = None
+
 
 # -----------------------------------------
 # 2. Model Loaders
 # -----------------------------------------
 
 def load_dustbin_model() -> Tuple[nn.Module, object, list]:
+    """Load and cache the dustbin classifier used by report-image validation and repair checks."""
     global _dustbin_model, _dustbin_transform, _dustbin_class_names
 
     if _dustbin_model is not None:
@@ -72,6 +85,7 @@ def load_dustbin_model() -> Tuple[nn.Module, object, list]:
 
 
 def load_toilet_model() -> Tuple[nn.Module, object, list]:
+    """Load and cache the public-toilet classifier used by report-image validation and repair checks."""
     global _toilet_model, _toilet_transform, _toilet_class_names
 
     if _toilet_model is not None:
@@ -106,10 +120,81 @@ def load_toilet_model() -> Tuple[nn.Module, object, list]:
     return _toilet_model, _toilet_transform, _toilet_class_names
 
 
+def load_water_model() -> Tuple[nn.Module, object, list]:
+    """Load and cache the drinking-water facility classifier."""
+    global _water_model, _water_transform, _water_class_names
+
+    if _water_model is not None:
+        return _water_model, _water_transform, _water_class_names
+
+    if not WATER_MODEL_PATH.exists():
+        raise FileNotFoundError(f"Drinking water model file not found at {WATER_MODEL_PATH}")
+
+    weights = MobileNet_V3_Large_Weights.DEFAULT
+    _water_transform = weights.transforms()
+
+    checkpoint = torch.load(
+        WATER_MODEL_PATH,
+        map_location=DEVICE,
+        weights_only=True,
+    )
+
+    _water_class_names = checkpoint["class_names"]
+
+    model = mobilenet_v3_large(weights=None)
+    input_features = model.classifier[3].in_features
+    model.classifier[3] = nn.Linear(input_features, len(_water_class_names))
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model = model.to(DEVICE)
+    model.eval()
+
+    _water_model = model
+    logger.info("Amar Sohor Drinking Water Model loaded successfully (Val Acc: %.2f%%)", checkpoint.get("validation_accuracy", 0.0) * 100)
+    return _water_model, _water_transform, _water_class_names
+
+
+def load_parking_model() -> Tuple[nn.Module, object, list]:
+    """Load and cache the public-parking facility classifier."""
+    global _parking_model, _parking_transform, _parking_class_names
+
+    if _parking_model is not None:
+        return _parking_model, _parking_transform, _parking_class_names
+
+    if not PARKING_MODEL_PATH.exists():
+        raise FileNotFoundError(f"Parking model file not found at {PARKING_MODEL_PATH}")
+
+    weights = MobileNet_V3_Large_Weights.DEFAULT
+    _parking_transform = weights.transforms()
+
+    checkpoint = torch.load(
+        PARKING_MODEL_PATH,
+        map_location=DEVICE,
+        weights_only=True,
+    )
+
+    _parking_class_names = checkpoint["class_names"]
+
+    model = mobilenet_v3_large(weights=None)
+    input_features = model.classifier[3].in_features
+    model.classifier[3] = nn.Linear(input_features, len(_parking_class_names))
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model = model.to(DEVICE)
+    model.eval()
+
+    _parking_model = model
+    logger.info("Amar Sohor Public Parking Model loaded successfully (Val Acc: %.2f%%)", checkpoint.get("validation_accuracy", 0.0) * 100)
+    return _parking_model, _parking_transform, _parking_class_names
+
+
 def load_model(model_type: str = "dustbin"):
     """Backwards-compatible generic loader."""
-    if any(k in model_type.lower() for k in ["toilet", "washroom", "restroom", "urinal"]):
+    ml = model_type.lower()
+    if any(k in ml for k in ["toilet", "washroom", "restroom", "urinal"]):
         return load_toilet_model()
+    if any(k in ml for k in ["water", "drinking", "tap", "dispenser", "fountain"]):
+        return load_water_model()
+    if any(k in ml for k in ["parking", "carpark", "garage"]):
+        return load_parking_model()
     return load_dustbin_model()
 
 
@@ -118,6 +203,7 @@ def load_model(model_type: str = "dustbin"):
 # -----------------------------------------
 
 def classify_dustbin_image(image_bytes: bytes) -> dict:
+    """Classify a dustbin photo for the reports router's image-validation endpoint."""
     model, transform, class_names = load_dustbin_model()
     try:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -140,6 +226,7 @@ def classify_dustbin_image(image_bytes: bytes) -> dict:
 
 
 def classify_toilet_image(image_bytes: bytes) -> dict:
+    """Classify a toilet photo for the reports router's image-validation endpoint."""
     model, transform, class_names = load_toilet_model()
     try:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -161,10 +248,61 @@ def classify_toilet_image(image_bytes: bytes) -> dict:
     }
 
 
+def classify_drinking_water_image(image_bytes: bytes) -> dict:
+    """Classify a drinking water facility photo for report validation."""
+    model, transform, class_names = load_water_model()
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("Invalid image file") from exc
+
+    image_tensor = transform(image).unsqueeze(0)
+    with torch.inference_mode():
+        outputs = model(image_tensor.to(DEVICE))
+        probabilities = torch.softmax(outputs, dim=1)[0]
+        confidence, predicted_index = torch.max(probabilities, dim=0)
+
+    predicted_class = class_names[predicted_index.item()]
+    return {
+        "facility_type": "water",
+        "predicted_class": predicted_class,
+        "confidence": round(confidence.item(), 4),
+        "is_relevant": predicted_class != "irrelevant_image",
+    }
+
+
+def classify_parking_image(image_bytes: bytes) -> dict:
+    """Classify a public parking facility photo for report validation."""
+    model, transform, class_names = load_parking_model()
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("Invalid image file") from exc
+
+    image_tensor = transform(image).unsqueeze(0)
+    with torch.inference_mode():
+        outputs = model(image_tensor.to(DEVICE))
+        probabilities = torch.softmax(outputs, dim=1)[0]
+        confidence, predicted_index = torch.max(probabilities, dim=0)
+
+    predicted_class = class_names[predicted_index.item()]
+    return {
+        "facility_type": "parking",
+        "predicted_class": predicted_class,
+        "confidence": round(confidence.item(), 4),
+        "is_relevant": predicted_class != "irrelevant_image",
+    }
+
+
 def classify_image(image_bytes: bytes, facility_type: str = "dustbin") -> dict:
     """Dispatches to the correct model based on facility type."""
-    if any(k in facility_type.lower() for k in ["toilet", "washroom", "restroom", "urinal"]):
+    ft = facility_type.lower()
+    if any(k in ft for k in ["toilet", "washroom", "restroom", "urinal"]):
         return classify_toilet_image(image_bytes)
+    if any(k in ft for k in ["water", "drinking", "tap", "dispenser", "fountain"]):
+        return classify_drinking_water_image(image_bytes)
+    if any(k in ft for k in ["parking", "carpark", "garage"]):
+        return classify_parking_image(image_bytes)
     return classify_dustbin_image(image_bytes)
 
 
@@ -216,15 +354,17 @@ def verify_resolution_evidence(
     3. Scene Consistency Check: Compares deep feature embeddings to verify physical location match,
        calibrated to tolerate day-night and angle variations.
     """
-    is_toilet = any(k in facility_type.lower() for k in ["toilet", "washroom", "restroom", "urinal"])
-    norm_type = "toilet" if is_toilet else "dustbin"
+    ft = facility_type.lower()
+    is_toilet = any(k in ft for k in ["toilet", "washroom", "restroom", "urinal"])
+    is_water = any(k in ft for k in ["water", "drinking", "tap", "dispenser", "fountain"])
+    is_parking = any(k in ft for k in ["parking", "carpark", "garage"])
 
     # Step 1: Cleanliness / Repair classification on the after-repair photo
     if is_toilet:
+        norm_type = "toilet"
         clf_result = classify_toilet_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-
         clean_classes = {"clean_public_toilet", "clean_public_urinal"}
         issue_labels = {
             "dirty_public_toilet": "Dirty Public Toilet",
@@ -233,11 +373,38 @@ def verify_resolution_evidence(
             "broken_public_urinal": "Broken Public Urinal",
         }
         is_clean = pred_class in clean_classes
+    elif is_water:
+        norm_type = "water"
+        clf_result = classify_drinking_water_image(after_bytes)
+        pred_class = clf_result["predicted_class"]
+        conf = clf_result["confidence"]
+        clean_classes = {"functional_drinking_water"}
+        issue_labels = {
+            "dirty_drinking_water_facility": "Dirty Drinking Water Facility",
+            "broken_drinking_water_facility": "Broken Drinking Water Facility",
+            "water_leakage": "Water Leakage / Wastage",
+            "damaged_water_infrastructure": "Damaged Water Infrastructure",
+        }
+        is_clean = pred_class in clean_classes
+    elif is_parking:
+        norm_type = "parking"
+        clf_result = classify_parking_image(after_bytes)
+        pred_class = clf_result["predicted_class"]
+        conf = clf_result["confidence"]
+        clean_classes = {"valid_public_parking"}
+        issue_labels = {
+            "illegal_parking": "Illegal Parking",
+            "blocked_parking_space": "Blocked Parking Space",
+            "damaged_parking_infrastructure": "Damaged Parking Infrastructure",
+            "poor_parking_management": "Poor Parking Management",
+            "parking_facility_hazard": "Parking Facility Hazard",
+        }
+        is_clean = pred_class in clean_classes
     else:
+        norm_type = "dustbin"
         clf_result = classify_dustbin_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-
         clean_classes = {"normal_bin"}
         issue_labels = {
             "overflowing_dustbin": "Overflowing Dustbin",
@@ -278,78 +445,9 @@ def verify_resolution_evidence(
 
             # Check 2: Scene consistency (Threshold: >= 0.35)
             # Calibrated deep cosine threshold: structural gradients and tile/bin geometry
+            # Rejects if the image background/location does not match the complaint photograph.
             if similarity < 0.35:
                 scene_matched = False
-
-        except Exception as exc:
-            logger.warning("Feature comparison failed, falling back to classifier: %s", exc)
-            similarity = None
-
-    # Step 3: Evaluate Cleanliness & Scene Match
-    if not is_clean:
-        if pred_class == "irrelevant_image":
-            message = (
-                f"Resolution Rejected: The uploaded photo does not appear to show a valid {norm_type} facility "
-                f"({conf * 100:.1f}% confidence). Please upload a clear photo of the restored facility."
-            )
-        else:
-            label = issue_labels.get(pred_class, pred_class.replace("_", " ").title())
-            message = (
-                f"Resolution Rejected: The resolution photo still shows a civic issue ({label}, {conf * 100:.1f}% confidence). "
-                "Evidence must confirm that the facility has been cleaned, emptied, or repaired."
-            )
-        return {
-            "status": "REJECTED",
-            "facility_type": norm_type,
-            "predicted_class": pred_class,
-            "cleanliness_confidence": conf,
-            "scene_similarity": round(similarity, 4) if similarity is not None else None,
-            "is_duplicate": is_duplicate,
-            "scene_matched": scene_matched,
-            "message": message,
-            "audit_note": f"Rejected by cleanliness classifier: {pred_class} ({conf * 100:.1f}%)."
-        }
-
-    # Cleanliness passed! Now evaluate scene consistency if before photo was checked
-    if before_bytes and similarity is not None:
-        if scene_matched:
-            # Both clean and scene match >= 0.35
-            return {
-                "status": "ACCEPTED",
-                "facility_type": norm_type,
-                "predicted_class": pred_class,
-                "cleanliness_confidence": conf,
-                "scene_similarity": round(similarity, 4),
-                "is_duplicate": False,
-                "scene_matched": True,
-                "message": (
-                    f"Valid Resolution: Clean facility verified ({conf * 100:.1f}%) and "
-                    f"location match confirmed ({similarity * 100:.1f}% scene consistency)."
-                ),
-                "audit_note": f"Verified clean ({pred_class}) with verified site scene match ({similarity * 100:.1f}%)."
-            }
-        else:
-            # Low scene similarity (< 0.35).
-            # If cleanliness confidence is high (>= 0.85), allow with day/night/angle advisory
-            if conf >= 0.85:
-                return {
-                    "status": "ACCEPTED",
-                    "facility_type": norm_type,
-                    "predicted_class": pred_class,
-                    "cleanliness_confidence": conf,
-                    "scene_similarity": round(similarity, 4),
-                    "is_duplicate": False,
-                    "scene_matched": False,
-                    "message": (
-                        f"Valid Resolution: Clean facility confirmed ({conf * 100:.1f}%). "
-                        f"Note: Lighting or perspective shift detected ({similarity * 100:.1f}% scene similarity)."
-                    ),
-                    "audit_note": (
-                        f"Accepted with notice: Cleanliness {conf * 100:.1f}% ({pred_class}). "
-                        f"Low scene match ({similarity * 100:.1f}%) attributed to illumination/angle change."
-                    )
-                }
-            else:
                 return {
                     "status": "REJECTED",
                     "facility_type": norm_type,
@@ -359,23 +457,48 @@ def verify_resolution_evidence(
                     "is_duplicate": False,
                     "scene_matched": False,
                     "message": (
-                        f"Resolution Rejected: The resolution photo does not sufficiently match the facility location "
-                        f"from the original complaint ({similarity * 100:.1f}% scene match). "
-                        "Please ensure the photograph is taken at the exact reported location."
+                        f"Resolution Rejected: Location / scene mismatch detected ({similarity * 100:.1f}% background match). "
+                        "The uploaded photograph does not appear to match the physical background or site of the reported complaint. "
+                        "Please upload genuine photographic proof taken at the actual reported facility location."
                     ),
-                    "audit_note": f"Rejected: Low scene match ({similarity * 100:.1f}%) and moderate cleanliness confidence ({conf * 100:.1f}%)."
+                    "audit_note": f"Rejected due to scene mismatch (Scene similarity: {similarity * 100:.1f}% < 35%)."
                 }
 
-    # Before photo was not available, but after photo is clean
+        except Exception as exc:
+            logger.warning("Feature comparison failed, falling back to classifier: %s", exc)
+            similarity = None
+
+    # Step 3: Evaluate Relevance & Assessment
+    if pred_class == "irrelevant_image":
+        return {
+            "status": "REJECTED",
+            "facility_type": norm_type,
+            "predicted_class": pred_class,
+            "cleanliness_confidence": conf,
+            "scene_similarity": round(similarity, 4) if similarity is not None else None,
+            "is_duplicate": False,
+            "scene_matched": False,
+            "message": (
+                f"Resolution Rejected: The uploaded photo does not appear to show a valid {norm_type} facility "
+                f"({conf * 100:.1f}% confidence). Please upload a clear photo of the facility."
+            ),
+            "audit_note": f"Rejected as irrelevant image ({conf * 100:.1f}% confidence)."
+        }
+
+    # Image is relevant to the facility (accepted with AI assessment score)
+    label = issue_labels.get(pred_class, pred_class.replace("_", " ").title())
+    similarity_text = f", Scene Match: {similarity * 100:.1f}%" if similarity is not None else ""
+    audit_note = f"AI Assessment: {label} ({conf * 100:.1f}% confidence{similarity_text})"
+
     return {
         "status": "ACCEPTED",
         "facility_type": norm_type,
         "predicted_class": pred_class,
         "cleanliness_confidence": conf,
-        "scene_similarity": None,
+        "scene_similarity": round(similarity, 4) if similarity is not None else None,
         "is_duplicate": False,
-        "scene_matched": True,
-        "message": f"Valid Resolution: Clean facility verified ({conf * 100:.1f}% confidence).",
-        "audit_note": f"Verified clean ({pred_class}). No complaint photo was available for comparison."
+        "scene_matched": similarity is None or similarity >= 0.35,
+        "message": f"Resolution Evidence Accepted: AI Assessment is {label} ({conf * 100:.1f}% confidence).",
+        "audit_note": audit_note
     }
 

@@ -1,3 +1,10 @@
+"""Build FastAPI authentication and role-authorization dependencies.
+
+Bearer tokens from the login workflow are decoded into a database-backed user;
+route dependencies then enforce citizen, admin, or agency-member access and
+resolve agency-member profiles where agency-scoped operations require them.
+"""
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -19,6 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 def get_current_user_id(
     token: str = Depends(oauth2_scheme)
 ) -> int:
+    """Decode the bearer JWT and return its subject as the authenticated user ID."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -47,6 +55,7 @@ def get_current_user(
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ) -> User:
+    """Load the authenticated user's account for downstream route dependencies."""
     user = db.query(User).filter(
         User.user_id == user_id
     ).first()
@@ -62,9 +71,11 @@ def get_current_user(
 
 
 def require_role(required_role: str):
+    """Create a dependency that permits only the requested account role."""
     def role_checker(
         current_user: User = Depends(get_current_user)
     ) -> User:
+        """Reject users outside the configured role and pass through allowed users."""
         # Support both 'AGENT' and 'AGENCY' role representations
         user_role = current_user.role
         if required_role in ["AGENT", "AGENCY"]:
@@ -87,6 +98,7 @@ def require_role(required_role: str):
 def require_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
+    """Require an authenticated administrator for administrative routes."""
     if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -98,6 +110,7 @@ def require_admin(
 def require_agency(
     current_user: User = Depends(get_current_user)
 ) -> User:
+    """Require an authenticated agency or agent account for agency routes."""
     if current_user.role not in ["AGENT", "AGENCY"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -113,6 +126,7 @@ require_agent = require_agency
 def require_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
+    """Require an authenticated citizen account for user-only routes."""
     if current_user.role != "USER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -125,6 +139,7 @@ def get_current_agent_member(
     current_user: User = Depends(require_agency),
     db: Session = Depends(get_db)
 ) -> AgencyMember:
+    """Load the agency-member profile needed by agency-scoped route workflows."""
     agent = db.query(AgencyMember).filter(
         AgencyMember.user_id == current_user.user_id
     ).first()

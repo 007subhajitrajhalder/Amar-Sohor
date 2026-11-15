@@ -1,0 +1,1 @@
+"""Schema namespace for facility rating API contracts used by facility routes."""

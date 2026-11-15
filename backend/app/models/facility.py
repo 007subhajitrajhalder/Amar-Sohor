@@ -1,3 +1,5 @@
+"""ORM entity for facilities managed by agencies and referenced by public service routes."""
+
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, TIMESTAMP, Enum, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +8,8 @@ from app.database.base import Base
 
 
 class Facility(Base):
+    """Persist facility details used by facility catalog, rating, and report workflows."""
+
     __tablename__ = "facilities"
 
     facility_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

@@ -1,3 +1,5 @@
+"""Manage agency facilities and their categories, listings, and statistics for the /agencies/facilities API."""
+
 from pathlib import Path
 
 from sqlalchemy import delete, String, cast, func, or_, select
@@ -19,18 +21,25 @@ from app.services.file_service import FACILITY_UPLOAD_DIR
 
 
 class FacilityNotFound(ValueError):
+    """Indicate that an agency-owned facility or category lookup failed in the facilities router."""
+
     pass
 
 
 class InvalidFacility(ValueError):
+    """Indicate invalid facility data that the facilities router translates to an API error."""
+
     pass
 
 
 class FacilityConflict(ValueError):
+    """Indicate a facility state or linked-record conflict reported by the facilities API."""
+
     pass
 
 
 def facility_response(facility: Facility) -> FacilityResponse:
+    """Convert a facility model to the response schema returned by agency facility endpoints."""
     return FacilityResponse(
         facility_id=facility.facility_id,
         facility_name=facility.facility_name,
@@ -49,6 +58,7 @@ def facility_response(facility: Facility) -> FacilityResponse:
 
 
 def get_categories(db: Session, agency_id: int):
+    """List the facility categories managed by an agency for GET /agencies/facilities/categories."""
     return db.scalars(
         select(FacilityCategory)
         .where(FacilityCategory.handling_agency == agency_id)
@@ -57,6 +67,7 @@ def get_categories(db: Session, agency_id: int):
 
 
 def get_statistics(db: Session, agency_id: int, agent_id: int | None = None) -> FacilityStatistics:
+    """Count agency facilities by status for the agency facility listing and dashboard response."""
     stat_filters = [FacilityCategory.handling_agency == agency_id]
     if agent_id is not None:
         stat_filters.append(Facility.added_by == agent_id)
@@ -80,6 +91,7 @@ def list_facilities(
     category_id: int | None = None, status: str | None = None,
     limit: int = 50, offset: int = 0, agent_id: int | None = None
 ) -> FacilityListResponse:
+    """Search and paginate facilities for GET /agencies/facilities, scoped to an agency or member."""
     filters = [FacilityCategory.handling_agency == agency_id]
     if agent_id is not None:
         filters.append(Facility.added_by == agent_id)
@@ -115,6 +127,7 @@ def list_facilities(
 
 
 def _get_owned_category(db: Session, agency_id: int, category_id: int):
+    """Resolve a category owned by the agency during facility creation or update."""
     category = db.scalar(select(FacilityCategory).where(
         FacilityCategory.category_id == category_id,
         FacilityCategory.handling_agency == agency_id
@@ -125,6 +138,7 @@ def _get_owned_category(db: Session, agency_id: int, category_id: int):
 
 
 def _validate_local_photo(photo_url: str | None, agency_id: int):
+    """Ensure a facility photo URL refers to an existing upload belonging to the agency."""
     if photo_url and photo_url.startswith("/uploads/"):
         prefix = f"/uploads/facilities/{agency_id}/"
         if not photo_url.startswith(prefix):
@@ -137,6 +151,7 @@ def _validate_local_photo(photo_url: str | None, agency_id: int):
 def create_facility(
     db: Session, agency: Agency, agent: AgencyMember, data: FacilityCreate
 ) -> FacilityResponse:
+    """Create an agency facility for POST /agencies/facilities, optionally installing an approved recommendation."""
     try:
         category = _get_owned_category(db, agency.agency_id, data.category_id)
         _validate_local_photo(data.photo_url, agency.agency_id)
@@ -176,6 +191,7 @@ def create_facility(
 def update_facility(
     db: Session, agency: Agency, facility: Facility, data: FacilityUpdate
 ) -> FacilityResponse:
+    """Update an agency facility for PUT /agencies/facilities/{facility_id}."""
     try:
         category = _get_owned_category(db, agency.agency_id, data.category_id)
         if facility.source_recommendation_id is not None and category.category_id != facility.category_id:

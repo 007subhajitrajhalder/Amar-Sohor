@@ -1,6 +1,6 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { displayDate, mediaUrl } from "../../api/client";
+import { displayDate, mediaUrl, apiRequest } from "../../api/client";
 
 function Pagination({ total = 0, offset, limit = 50, onChange, disabled, showCount = true }) {
   return (
@@ -26,24 +26,84 @@ function Pagination({ total = 0, offset, limit = 50, onChange, disabled, showCou
   );
 }
 
-function ResolvedReportDetails({ id, onClose }) {
+function ResolvedReportDetails({ id, onClose, onReopened }) {
   const resource = useApi("/agencies/reports/resolved/" + id);
   const data = resource.data;
+  const [reopening, setReopening] = useState(false);
+  const [reopenError, setReopenError] = useState("");
+
+  const handleReopen = async () => {
+    setReopening(true);
+    setReopenError("");
+    try {
+      await apiRequest("/reports/" + id + "/reopen", { method: "POST" });
+      if (onReopened) onReopened();
+      onClose();
+    } catch (err) {
+      setReopenError(err.message);
+    } finally {
+      setReopening(false);
+    }
+  };
+
   return (
     <section aria-label="Resolved report details" className="my-5 rounded-2xl border p-5">
       <button type="button" onClick={onClose} className="float-right underline">Close details</button>
       <ApiState {...resource} />
+      {reopenError && <p className="text-xs text-rose-400 mb-2">{reopenError}</p>}
       {data && (
         <>
-          <h2 className="text-xl font-bold">#{data.report_id}: {data.title}</h2>
-          <p>{data.facility_name}</p>
-          <p className="my-3">{data.description}</p>
-          <p>Resolved: {displayDate(data.resolved_at)}</p>
-          {data.photo_url && <img className="mt-3 max-h-64 rounded-xl" src={mediaUrl(data.photo_url)} alt="Reported issue" />}
-          {data.resolution_photo_url ? (
-            <img className="mt-3 max-h-64 rounded-xl" src={mediaUrl(data.resolution_photo_url)} alt="Approved resolution evidence" />
-          ) : (
-            <p className="mt-2 text-sm opacity-60">No approved resolution photo recorded.</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold">#{data.report_id}: {data.title}</h2>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+              data.status === "REJECTED" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+            }`}>
+              {data.status === "REJECTED" ? "Rejected" : "Resolved"}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-white/70">{data.facility_name}</p>
+          <p className="my-3 text-sm">{data.description}</p>
+          <p className="text-xs text-white/50">{data.status === "REJECTED" ? "Rejected: " : "Resolved: "} {displayDate(data.resolved_at)}</p>
+
+          {data.resolution_description && (
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs">
+              <p className="font-bold text-white/80">{data.status === "REJECTED" ? "Agency Rejection Reason:" : "Resolution Details:"}</p>
+              <p className="mt-1 whitespace-pre-wrap text-white/70">{data.resolution_description}</p>
+            </div>
+          )}
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.photo_url && (
+              <div>
+                <p className="text-xs font-semibold text-white/60 mb-1">Citizen Complaint Photograph</p>
+                <img className="max-h-64 rounded-xl border border-white/10 w-full object-cover" src={mediaUrl(data.photo_url)} alt="Reported issue" />
+              </div>
+            )}
+            {data.resolution_photo_url ? (
+              <div>
+                <p className="text-xs font-semibold text-white/60 mb-1">
+                  {data.status === "REJECTED" ? "Resolution Record Photograph (Complaint Evidence)" : "Resolution Proof Photograph"}
+                </p>
+                <img className="max-h-64 rounded-xl border border-white/10 w-full object-cover" src={mediaUrl(data.resolution_photo_url)} alt="Resolution evidence" />
+              </div>
+            ) : data.status !== "REJECTED" ? (
+              <div className="flex items-center justify-center p-4 border border-white/10 rounded-xl">
+                <p className="text-sm opacity-60">No approved resolution photo recorded.</p>
+              </div>
+            ) : null}
+          </div>
+
+          {data.status === "REJECTED" && (
+            <div className="mt-4 pt-3 border-t border-white/10 flex justify-end">
+              <button
+                type="button"
+                disabled={reopening}
+                onClick={handleReopen}
+                className="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50"
+              >
+                {reopening ? "Reopening..." : "Reopen Case for Investigation"}
+              </button>
+            </div>
           )}
         </>
       )}
@@ -104,7 +164,9 @@ function PreviouslyResolvedPage() {
   const resource = useApi("/agencies/reports/resolved?" + new URLSearchParams({ search, offset: String(offset), limit: "50", mine: "true" }));
   const resolvedReports = (resource.data?.items || []).map(report => ({
     id: report.report_id, title: report.title, facility: report.facility_name,
-    date: displayDate(report.resolved_at), status: "Resolved"
+    date: displayDate(report.resolved_at),
+    status: report.status === "REJECTED" ? "Rejected" : "Resolved",
+    rawStatus: report.status
   }));
 
   return (
@@ -185,7 +247,7 @@ function PreviouslyResolvedPage() {
         <input aria-label="Search resolved reports" maxLength={150} value={search}
           onChange={event => { setSearch(event.target.value); setOffset(0); }} placeholder="Search resolved complaints..."
           className="mb-5 w-full rounded-xl border bg-transparent p-3" />
-        {selectedReport && <ResolvedReportDetails id={selectedReport} onClose={() => setSelectedReport(null)} />}
+        {selectedReport && <ResolvedReportDetails id={selectedReport} onClose={() => setSelectedReport(null)} onReopened={() => resource.refresh()} />}
         <div className="mb-6">
           <button
             onClick={() => navigate("/agency/dashboard")}
@@ -307,9 +369,13 @@ function PreviouslyResolvedPage() {
                   <td className="p-5">
                     <span
                       className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
-                        isDarkMode
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        report.status === "Rejected"
+                          ? isDarkMode
+                            ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+                            : "border-rose-200 bg-rose-50 text-rose-700"
+                          : isDarkMode
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
                       }`}
                     >
                       {report.status}

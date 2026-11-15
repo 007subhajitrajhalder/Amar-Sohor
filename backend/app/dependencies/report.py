@@ -1,3 +1,9 @@
+"""Resolve completed reports within the authenticated agency's scope.
+
+Report routes use this dependency for operations that specifically require a
+resolved report assigned to the current agency.
+"""
+
 from fastapi import Depends, HTTPException, Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -13,6 +19,7 @@ def get_agency_resolved_report(
     agency: Agency = Depends(get_current_agency),
     db: Session = Depends(get_db)
 ) -> Report:
+    """Load a resolved report assigned to the current agency."""
     report = db.scalar(
         select(Report)
         .options(joinedload(Report.facility))

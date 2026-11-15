@@ -1,3 +1,5 @@
+"""Manage user accounts for profile and admin endpoints in the /users API router."""
+
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -7,6 +9,7 @@ from app.models.user import User
 
 
 def update_user(db: Session, user_id: int, user_data):
+    """Update a user's profile for PUT /users/me or the admin PUT /users/{user_id} endpoint."""
     statement = select(User).where(User.user_id == user_id)
     result = db.execute(statement)
     user = result.scalar_one_or_none()
@@ -53,6 +56,7 @@ def update_user(db: Session, user_id: int, user_data):
 
 
 def delete_user(db: Session, user_id: int):
+    """Delete an eligible citizen account for DELETE /users/{user_id}, preserving linked records."""
     statement = select(User).where(User.user_id == user_id)
     result = db.execute(statement)
     user = result.scalar_one_or_none()
@@ -73,6 +77,7 @@ def delete_user(db: Session, user_id: int):
 
 
 def create_user(db: Session, user_data):
+    """Create an account for the admin-only POST /users/ endpoint."""
     hashed_password = hash_password(user_data.password)
 
     new_user = User(
@@ -90,6 +95,7 @@ def create_user(db: Session, user_data):
 
 
 def get_all_users(db: Session):
+    """List user records for the admin-only GET /users/ endpoint."""
     statement = select(User)
     result = db.execute(statement)
 
@@ -97,6 +103,7 @@ def get_all_users(db: Session):
 
 
 def get_user_by_id(db: Session, user_id: int):
+    """Retrieve a user record for the admin-only GET /users/{user_id} endpoint."""
     statement = select(User).where(User.user_id == user_id)
     result = db.execute(statement)
 

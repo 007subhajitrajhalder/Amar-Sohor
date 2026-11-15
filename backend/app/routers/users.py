@@ -1,3 +1,5 @@
+"""Authenticated self-service profile routes and administrator-only user management."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
@@ -23,6 +25,7 @@ def get_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Return the signed-in user's profile; called by UserDashboardPage and AssignedRecommendationsPage."""
     agency_id = None
     agent_id = None
     if current_user.role in ["AGENT", "AGENCY"]:
@@ -50,6 +53,7 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Update the signed-in user's profile; called by frontend UserDashboardPage."""
     user = user_service.update_user(
         db,
         current_user.user_id,
@@ -71,6 +75,7 @@ def delete_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin)
 ):
+    """Delete a user account by ID; administrator access is required."""
     user = user_service.delete_user(db, user_id)
 
     if user is None:
@@ -88,6 +93,7 @@ def delete_user(
 def admin_test(
     current_user: User = Depends(require_admin)
 ):
+    """Confirm administrator access and return the current admin identity."""
     return {
         "message": "Welcome Admin",
         "user_id": current_user.user_id,
@@ -100,6 +106,7 @@ def admin_test(
 def agency_test(
     current_user: User = Depends(require_role("AGENCY"))
 ):
+    """Confirm agency-role access and return the current agency identity."""
     return {
         "message": "Welcome Agency",
         "user_id": current_user.user_id,
@@ -114,6 +121,7 @@ def update_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin)
 ):
+    """Update a user's account by ID; administrator access is required."""
     user = user_service.update_user(
         db,
         user_id,
@@ -131,6 +139,7 @@ def update_user(
 
 @router.get("/", response_model=list[UserResponse])
 def get_users(db: Session = Depends(get_db), current_admin: User = Depends(require_admin)):
+    """List all user accounts; administrator access is required."""
     users = user_service.get_all_users(db)
 
     return users
@@ -142,6 +151,7 @@ def get_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin)
 ):
+    """Return one user's account by ID; administrator access is required."""
     user = user_service.get_user_by_id(db, user_id)
 
     if user is None:
@@ -159,4 +169,5 @@ def create_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin)
 ):
+    """Create a user account directly; administrator access is required."""
     return user_service.create_user(db, user_data)

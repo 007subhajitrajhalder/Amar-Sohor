@@ -1,3 +1,5 @@
+"""Administrator-only dashboard, account, agency, and membership endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -20,7 +22,7 @@ def get_dashboard(
     current_admin: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db)
 ):
-    """Unified analytical dashboard metrics computed directly in the database."""
+    """Return admin dashboard metrics; called by frontend AdminDashboardPage."""
     return admin_service.get_admin_dashboard_stats(db)
 
 
@@ -30,6 +32,7 @@ def get_user_by_id(
     current_admin: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db)
 ):
+    """Return one user's account details to an administrator."""
     user = admin_service.get_user_by_id(db, user_id)
 
     if user is None:
@@ -52,6 +55,7 @@ def get_all_users(
     ),
     db: Session = Depends(get_db)
 ):
+    """List accounts, optionally by role; called by frontend UserManagementPage."""
     return admin_service.get_all_users(db, role=role)
 
 
@@ -67,6 +71,7 @@ def create_agency_member(
     ),
     db: Session = Depends(get_db)
 ):
+    """Create an agency member account from the admin Add Agency Member page."""
     result = admin_service.create_agency_member(
         db,
         user_data
@@ -89,6 +94,10 @@ def create_agency_member(
 
 @router.get("/agencies")
 def list_agencies(current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    """List agencies and workload totals.
+
+    Called by AgencyManagementPage, AgencyMembersPage, and AddAgencyMemberPage.
+    """
     from app.models.agency import Agency
     from app.models.report import Report
     from app.models.recommendation import Recommendation
@@ -114,6 +123,7 @@ def list_agencies(current_admin: User = Depends(require_role("ADMIN")), db: Sess
 
 @router.get("/agency-members")
 def list_members(agency_id: int | None = None, current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    """List agency member workload for AgencyMembersPage and AllocateRecommendationPage."""
     from app.models.agency_member import AgencyMember
     from app.services.agency_service import format_agent_details
     query = db.query(AgencyMember)
@@ -137,6 +147,7 @@ def list_members(agency_id: int | None = None, current_admin: User = Depends(req
 
 @router.delete("/agency-members/{agent_id}", status_code=204)
 def remove_member(agent_id: int, current_admin: User = Depends(require_role("ADMIN")), db: Session = Depends(get_db)):
+    """Remove an unassigned agency member account; reject deletion when records remain."""
     from sqlalchemy import delete
     from sqlalchemy.exc import IntegrityError
     from app.models.agency_member import AgencyMember

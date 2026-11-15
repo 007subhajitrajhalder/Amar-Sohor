@@ -1,3 +1,5 @@
+"""ORM entity defining the agency-owned categories used to classify facilities."""
+
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -5,6 +7,8 @@ from app.database.base import Base
 
 
 class FacilityCategory(Base):
+    """Persist a facility category used by facility and recommendation workflows."""
+
     __tablename__ = "facility_categories"
 
     category_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

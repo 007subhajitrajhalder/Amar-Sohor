@@ -1,3 +1,5 @@
+"""Configure the Amar Sohor FastAPI application, middleware, health routes, and routers."""
+
 import os
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -9,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
+from app.chatbot.router import router as chatbot_router
 from app.routers import (
     admin,
     agencies,
@@ -47,6 +50,7 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    """Convert unhandled request exceptions into JSON HTTP 500 responses."""
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc) or "Internal server error"}
@@ -62,6 +66,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/")
 def home():
+    """Return a simple status message for the running API."""
     return {
         "message": "Amar Sohor Backend is running",
         "version": "1.0.0"
@@ -70,6 +75,7 @@ def home():
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
+    """Check database connectivity; called by frontend AdminDashboardPage."""
     try:
         db.execute(text("SELECT 1"))
     except SQLAlchemyError as exc:
@@ -85,3 +91,4 @@ app.include_router(agencies.router)
 app.include_router(facilities.router)
 app.include_router(reports.router)
 app.include_router(recommendations.router)
+app.include_router(chatbot_router)
