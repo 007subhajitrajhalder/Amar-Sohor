@@ -17,6 +17,7 @@ import {
   Sparkles,
   Trash2,
   Car,
+  XCircle
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApi } from "../../api/useApi";
@@ -30,6 +31,7 @@ const statusStyle = {
   Pending: "bg-amber-400/10 text-amber-300 border border-amber-400/20",
   "Under Investigation": "bg-blue-400/10 text-blue-300 border border-blue-400/20",
   Resolved: "bg-lime-300/10 text-lime-300 border border-lime-300/20",
+  Rejected: "bg-rose-400/10 text-rose-300 border border-rose-400/20",
 };
 
 const facilityIcons = {
@@ -74,6 +76,12 @@ function MyReportsPage() {
       icon: CheckCircle2,
       color: "text-lime-300",
     },
+    {
+      label: "Rejected",
+      value: count("Rejected"),
+      icon: XCircle,
+      color: "text-rose-300",
+    },
   ];
 
   const filtered = reports.filter((report) => {
@@ -81,7 +89,8 @@ function MyReportsPage() {
       selectedFilter === "all" ||
       (selectedFilter === "pending" && report.status === "Pending") ||
       (selectedFilter === "investigating" && report.status === "Under Investigation") ||
-      (selectedFilter === "resolved" && report.status === "Resolved");
+      (selectedFilter === "resolved" && report.status === "Resolved") ||
+      (selectedFilter === "rejected" && report.status === "Rejected");
 
     const matchesSearch =
       !searchQuery.trim() ||
@@ -162,7 +171,7 @@ function MyReportsPage() {
           </div>
 
           {/* Stats Bar */}
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {stats.map(({ label, value, icon: Icon, color }) => (
               <article
                 key={label}
@@ -185,6 +194,7 @@ function MyReportsPage() {
                 { id: "pending", label: "Pending" },
                 { id: "investigating", label: "Under Investigation" },
                 { id: "resolved", label: "Resolved" },
+                { id: "rejected", label: "Rejected" },
               ].map((tab) => (
                 <button
                   key={tab.id}

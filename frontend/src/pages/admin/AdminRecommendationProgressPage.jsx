@@ -18,7 +18,8 @@ import {
   Trash2,
   UserCheck,
   UserRound,
-  Users
+  Users,
+  XCircle
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -55,14 +56,6 @@ const lightAuraLayers = [
   }
 ];
 
-const STAGES = [
-  { stage: 1, label: "Submitted", desc: "Citizen proposal registered" },
-  { stage: 2, label: "Allocated", desc: "Officer assigned to the proposal" },
-  { stage: 3, label: "Investigation", desc: "Field officer feasibility inspection" },
-  { stage: 4, label: "Approved", desc: "Ready for facility installation" },
-  { stage: 5, label: "Commissioned", desc: "Operational and verified" }
-];
-
 const FACILITY_ICONS = {
   dustbin: Trash2,
   water: Droplets,
@@ -79,6 +72,21 @@ function AdminRecommendationProgressPage() {
   const resource = useApi("/recommendations/" + cleanId);
   const recommendation = resource.data ? recommendationView(resource.data) : null;
   const currentStage = recommendation?.stage || 1;
+  const isRejected = recommendation?.status === "REJECTED";
+
+  const stages = [
+    { stage: 1, label: "Submitted", desc: "Citizen proposal registered" },
+    { stage: 2, label: "Allocated", desc: "Officer assigned to the proposal" },
+    {
+      stage: 3,
+      label: isRejected ? "Rejected" : "Investigation",
+      desc: isRejected
+        ? "Proposal turned down during feasibility inspection"
+        : "Field officer feasibility inspection"
+    },
+    { stage: 4, label: "Approved", desc: "Ready for facility installation" },
+    { stage: 5, label: "Commissioned", desc: "Operational and verified" }
+  ];
 
   if (resource.loading) {
     return (
@@ -208,14 +216,16 @@ function AdminRecommendationProgressPage() {
           <div className="flex flex-wrap items-center gap-3">
             <span
               className={`inline-flex items-center gap-2 self-start rounded-full border px-4 py-2 text-xs font-bold ${
-                !member
+                isRejected
+                  ? "border-rose-400/50 bg-rose-500/15 text-rose-200"
+                  : !member
                   ? "border-amber-300/40 bg-amber-400/15 text-amber-200"
                   : currentStage === 5
                   ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-200"
                   : "border-cyan-300/40 bg-cyan-400/15 text-cyan-200"
               }`}
             >
-              <span className="h-2 w-2 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
+              <span className={`h-2 w-2 rounded-full ${isRejected ? "bg-rose-400 shadow-[0_0_8px_#fb7185]" : "bg-current shadow-[0_0_8px_currentColor]"}`} />
               {recommendation.statusLabel}
             </span>
           </div>
@@ -275,11 +285,11 @@ function AdminRecommendationProgressPage() {
         </div>
 
         {/* Rejection Notification if Rejected */}
-        {recommendation.status === "REJECTED" && (
+        {isRejected && (
           <div className="admin-glass-card mt-6 rounded-2xl border border-rose-400/40 bg-rose-500/15 p-5 text-white backdrop-blur-xl">
             <div className="flex items-start gap-3.5">
               <div className="rounded-xl border border-rose-400/40 bg-rose-500/25 p-2.5 text-rose-300 shrink-0">
-                <AlertCircle size={22} />
+                <XCircle size={22} />
               </div>
               <div>
                 <h3 className="font-bold text-rose-200 text-base">Civic Proposal Rejected</h3>
@@ -297,21 +307,24 @@ function AdminRecommendationProgressPage() {
             <div>
               <h2 className="text-base font-bold">Recommendation Lifecycle Progress</h2>
               <p className="text-xs text-white/55">
-                Current stage: Step {currentStage} of 5 ({STAGES[currentStage - 1]?.label || "Submitted"})
+                Current stage: {isRejected ? "Proposal Rejected (Step 3)" : `Step ${currentStage} of 5 (${stages[currentStage - 1]?.label || "Submitted"})`}
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
-            {STAGES.map((s) => {
+            {stages.map((s) => {
               const isPast = s.stage < currentStage;
               const isCurrent = s.stage === currentStage;
+              const isThisRejected = isRejected && s.stage === 3;
 
               return (
                 <div
                   key={s.stage}
                   className={`group relative flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
-                    isCurrent
+                    isThisRejected
+                      ? "border-rose-400 bg-rose-500/20 shadow-lg shadow-rose-950/40 ring-2 ring-rose-400/50"
+                      : isCurrent
                       ? "border-cyan-300 bg-cyan-400/20 shadow-lg shadow-cyan-950/40 ring-2 ring-cyan-300/50"
                       : isPast
                       ? "border-emerald-300/40 bg-emerald-400/10"
@@ -321,24 +334,42 @@ function AdminRecommendationProgressPage() {
                   <div className="relative flex items-center justify-center">
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                        isCurrent
+                        isThisRejected
+                          ? "bg-rose-400 text-slate-950"
+                          : isCurrent
                           ? "bg-cyan-300 text-slate-900 ring-2 ring-cyan-200/60"
                           : isPast
                           ? "bg-emerald-300 text-slate-900"
                           : "bg-white/10 text-white/50"
                       }`}
                     >
-                      {isPast ? <Check size={13} strokeWidth={3} /> : s.stage}
+                      {isThisRejected ? (
+                        <XCircle size={14} strokeWidth={2.5} />
+                      ) : isPast ? (
+                        <Check size={13} strokeWidth={3} />
+                      ) : (
+                        s.stage
+                      )}
                     </span>
                     {isCurrent && (
-                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9] animate-pulse" />
+                      <span
+                        className={`absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full ${
+                          isThisRejected ? "bg-rose-400 shadow-[0_0_8px_#fb7185]" : "bg-cyan-300 shadow-[0_0_8px_#67e8f9]"
+                        } animate-pulse`}
+                      />
                     )}
                   </div>
 
                   <div className="mt-3 text-center w-full">
                     <p
                       className={`text-xs font-bold text-center ${
-                        isCurrent ? "text-cyan-100" : isPast ? "text-emerald-200" : "text-white/60"
+                        isThisRejected
+                          ? "text-rose-200"
+                          : isCurrent
+                          ? "text-cyan-100"
+                          : isPast
+                          ? "text-emerald-200"
+                          : "text-white/60"
                       }`}
                     >
                       {s.label}
@@ -517,26 +548,47 @@ function AdminRecommendationProgressPage() {
 
               <div className="mt-4 space-y-3">
                 {(recommendation.history || []).length > 0 ? (
-                  (recommendation.history || []).map((entry, idx) => (
-                    <div
-                      key={idx}
-                      className="relative flex items-start gap-3 border-l-2 border-cyan-300/30 pl-3.5 py-1 text-xs"
-                    >
-                      <span className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-cyan-300" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-white">{entry.action}</p>
-                        {entry.description && (
-                          <p className="mt-1 text-xs text-white/80 rounded-lg border border-white/10 bg-white/5 p-2 leading-relaxed break-words">
-                            {entry.description}
+                  (recommendation.history || []).map((entry, idx) => {
+                    const isEntryRejected = entry.status === "REJECTED" || (entry.action || "").toLowerCase().includes("reject");
+                    return (
+                      <div
+                        key={idx}
+                        className={`relative flex items-start gap-3 border-l-2 pl-3.5 py-1 text-xs ${
+                          isEntryRejected ? "border-rose-400/50" : "border-cyan-300/30"
+                        }`}
+                      >
+                        <span
+                          className={`absolute -left-[5px] top-2 h-2 w-2 rounded-full ${
+                            isEntryRejected ? "bg-rose-400 shadow-[0_0_6px_#fb7185]" : "bg-cyan-300"
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-semibold ${isEntryRejected ? "text-rose-200" : "text-white"}`}>
+                            {entry.action}
                           </p>
-                        )}
-                        <p className="mt-1 text-[11px] text-white/50">
-                          {entry.actor && <span className="text-cyan-200">{entry.actor} • </span>}
-                          {entry.formattedDate || entry.date}
-                        </p>
+                          {entry.description && (
+                            <p
+                              className={`mt-1 text-xs leading-relaxed break-words rounded-lg border p-2 ${
+                                isEntryRejected
+                                  ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+                                  : "border-white/10 bg-white/5 text-white/80"
+                              }`}
+                            >
+                              {entry.description}
+                            </p>
+                          )}
+                          <p className="mt-1 text-[11px] text-white/50">
+                            {entry.actor && (
+                              <span className={isEntryRejected ? "text-rose-300" : "text-cyan-200"}>
+                                {entry.actor} •{" "}
+                              </span>
+                            )}
+                            {entry.formattedDate || entry.date}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="relative flex items-start gap-3 border-l-2 border-cyan-300/30 pl-3.5 py-1 text-xs">
                     <span className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-cyan-300" />

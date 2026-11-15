@@ -1,6 +1,6 @@
 import AuthGate from "./components/AuthGate";
 import ChatbotWidget from "./components/ChatbotWidget";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 
 // Authentication pages (Public)
@@ -24,7 +24,6 @@ import RecommendationStatusPage from "./pages/citizen/RecommendationStatusPage";
 import AgencyDashboardPage from "./pages/agency/AgencyDashboardPage";
 import AssignedReportsPage from "./pages/agency/AssignedReportsPage";
 import ReportInvestigationPage from "./pages/agency/ReportInvestigationPage";
-import PreviouslyResolvedPage from "./pages/agency/PreviouslyResolvedPage";
 import AddFacilityPage from "./pages/agency/AddFacilityPage";
 import FacilityManagementPage from "./pages/agency/FacilityManagementPage";
 import UploadResolutionPage from "./pages/agency/UploadResolutionPage";
@@ -116,7 +115,7 @@ function App() {
       />
       <Route
         path="/agency/resolved"
-        element={<AuthGate role="AGENT"><PreviouslyResolvedPage /></AuthGate>}
+        element={<Navigate to="/agency/reports?status=RESOLVED" replace />}
       />
       <Route
         path="/agency/facilities/:facilityId/edit"

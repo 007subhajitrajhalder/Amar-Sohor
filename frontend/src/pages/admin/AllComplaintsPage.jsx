@@ -17,7 +17,8 @@ import {
   UserRound,
   X,
   ShieldCheck,
-  TrendingUp
+  TrendingUp,
+  XCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -117,6 +118,7 @@ function AllComplaintsPage() {
   const pendingCount = complaints.filter((c) => c.status === "PENDING").length;
   const investigationCount = complaints.filter((c) => c.status === "UNDER_INVESTIGATION").length;
   const resolvedCount = complaints.filter((c) => c.status === "RESOLVED").length;
+  const rejectedCount = complaints.filter((c) => c.status === "REJECTED").length;
   const resolutionRate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
 
   // Filter complaints based on search query and status filter
@@ -190,6 +192,13 @@ function AllComplaintsPage() {
       return {
         icon: CheckCircle2,
         badge: "border-emerald-200/30 bg-emerald-300/15 text-emerald-200"
+      };
+    }
+
+    if (status === "REJECTED") {
+      return {
+        icon: XCircle,
+        badge: "border-rose-300/40 bg-rose-500/20 text-rose-200"
       };
     }
 
@@ -285,8 +294,8 @@ function AllComplaintsPage() {
           </div>
         </div>
 
-        {/* 4 Analytical Cards Derived from Live Backend Data */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* 5 Analytical Cards Derived from Live Backend Data */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {/* Card 1: Total */}
           <article className="admin-glass-card relative overflow-hidden rounded-2xl border border-white/20 p-5 text-white shadow-xl backdrop-blur-2xl">
             <div className="flex items-start justify-between">
@@ -346,6 +355,21 @@ function AllComplaintsPage() {
             <h2 className="mt-0.5 text-3xl font-bold tracking-tight text-emerald-300">{resolvedCount}</h2>
             <p className="mt-1 text-xs text-white/45">{resolutionRate}% resolution success</p>
           </article>
+
+          {/* Card 5: Rejected */}
+          <article className="admin-glass-card relative overflow-hidden rounded-2xl border border-white/20 p-5 text-white shadow-xl backdrop-blur-2xl">
+            <div className="flex items-start justify-between">
+              <div className="rounded-xl border border-rose-300/30 bg-rose-500/15 p-2.5 text-rose-200">
+                <XCircle size={20} aria-hidden="true" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-300/80">
+                Rejected
+              </span>
+            </div>
+            <p className="mt-4 text-xs font-semibold text-white/60">Rejected Cases</p>
+            <h2 className="mt-0.5 text-3xl font-bold tracking-tight text-rose-300">{rejectedCount}</h2>
+            <p className="mt-1 text-xs text-white/45">Turned down or invalid</p>
+          </article>
         </div>
 
         {/* Controls Bar: Search, Status Filter & Sorting */}
@@ -399,7 +423,8 @@ function AllComplaintsPage() {
                 { id: "ALL", label: "All" },
                 { id: "PENDING", label: "Pending" },
                 { id: "UNDER_INVESTIGATION", label: "Investigating" },
-                { id: "RESOLVED", label: "Resolved" }
+                { id: "RESOLVED", label: "Resolved" },
+                { id: "REJECTED", label: "Rejected" }
               ].map((filterTab) => (
                 <button
                   key={filterTab.id}

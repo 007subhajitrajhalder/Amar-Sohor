@@ -2,6 +2,7 @@
 
 import base64
 import logging
+import re
 from typing import List, Optional
 from datetime import date, datetime, timezone, timedelta
 from fastapi import HTTPException
@@ -590,14 +591,26 @@ async def submit_resolution(
     if ai_audit_note:
         res_desc = f"{res_desc}\n\n[{ai_audit_note}]"
 
-    db.add(ReportResolutionSubmission(
-        report_id=report_id,
-        agent_id=member.agent_id,
-        resolution_photo=url,
-        description=res_desc,
-        completion_date=completion_date,
-        verification_status="APPROVED"
-    ))
+    existing_submission = db.query(ReportResolutionSubmission).filter_by(report_id=report_id).order_by(ReportResolutionSubmission.resolution_id.desc()).first()
+    if existing_submission:
+        existing_submission.agent_id = member.agent_id
+        existing_submission.resolution_photo = url
+        existing_submission.description = res_desc
+        existing_submission.completion_date = completion_date
+        existing_submission.verification_status = "APPROVED"
+        db.query(ReportResolutionSubmission).filter(
+            ReportResolutionSubmission.report_id == report_id,
+            ReportResolutionSubmission.resolution_id != existing_submission.resolution_id
+        ).delete(synchronize_session=False)
+    else:
+        db.add(ReportResolutionSubmission(
+            report_id=report_id,
+            agent_id=member.agent_id,
+            resolution_photo=url,
+            description=res_desc,
+            completion_date=completion_date,
+            verification_status="APPROVED"
+        ))
     report.status = "RESOLVED"
     report.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
     if ai_audit_note:
@@ -702,20 +715,37 @@ async def reject_report(
     if ai_audit_note:
         res_desc = f"{res_desc}\n\n[{ai_audit_note}]"
 
-    existing_notes = report.investigation_notes or ""
-    note_line = f"[Report Rejected by {member.full_name}: {rejection_text}]"
+    # Preserve AI validation prefix if present, but replace prior reject/reopen entries with the latest status
+    ai_match = re.search(r"(\[AI Validation:[^\]]+\])", report.investigation_notes or "")
+    ai_prefix = ai_match.group(1).strip() if ai_match else None
+
+    agent_name = member.user.full_name if (member.user and member.user.full_name) else f"Agent #{member.agent_id}"
+    note_line = f"[Report Rejected by {agent_name}: {rejection_text}]"
     if ai_audit_note:
         note_line += f" [{ai_audit_note}]"
-    report.investigation_notes = (existing_notes + f"\n{note_line}").strip()
+    report.investigation_notes = f"{ai_prefix}\n{note_line}".strip() if ai_prefix else note_line
 
-    db.add(ReportResolutionSubmission(
-        report_id=report_id,
-        agent_id=member.agent_id,
-        resolution_photo=final_resolution_photo,
-        description=res_desc,
-        completion_date=now_dt.date(),
-        verification_status="REJECTED"
-    ))
+    existing_sub = db.query(ReportResolutionSubmission).filter_by(report_id=report_id).order_by(ReportResolutionSubmission.resolution_id.desc()).first()
+    if existing_sub:
+        existing_sub.agent_id = member.agent_id
+        existing_sub.resolution_photo = final_resolution_photo
+        existing_sub.description = res_desc
+        existing_sub.completion_date = now_dt.date()
+        existing_sub.verification_status = "REJECTED"
+        existing_sub.submitted_at = now_dt
+        db.query(ReportResolutionSubmission).filter(
+            ReportResolutionSubmission.report_id == report_id,
+            ReportResolutionSubmission.resolution_id != existing_sub.resolution_id
+        ).delete(synchronize_session=False)
+    else:
+        db.add(ReportResolutionSubmission(
+            report_id=report_id,
+            agent_id=member.agent_id,
+            resolution_photo=final_resolution_photo,
+            description=res_desc,
+            completion_date=now_dt.date(),
+            verification_status="REJECTED"
+        ))
     db.commit()
     db.refresh(report)
     return report_service.report_response(report)
@@ -729,17 +759,32 @@ async def reopen_report(
 ):
     """
     Agency member reopens a previously rejected report for renewed investigation.
+    Updates the report status to UNDER_INVESTIGATION and changes any associated
+    REJECTED resolution submission records to PENDING.
     """
     report = db.query(Report).filter_by(report_id=report_id, assigned_agency=member.agency_id).first()
     if report is None:
         raise HTTPException(404, "Report not found")
-    if report.status != "REJECTED":
+    if report.status not in ("REJECTED", "UNDER_INVESTIGATION"):
         raise HTTPException(400, "Only rejected reports can be reopened.")
 
     report.status = "UNDER_INVESTIGATION"
     report.resolved_at = None
-    existing_notes = report.investigation_notes or ""
-    report.investigation_notes = (existing_notes + f"\n[Report Reopened by {member.full_name} for Investigation]").strip()
+    # Preserve AI validation prefix if present, but replace prior reject/reopen entries with the latest status
+    ai_match = re.search(r"(\[AI Validation:[^\]]+\])", report.investigation_notes or "")
+    ai_prefix = ai_match.group(1).strip() if ai_match else None
+
+    agent_name = member.user.full_name if (member.user and member.user.full_name) else f"Agent #{member.agent_id}"
+    note_line = f"[Report Reopened by {agent_name} for Investigation]"
+    report.investigation_notes = f"{ai_prefix}\n{note_line}".strip() if ai_prefix else note_line
+
+    # Change existing resolution submission record to PENDING and deduplicate
+    submissions = db.query(ReportResolutionSubmission).filter_by(report_id=report_id).order_by(ReportResolutionSubmission.resolution_id.desc()).all()
+    if submissions:
+        latest = submissions[0]
+        latest.verification_status = "PENDING"
+        for extra in submissions[1:]:
+            db.delete(extra)
 
     db.commit()
     db.refresh(report)

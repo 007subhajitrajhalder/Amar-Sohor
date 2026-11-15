@@ -176,7 +176,7 @@ export function categoryKey(name = "") {
 }
 
 export const statusLabel = value => ({ OPEN: "Open", UNDER_REPAIR: "Under Repair", SUSPENDED: "Suspended",
-  PENDING: "Pending", UNDER_INVESTIGATION: "Under Investigation", RESOLVED: "Resolved" }[value] || value);
+  PENDING: "Pending", UNDER_INVESTIGATION: "Under Investigation", RESOLVED: "Resolved", REJECTED: "Rejected" }[value] || value);
 export const displayDate = value => value ? new Date(value).toLocaleDateString("en-GB") : "Not recorded";
 export const displayDateTime = value => {
   if (!value) return "Not recorded";
@@ -202,7 +202,7 @@ export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_na
     email: r.citizen_email || "Not recorded",
     phone: r.citizen_phone || "Not recorded"
   },
-  status: statusLabel(r.status), date: displayDate(r.created_at), rawDate: r.created_at, resolvedDate: displayDate(r.resolved_at),
+  status: statusLabel(r.status), rawStatus: r.status, date: displayDate(r.created_at), rawDate: r.created_at, resolvedDate: displayDate(r.resolved_at),
   photoUrl: mediaUrl(r.photo_url), assignedAgency: r.agency_name, assignedOfficer: r.assigned_officer,
   assignedMember: r.assigned_member, agencyNotes: r.agency_notes,
   aiValidated: r.ai_validated,

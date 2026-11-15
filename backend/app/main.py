@@ -50,10 +50,18 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Convert unhandled request exceptions into JSON HTTP 500 responses."""
+    """Convert unhandled request exceptions into JSON HTTP 500 responses with CORS headers."""
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Methods"] = "*"
+        headers["Access-Control-Allow-Headers"] = "*"
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc) or "Internal server error"}
+        content={"detail": str(exc) or "Internal server error"},
+        headers=headers if headers else None
     )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

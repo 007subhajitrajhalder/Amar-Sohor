@@ -16,6 +16,7 @@ import {
   Sparkles,
   Trash2,
   Car,
+  XCircle,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/useApi";
@@ -36,6 +37,7 @@ const statusStyle = {
   Pending: "bg-amber-400/15 text-amber-300 border border-amber-400/30",
   "Under Investigation": "bg-blue-400/15 text-blue-300 border border-blue-400/30",
   Resolved: "bg-lime-300/15 text-lime-300 border border-lime-300/30",
+  Rejected: "bg-rose-400/15 text-rose-300 border border-rose-400/30",
 };
 
 function ReportStatusPage() {
@@ -45,7 +47,7 @@ function ReportStatusPage() {
   const resource = useApi("/reports/" + reportId.replace(/^REP-0*/, ""));
   if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white"><ApiState {...resource} /><Link to="/citizen/my-reports">My Reports</Link></main>;
   const data = reportView(resource.data);
-  const currentStage = data.stage || (data.status === "Resolved" ? 4 : data.status === "Under Investigation" ? 2 : 1);
+  const currentStage = data.stage || (data.status === "Resolved" || data.status === "Rejected" ? 4 : data.status === "Under Investigation" ? 2 : 1);
   const FacilityIcon = facilityIcons[data.facilityCategory] || MapPin;
 
   const reportCode = String(data.id).startsWith("REP-")
@@ -81,12 +83,14 @@ function ReportStatusPage() {
     },
     {
       step: 4,
-      title: "Issue Resolved",
+      title: data.status === "Rejected" ? "Report Rejected" : "Issue Resolved",
       date: data.resolved_at
         ? displayDateTime(data.resolved_at)
-        : "Date not recorded",
+        : (data.status === "Rejected" ? "Marked as Rejected" : "Date not recorded"),
       description:
-        currentStage >= 4
+        data.status === "Rejected"
+          ? (data.resolutionDescription || "Grievance was inspected and marked as rejected by civic authorities.")
+          : currentStage >= 4
           ? "The issue is completely resolved."
           : "Final clearance awaiting repair completion.",
     },
@@ -345,30 +349,30 @@ function ReportStatusPage() {
                   )}
 
 
-                  {/* Resolution Evidence Photo if Resolved */}
+                  {/* Resolution Evidence Photo if Resolved / Rejection Info */}
                   <div>
                     <p className="text-xs uppercase tracking-wider text-white/35 mb-1.5">
-                      Resolution Evidence
+                      {data.status === "Rejected" ? "Agency Rejection & Inspection Details" : "Resolution Evidence"}
                     </p>
                     {data.resolutionPhotoUrl ? (
                       <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
                         <img
                           src={data.resolutionPhotoUrl}
-                          alt="Agency resolution evidence"
+                          alt={data.status === "Rejected" ? "Rejection inspection record" : "Agency resolution evidence"}
                           className="max-h-52 w-full object-cover"
                         />
                         <div className="space-y-1 p-2 text-xs">
                           <p className={`flex items-center gap-1 ${
-                            data.resolutionStatus === "APPROVED"
+                            data.resolutionStatus === "APPROVED" || data.status === "Resolved"
                               ? "text-lime-300"
-                              : data.resolutionStatus === "REJECTED"
+                              : data.resolutionStatus === "REJECTED" || data.status === "Rejected"
                               ? "text-rose-300"
                               : "text-amber-300"
                           }`}>
-                            {data.resolutionStatus === "APPROVED" ? (
+                            {data.resolutionStatus === "APPROVED" || data.status === "Resolved" ? (
                               <><CheckCircle2 size={13} /> Resolution approved</>
-                            ) : data.resolutionStatus === "REJECTED" ? (
-                              <><AlertTriangle size={13} /> Evidence rejected</>
+                            ) : data.resolutionStatus === "REJECTED" || data.status === "Rejected" ? (
+                              <><XCircle size={13} /> Grievance Rejected by Agency</>
                             ) : (
                               <><CircleDashed size={13} /> Awaiting approval</>
                             )}
@@ -377,7 +381,8 @@ function ReportStatusPage() {
                             <p className="leading-relaxed text-white/70">{data.resolutionDescription}</p>
                           )}
                           <p className="text-white/40">
-                            Completed {data.resolutionCompletionDate}
+                            {data.status === "Rejected" ? "Recorded " : "Completed "}
+                            {data.resolutionCompletionDate}
                             {data.resolutionSubmittedAt !== "Not recorded" &&
                               ` · Submitted ${data.resolutionSubmittedAt}`}
                           </p>
@@ -385,8 +390,20 @@ function ReportStatusPage() {
                       </div>
                     ) : (
                       <div className="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-black/15 p-4 text-center text-xs text-white/35">
-                        <AlertTriangle size={18} className="mb-1.5 text-amber-300/70" />
-                        <span>Resolution evidence will appear here after the agency submits it.</span>
+                        {data.status === "Rejected" ? (
+                          <>
+                            <XCircle size={18} className="mb-1.5 text-rose-300/70" />
+                            <span className="font-semibold text-rose-200">Grievance Rejected</span>
+                            <span className="mt-1">
+                              {data.resolutionDescription || "This grievance was inspected and marked as rejected by civic inspectors."}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle size={18} className="mb-1.5 text-amber-300/70" />
+                            <span>Resolution evidence will appear here after the agency submits it.</span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

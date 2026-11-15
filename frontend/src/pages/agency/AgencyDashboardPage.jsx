@@ -91,11 +91,11 @@ function AgencyDashboardPage() {
       buttonText: "View Assigned Reports"
     },
     {
-      title: "Previously Resolved Cases",
+      title: "Resolved & Closed Cases",
       description:
-        "View complaints that have already been resolved by your agency.",
+        "View complaints that have already been resolved or rejected by your agency.",
       icon: "✅",
-      route: "/agency/resolved",
+      route: "/agency/reports?status=RESOLVED",
       buttonText: "View Resolved Reports"
     },
     {

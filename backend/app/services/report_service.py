@@ -172,7 +172,7 @@ def get_resolved_report_details(db: Session, report: Report) -> ResolvedReportDe
         .join(AgencyMember, ReportResolutionSubmission.agent_id == AgencyMember.agent_id)
         .where(
             ReportResolutionSubmission.report_id == report.report_id,
-            ReportResolutionSubmission.verification_status.in_(["APPROVED", "REJECTED"]),
+            ReportResolutionSubmission.verification_status.in_(["APPROVED", "REJECTED", "PENDING"]),
             AgencyMember.agency_id == report.assigned_agency
         )
         .order_by(

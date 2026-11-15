@@ -26,9 +26,9 @@ def get_agency_resolved_report(
         .where(
             Report.report_id == report_id,
             Report.assigned_agency == agency.agency_id,
-            Report.status == "RESOLVED"
+            Report.status.in_(["RESOLVED", "REJECTED"])
         )
     )
     if report is None:
-        raise HTTPException(status_code=404, detail="Resolved report not found")
+        raise HTTPException(status_code=404, detail="Resolved or rejected report not found")
     return report

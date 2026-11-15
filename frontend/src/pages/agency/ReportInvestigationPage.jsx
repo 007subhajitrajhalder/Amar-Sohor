@@ -1,8 +1,9 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { apiRequest, statusLabel, mediaUrl } from "../../api/client";
+import { apiRequest, statusLabel, mediaUrl, displayDate } from "../../api/client";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { XCircle, RotateCcw, CheckCircle2, Camera } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -11,13 +12,20 @@ function ReportInvestigationPage() {
   const navigate = useNavigate();
 
   const resource = useApi("/reports/" + reportId);
+  const rawStatus = (resource.data?.status || "").toUpperCase();
   const status = statusLabel(resource.data?.status);
+  const isRejected = rawStatus === "REJECTED" || status === "Rejected" || status === "REJECTED";
+  const isResolved = rawStatus === "RESOLVED" || status === "Resolved" || status === "RESOLVED";
+  const isPending = rawStatus === "PENDING" || status === "Pending" || status === "PENDING";
+  const isUnderInvestigation = ["UNDER_INVESTIGATION", "UNDER INVESTIGATION"].includes(rawStatus) || status === "Under Investigation";
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectPhoto, setRejectPhoto] = useState(null);
   const [rejectPhotoPreview, setRejectPhotoPreview] = useState(null);
+  const [restarting, setRestarting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const aiConf = resource.data?.ai_confidence != null ? resource.data.ai_confidence : null;
   const aiPred = (resource.data?.ai_prediction || "").toLowerCase();
@@ -104,12 +112,27 @@ function ReportInvestigationPage() {
         body: formData,
       });
       navigate("/agency/reports", {
-        state: { message: `Report #${reportId} has been rejected and documented in Previously Solved Reports.` },
+        state: { message: `Report #${reportId} has been rejected.` },
       });
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRestartInvestigation = async () => {
+    setRestarting(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      await apiRequest(`/reports/${reportId}/reopen`, { method: "POST" });
+      setSuccessMessage("Investigation restarted successfully. The report is now active under investigation.");
+      resource.refresh();
+    } catch (err) {
+      setError(err.message || "Failed to restart investigation.");
+    } finally {
+      setRestarting(false);
     }
   };
   if (!resource.data) return <main className="min-h-screen bg-slate-950 p-8 text-white">
@@ -227,16 +250,24 @@ function ReportInvestigationPage() {
 
             <span
               className={`self-start rounded-full px-4 py-2 text-sm font-bold ${
-                status === "Pending"
+                isPending
                   ? isDark
                     ? "bg-amber-400/15 text-amber-300 ring-1 ring-amber-300/20"
                     : "bg-amber-100 text-amber-800"
-                  : isDark
-                    ? "bg-cyan-400/15 text-cyan-300 ring-1 ring-cyan-300/20"
-                    : "bg-cyan-100 text-cyan-800"
+                  : isResolved
+                    ? isDark
+                      ? "bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-300/20"
+                      : "bg-emerald-100 text-emerald-800"
+                    : isRejected
+                      ? isDark
+                        ? "bg-rose-400/15 text-rose-300 ring-1 ring-rose-300/20"
+                        : "bg-rose-100 text-rose-800"
+                      : isDark
+                        ? "bg-cyan-400/15 text-cyan-300 ring-1 ring-cyan-300/20"
+                        : "bg-cyan-100 text-cyan-800"
               }`}
             >
-              {status}
+              {isRejected ? "Rejected" : isResolved ? "Resolved" : isPending ? "Pending" : "Under Investigation"}
             </span>
           </div>
 
@@ -350,41 +381,151 @@ function ReportInvestigationPage() {
               </h2>
 
               <ApiState error={error} />
-              <div className="mt-5 grid gap-5">
-                <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                  {status === "Pending" && "Click below to begin the investigation. The report status will update to Under Investigation and you can upload the resolution evidence."}
-                  {status === "Under Investigation" && "This complaint is currently under investigation. Once work is completed on-site, upload the resolution evidence."}
-                  {status === "Resolved" && "This complaint has been investigated and resolved."}
-                </p>
+              {successMessage && (
+                <div className="my-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+                  {successMessage}
+                </div>
+              )}
 
-                {status === "Pending" && (
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={handleStartInvestigation}
-                    className={`rounded-xl p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 ${
+              {/* Resolved State Details */}
+              {isResolved && (
+                <div className="mt-4 space-y-4">
+                  <div
+                    className={`rounded-2xl border p-5 ${
                       isDark
-                        ? "bg-cyan-600 hover:bg-cyan-500 hover:shadow-cyan-500/20"
-                        : "bg-blue-700 hover:bg-blue-600 hover:shadow-blue-500/20"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-900"
                     }`}
                   >
-                    {saving ? "Starting..." : "Start Investigation"}
-                  </button>
-                )}
+                    <div className="flex items-center gap-2 font-bold text-base">
+                      <CheckCircle2 size={20} className="text-emerald-400" />
+                      <span>Grievance Successfully Resolved</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed opacity-90">
+                      <strong>Resolution Details:</strong>{" "}
+                      {resource.data.resolution?.description || "Work completed and verified on-site."}
+                    </p>
+                    <div className="mt-3 flex items-center gap-4 text-xs opacity-75">
+                      <span>
+                        <strong>Completed:</strong>{" "}
+                        {displayDate(resource.data.resolution?.completion_date || resource.data.resolved_at)}
+                      </span>
+                      <span>
+                        <strong>Status:</strong> Approved
+                      </span>
+                    </div>
+                  </div>
 
-                {status === "Under Investigation" && (
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={handleGoToResolution}
-                    className="rounded-xl bg-emerald-700 p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-emerald-500/20"
+                  {resource.data.resolution?.photo_url && (
+                    <div>
+                      <p className={`text-xs font-semibold mb-2 flex items-center gap-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        <Camera size={13} /> After-Repair Resolution Evidence
+                      </p>
+                      <div className={`overflow-hidden rounded-xl border ${isDark ? "border-white/10 bg-slate-900/60" : "border-slate-200 bg-slate-100"}`}>
+                        <img
+                          src={mediaUrl(resource.data.resolution.photo_url)}
+                          alt="Resolution evidence"
+                          className="max-h-64 w-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Rejected State Details & Restart Investigation */}
+              {isRejected && (
+                <div className="mt-4 space-y-4">
+                  <div
+                    className={`rounded-2xl border p-5 ${
+                      isDark
+                        ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                        : "border-rose-200 bg-rose-50 text-rose-900"
+                    }`}
                   >
-                    Upload Resolution
-                  </button>
-                )}
+                    <div className="flex items-center gap-2 font-bold text-base">
+                      <XCircle size={20} className="text-rose-400" />
+                      <span>Report Rejected</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed opacity-90">
+                      <strong>Rejection Reason / Notes:</strong>{" "}
+                      {resource.data.resolution?.description || resource.data.agency_notes || "Report was marked as rejected during inspection."}
+                    </p>
+                    {resource.data.resolved_at && (
+                      <p className="mt-1 text-xs opacity-75">
+                        <strong>Recorded:</strong> {displayDate(resource.data.resolved_at)}
+                      </p>
+                    )}
+
+                    {/* Restart Investigation Button */}
+                    <button
+                      type="button"
+                      disabled={restarting}
+                      onClick={handleRestartInvestigation}
+                      className={`mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition shadow-lg disabled:opacity-50 ${
+                        isDark
+                          ? "bg-cyan-600 text-white hover:bg-cyan-500 hover:shadow-cyan-500/20"
+                          : "bg-cyan-700 text-white hover:bg-cyan-600 hover:shadow-cyan-700/20"
+                      }`}
+                    >
+                      <RotateCcw size={14} className={restarting ? "animate-spin" : ""} />
+                      <span>{restarting ? "Restarting Investigation..." : "Restart Investigation"}</span>
+                    </button>
+                  </div>
+
+                  {resource.data.resolution?.photo_url && (
+                    <div>
+                      <p className={`text-xs font-semibold mb-2 flex items-center gap-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                        <Camera size={13} /> On-Site Inspection Record Photograph
+                      </p>
+                      <div className={`overflow-hidden rounded-xl border ${isDark ? "border-white/10 bg-slate-900/60" : "border-slate-200 bg-slate-100"}`}>
+                        <img
+                          src={mediaUrl(resource.data.resolution.photo_url)}
+                          alt="Inspection evidence"
+                          className="max-h-64 w-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Active Investigation Controls (Pending / Under Investigation) */}
+              {(isPending || isUnderInvestigation) && (
+                <div className="mt-5 grid gap-5">
+                  <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    {isPending && "Click below to begin the investigation. The report status will update to Under Investigation and you can upload the resolution evidence."}
+                    {isUnderInvestigation && "This complaint is currently under investigation. Once work is completed on-site, upload the resolution evidence."}
+                  </p>
+
+                  {isPending && (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={handleStartInvestigation}
+                      className={`rounded-xl p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 ${
+                        isDark
+                          ? "bg-cyan-600 hover:bg-cyan-500 hover:shadow-cyan-500/20"
+                          : "bg-blue-700 hover:bg-blue-600 hover:shadow-blue-500/20"
+                      }`}
+                    >
+                      {saving ? "Starting..." : "Start Investigation"}
+                    </button>
+                  )}
+
+                  {isUnderInvestigation && (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={handleGoToResolution}
+                      className="rounded-xl bg-emerald-700 p-3 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-emerald-500/20"
+                    >
+                      Upload Resolution
+                    </button>
+                  )}
 
                 {/* Defect verified with high confidence: Photo Proof Required notice */}
-                {isHighConfBadFacility && (status === "Pending" || status === "Under Investigation") && (
+                {isHighConfBadFacility && (isPending || isUnderInvestigation) && (
                   <div className={`rounded-xl border p-3 text-xs ${
                     isDark ? "border-amber-500/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-900"
                   }`}>
@@ -396,7 +537,7 @@ function ReportInvestigationPage() {
                 )}
 
                 {/* Good facility or low confidence AI notes */}
-                {isGoodFacility && (status === "Pending" || status === "Under Investigation") && (
+                {isGoodFacility && (isPending || isUnderInvestigation) && (
                   <div className={`rounded-xl border p-2.5 text-xs ${
                     isDark ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-emerald-200 bg-emerald-50 text-emerald-900"
                   }`}>
@@ -405,7 +546,7 @@ function ReportInvestigationPage() {
                   </div>
                 )}
 
-                {!isGoodFacility && aiConf !== null && aiConf < 0.50 && (status === "Pending" || status === "Under Investigation") && (
+                {!isGoodFacility && aiConf !== null && aiConf < 0.50 && (isPending || isUnderInvestigation) && (
                   <div className={`rounded-xl border p-2.5 text-xs ${
                     isDark ? "border-rose-500/30 bg-rose-500/10 text-rose-200" : "border-rose-200 bg-rose-50 text-rose-900"
                   }`}>
@@ -414,7 +555,7 @@ function ReportInvestigationPage() {
                   </div>
                 )}
 
-                {(status === "Pending" || status === "Under Investigation") && (
+                {(isPending || isUnderInvestigation) && (
                   <button
                     type="button"
                     disabled={saving}
@@ -508,7 +649,8 @@ function ReportInvestigationPage() {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </section>
           </div>
         </div>

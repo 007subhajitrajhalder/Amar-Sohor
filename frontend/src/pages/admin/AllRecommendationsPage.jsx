@@ -22,7 +22,8 @@ import {
   Trash2,
   UserCheck,
   UserRound,
-  X
+  X,
+  XCircle
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -105,6 +106,9 @@ function getFacilityBadge(type) {
 }
 
 function formatStatus(status, assignedMember) {
+  if (status === "REJECTED") {
+    return "Proposal Rejected";
+  }
   if (!assignedMember) {
     return "Pending Allocation";
   }
@@ -126,6 +130,17 @@ function formatStatus(status, assignedMember) {
 }
 
 function getStatusStyle(assignedMember, status) {
+  if (status === "REJECTED") {
+    return {
+      badge: "border-rose-400/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25",
+      pulse: "bg-rose-400",
+      icon: XCircle,
+      tag: "Rejected • Click for Details",
+      actionLabel: "View Details",
+      actionBg: "border-rose-300/30 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
+    };
+  }
+
   if (!assignedMember) {
     return {
       badge: "border-amber-400/50 bg-amber-400/15 text-amber-200 shadow-amber-950/20 hover:bg-amber-400/25",
@@ -216,11 +231,12 @@ function AllRecommendationsPage() {
     SORT_OPTIONS.find((option) => option.value === sortKey) ?? SORT_OPTIONS[0];
 
   // Counts for KPIs
-  const unallottedCount = recommendations.filter((r) => !r.assignedMember).length;
+  const unallottedCount = recommendations.filter((r) => !r.assignedMember && r.status !== "REJECTED").length;
   const inProgressCount = recommendations.filter(
-    (r) => r.assignedMember && r.status !== "INSTALLED"
+    (r) => r.assignedMember && r.status !== "INSTALLED" && r.status !== "REJECTED"
   ).length;
   const installedCount = recommendations.filter((r) => r.status === "INSTALLED").length;
+  const rejectedCount = recommendations.filter((r) => r.status === "REJECTED").length;
 
   // Filtered list
   const filtered = useMemo(() => {
@@ -228,10 +244,11 @@ function AllRecommendationsPage() {
       const isUnallotted = !item.assignedMember;
 
       // Status filter
-      if (selectedStatus === "UNALLOTTED" && !isUnallotted) return false;
-      if (selectedStatus === "ALLOTTED" && isUnallotted) return false;
+      if (selectedStatus === "UNALLOTTED" && (!isUnallotted || item.status === "REJECTED")) return false;
+      if (selectedStatus === "ALLOTTED" && (isUnallotted || item.status === "REJECTED")) return false;
       if (selectedStatus === "APPROVED" && item.status !== "APPROVED") return false;
       if (selectedStatus === "INSTALLED" && item.status !== "INSTALLED") return false;
+      if (selectedStatus === "REJECTED" && item.status !== "REJECTED") return false;
 
       // Category filter
       if (selectedCategory !== "ALL" && (item.facilityType || "").toLowerCase() !== selectedCategory.toLowerCase()) {
@@ -306,7 +323,9 @@ function AllRecommendationsPage() {
 
   // Handler for dual-action status click
   const handleStatusClick = (rec) => {
-    if (!rec.assignedMember) {
+    if (rec.status === "REJECTED") {
+      navigate(`/admin/recommendations/${rec.id}/progress`);
+    } else if (!rec.assignedMember) {
       // First possibility: Not allotted -> redirect to agency members of the same facility category
       navigate(`/admin/recommendations/${rec.id}/allocate`);
     } else {
@@ -459,6 +478,10 @@ function AllRecommendationsPage() {
               <CheckCircle2 size={15} />
               {installedCount} Installed
             </span>
+            <span className="inline-flex items-center gap-1.5 text-rose-300">
+              <XCircle size={15} />
+              {rejectedCount} Rejected
+            </span>
             <span className="hidden items-center gap-1.5 sm:inline-flex text-white/50 border-l border-white/10 pl-3">
               <Clock3 size={13} className="text-cyan-200" />
               Sorted {currentSortOption.label.toLowerCase()}
@@ -467,7 +490,7 @@ function AllRecommendationsPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="mt-7 grid gap-5 md:grid-cols-3">
+        <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {/* Unallotted Card */}
           <article
             className="admin-glass-card relative flex flex-col items-center justify-center text-center overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl"
@@ -522,6 +545,25 @@ function AllRecommendationsPage() {
             <h2 className="mt-1 text-3xl font-bold tracking-tight text-white">{installedCount}</h2>
             <p className="mt-2 text-xs text-white/50 text-center">
               Civic infrastructure approved or installed for public usage.
+            </p>
+          </article>
+
+          {/* Rejected Card */}
+          <article
+            className="admin-glass-card relative flex flex-col items-center justify-center text-center overflow-hidden rounded-2xl border border-white/30 p-6 shadow-xl shadow-cyan-950/25 ring-1 ring-inset ring-white/15 backdrop-blur-2xl"
+          >
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="dashboard-icon-box rounded-xl border border-rose-300/30 bg-rose-500/15 p-3 text-rose-200">
+                <XCircle size={22} aria-hidden="true" />
+              </div>
+              <span className="rounded-full border border-rose-300/30 bg-rose-500/10 px-2.5 py-0.5 text-xs font-bold text-rose-200">
+                Turned Down
+              </span>
+            </div>
+            <p className="mt-4 text-sm font-medium text-white/70">Rejected Proposals</p>
+            <h2 className="mt-1 text-3xl font-bold tracking-tight text-white">{rejectedCount}</h2>
+            <p className="mt-2 text-xs text-white/50 text-center">
+              Proposals deemed unfeasible or non-compliant during survey.
             </p>
           </article>
         </div>
@@ -612,6 +654,17 @@ function AllRecommendationsPage() {
                 }`}
               >
                 Installed
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedStatus("REJECTED")}
+                className={`whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                  selectedStatus === "REJECTED"
+                    ? "border-rose-300/60 bg-rose-500/20 text-rose-200"
+                    : "border-white/15 bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                Rejected
               </button>
             </div>
           </div>
@@ -869,7 +922,13 @@ function AllRecommendationsPage() {
                   <button
                     type="button"
                     onClick={() => handleStatusClick(rec)}
-                    title={isUnallotted ? "Not allotted. Click to allocate to an agency member" : "Allotted. Click to view progress"}
+                    title={
+                      rec.status === "REJECTED"
+                        ? "Proposal Rejected. Click to view progress and inspection details"
+                        : isUnallotted
+                        ? "Not allotted. Click to allocate to an agency member"
+                        : "Allotted. Click to view progress"
+                    }
                     className={`group/btn relative inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition shadow-sm shrink-0 ${statusConfig.badge}`}
                   >
                     <span className={`h-2 w-2 rounded-full ${statusConfig.pulse} shadow-[0_0_8px_currentColor] shrink-0`} />
@@ -881,7 +940,7 @@ function AllRecommendationsPage() {
                   {/* Explicit Action Button */}
                   <Link
                     to={
-                      isUnallotted
+                      isUnallotted && rec.status !== "REJECTED"
                         ? `/admin/recommendations/${rec.id}/allocate`
                         : `/admin/recommendations/${rec.id}/progress`
                     }

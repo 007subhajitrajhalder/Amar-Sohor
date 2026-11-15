@@ -18,7 +18,8 @@ import {
   Phone,
   ShieldCheck,
   UserRound,
-  Wrench
+  Wrench,
+  XCircle
 } from "lucide-react";
 
 import { useAdminTheme } from "./useAdminTheme";
@@ -132,7 +133,7 @@ function AdminComplaintDetailsPage() {
     },
     agencyNotes: record.agency_notes,
     complaintPhoto: mediaUrl(record.photo_url),
-    stage: record.stage || (record.status === "RESOLVED" ? 4 : record.status === "UNDER_INVESTIGATION" ? 2 : 1),
+    stage: record.stage || (record.status === "RESOLVED" || record.status === "REJECTED" ? 4 : record.status === "UNDER_INVESTIGATION" ? 2 : 1),
     resolution: record.resolution
       ? {
           id: record.resolution.resolution_id,
@@ -167,6 +168,9 @@ function AdminComplaintDetailsPage() {
     if (status === "RESOLVED") {
       return "border-emerald-200/40 bg-emerald-400/15 text-emerald-200";
     }
+    if (status === "REJECTED") {
+      return "border-rose-300/40 bg-rose-500/20 text-rose-200";
+    }
     return "border-white/20 bg-white/10 text-white/70";
   };
 
@@ -179,7 +183,11 @@ function AdminComplaintDetailsPage() {
         method: "PATCH",
         body: { status: pendingAction.value }
       });
-      setActionMessage("Resolution verified and approved. Complaint status is now RESOLVED.");
+      setActionMessage(
+        pendingAction.value === "RESOLVED"
+          ? "Resolution verified and approved. Complaint status is now RESOLVED."
+          : `Complaint status updated to ${pendingAction.value}.`
+      );
       setPendingAction(null);
       resource.refresh();
     } catch (err) {
@@ -232,14 +240,18 @@ function AdminComplaintDetailsPage() {
     },
     {
       step: 4,
-      title: "Complaint Resolved",
-      date: currentStatus === "RESOLVED"
+      title: currentStatus === "REJECTED" ? "Complaint Rejected" : "Complaint Resolved",
+      date: currentStatus === "REJECTED"
+        ? complaint.resolvedAt || "Rejected"
+        : currentStatus === "RESOLVED"
         ? complaint.resolvedAt || complaint.resolution?.completionDate || "Resolved"
         : "Not resolved",
-      description: currentStatus === "RESOLVED"
+      description: currentStatus === "REJECTED"
+        ? complaint.resolution?.description || "Grievance inspected and marked as rejected by agency."
+        : currentStatus === "RESOLVED"
         ? complaint.resolution?.description || "Repair verified and grievance successfully closed."
         : "The complaint is closed after an administrator approves the agency's resolution evidence.",
-      isDone: currentStatus === "RESOLVED"
+      isDone: currentStatus === "RESOLVED" || currentStatus === "REJECTED"
     }
   ];
 
@@ -389,7 +401,7 @@ function AdminComplaintDetailsPage() {
                     </div>
                   </div>
 
-                  <p className="mt-2.5 text-[11px] leading-relaxed text-white/60">
+                  <p className="mt-2.5 text-[11px] leading-relaxed text-white/60 whitespace-pre-line">
                     {s.description}
                   </p>
                 </div>
@@ -551,7 +563,7 @@ function AdminComplaintDetailsPage() {
         </div>
 
         {/* Resolution Approval Action for Municipal Admin */}
-        {record.resolution?.verification_status === "PENDING" && currentStatus !== "RESOLVED" && (
+        {record.resolution?.verification_status === "PENDING" && currentStatus !== "RESOLVED" && currentStatus !== "REJECTED" && (
           <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-emerald-300/40 bg-emerald-400/15 p-5 text-white shadow-xl backdrop-blur-xl">
             <div>
               <p className="font-bold text-emerald-200 text-base">Resolution Submitted for Verification</p>
@@ -570,12 +582,12 @@ function AdminComplaintDetailsPage() {
           </div>
         )}
 
-        {/* Resolution Information Card */}
+        {/* Resolution / Rejection Information Card */}
         <section className="admin-glass-card mt-6 mb-12 rounded-2xl border border-white/20 p-6 sm:p-7 text-white shadow-xl backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <Wrench size={20} className="text-emerald-300" />
-              Resolution Information & Verification
+              <Wrench size={20} className={currentStatus === "REJECTED" ? "text-rose-300" : "text-emerald-300"} />
+              {currentStatus === "REJECTED" ? "Agency Rejection & Inspection Details" : "Resolution Information & Verification"}
             </h2>
 
             {currentStatus === "RESOLVED" && (
@@ -584,23 +596,29 @@ function AdminComplaintDetailsPage() {
                 Verified & Resolved
               </span>
             )}
+            {currentStatus === "REJECTED" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/40 bg-rose-500/20 px-3 py-1 text-xs font-bold text-rose-200">
+                <XCircle size={13} />
+                Rejected by Agency
+              </span>
+            )}
           </div>
 
-          {currentStatus === "RESOLVED" || complaint.resolution ? (
+          {currentStatus === "RESOLVED" || currentStatus === "REJECTED" || complaint.resolution ? (
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               <div className="space-y-4 text-sm">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                    Resolution Description
+                    {currentStatus === "REJECTED" ? "Agency Rejection Rationale" : "Resolution Description"}
                   </p>
                   <p className="mt-1 leading-relaxed text-white/80 rounded-xl border border-white/10 bg-white/5 p-3.5 break-words">
-                    {complaint.resolution?.description || "Work completed and verified by civic authorities."}
+                    {complaint.resolution?.description || (currentStatus === "REJECTED" ? "Rejected during field inspection." : "Work completed and verified by civic authorities.")}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 text-xs">
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <p className="text-white/40 uppercase text-[10px] font-semibold">Completion Date</p>
+                    <p className="text-white/40 uppercase text-[10px] font-semibold">{currentStatus === "REJECTED" ? "Rejection Date" : "Completion Date"}</p>
                     <p className="mt-1 font-bold text-white text-sm">
                       {complaint.resolution?.completionDate || complaint.resolvedAt || "Recorded"}
                     </p>
@@ -608,8 +626,8 @@ function AdminComplaintDetailsPage() {
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                     <p className="text-white/40 uppercase text-[10px] font-semibold">Verification Status</p>
-                    <p className="mt-1 font-bold text-emerald-300 text-sm">
-                      {complaint.resolution?.verificationStatus || "APPROVED"}
+                    <p className={`mt-1 font-bold text-sm ${currentStatus === "REJECTED" || complaint.resolution?.verificationStatus === "REJECTED" ? "text-rose-300" : "text-emerald-300"}`}>
+                      {complaint.resolution?.verificationStatus || (currentStatus === "REJECTED" ? "REJECTED" : "APPROVED")}
                     </p>
                   </div>
                 </div>
@@ -617,19 +635,19 @@ function AdminComplaintDetailsPage() {
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">
-                  After-Repair Photographic Evidence
+                  {currentStatus === "REJECTED" ? "Field Inspection Record Photograph" : "After-Repair Photographic Evidence"}
                 </p>
                 {complaint.resolution?.photo ? (
                   <div className="overflow-hidden rounded-xl border border-white/20 bg-black/40">
                     <img
                       src={complaint.resolution.photo}
-                      alt="Resolution evidence"
+                      alt={currentStatus === "REJECTED" ? "Rejection evidence" : "Resolution evidence"}
                       className="h-56 w-full object-cover transition duration-300 hover:scale-105"
                     />
                   </div>
                 ) : (
                   <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-xs text-white/40">
-                    No resolution photograph submitted
+                    {currentStatus === "REJECTED" ? "No inspection photograph submitted" : "No resolution photograph submitted"}
                   </div>
                 )}
               </div>
