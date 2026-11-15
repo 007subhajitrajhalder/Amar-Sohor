@@ -27,6 +27,19 @@ Startup does not alter the schema or seed application records.
 API docs: http://localhost:8000/docs. Database health: http://localhost:8000/health.
 CORS permits localhost/127.0.0.1:5173 and the configured `FRONTEND_URL`.
 
+## AI Civic Assistant (Google Gemini)
+
+The chatbot is grounded in the platform's civic documentation and facility statistics.
+To enable it:
+1. Copy `backend/.env.example` to `backend/.env` if you have not created it yet.
+2. Obtain a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+3. In `backend/.env`, configure:
+   ```env
+   GEMINI_API_KEY=your_api_key_here
+   GEMINI_MODEL=gemini-3.5-flash-lite
+   ```
+If the key is missing, the API returns a 503 HTTP status and the frontend chat widget displays setup guidance.
+
 ## Authentication and access
 
 POST JSON email/password to `/auth/login`; send `Authorization: Bearer <access_token>`.
