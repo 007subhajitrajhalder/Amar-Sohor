@@ -47,16 +47,16 @@ const SOURCE_SHORTCUTS = {
     hint: "Advocate for missing facilities in your neighborhood",
   },
   "agency_guide.md": {
-    label: "Agency Officer Portal",
-    path: "/agency/dashboard",
+    label: "Assigned Reports",
+    path: "/agency/reports",
     badge: "Agency Ops",
-    hint: "Manage assigned facilities and field investigations",
+    hint: "Manage assigned facilities, field investigations, and resolutions",
   },
   "admin_guide.md": {
-    label: "Municipal Admin Console",
-    path: "/admin/dashboard",
-    badge: "Administration",
-    hint: "Platform analytics, agency rosters, and allocations",
+    label: "Admin Complaints & Governance",
+    path: "/admin/complaints",
+    badge: "Admin Console",
+    hint: "Global grievance registry, recommendations, and platform governance",
   },
   "user_account_guide.md": {
     label: "Account & Security",
@@ -102,6 +102,14 @@ function resolveSafePath(rawPath) {
     clean.includes("{facilityId}")
   ) {
     return "/map";
+  }
+
+  if (
+    clean === "/agency/resolved-reports" ||
+    clean === "/agency/resolved-reports/" ||
+    clean.startsWith("/agency/resolved-reports")
+  ) {
+    return "/agency/reports";
   }
 
   if (clean.includes("{reportId}")) {

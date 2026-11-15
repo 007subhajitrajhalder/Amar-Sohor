@@ -42,6 +42,8 @@ Strict Behavioral Instructions:
    - Interactive GIS map discovery with operational status indicators (OPEN, UNDER_REPAIR, SUSPENDED)
    - Rating and reviewing facilities (1 to 5 stars with citizen reviews)
    - Proposing new facilities through the Recommendation lifecycle (PENDING -> ALLOCATED -> UNDER_INVESTIGATION -> APPROVED/REJECTED/INSTALLED)
+   - Unified agency report workflow: Previously resolved pages have been consolidated into **Assigned Reports** (`/agency/reports`), where all tickets (Pending, Under Investigation, Resolved, and Rejected) are managed in one place with search and status filters. Officers click 'Investigate' to open the investigation view where they can start investigations, submit resolution evidence, review resolved evidence, or click 'Restart Investigation' on rejected cases to reopen them.
+   - Admin oversight and verification: In **All Complaints** (`/admin/complaints`), administrators can monitor grievances across Kolkata with status filters (Pending, Investigating, Resolved, and Rejected), review 4-stage lifecycle progress, approve agency resolution evidence, and inspect agency rejection rationales and proof. In **Recommendations** (`/admin/recommendations`), administrators review and allocate proposals and track the 5-stage progress stepper.
    - User account and profile management: When signed in, click your name in the top navigation header on any page to open your Citizen Dashboard, where you can view and edit your profile details (Full Name, Phone Number, Email) and monitor all submitted complaints and recommendations.
    - User roles and permissions (Citizen USER, Agency AGENT, Admin ADMIN)
 3. Maintain clear privacy boundaries: you are a project reference assistant and do NOT have live access
@@ -60,7 +62,8 @@ Strict Behavioral Instructions:
      * "From your Citizen Dashboard, click the 'View My Reports' button in the top action bar to monitor your submitted grievances."
      * "From the Home page, scroll to the 'Citizen Recommendation' banner and click 'Recommend a Facility' (or click 'Recommend Facility' on your Citizen Dashboard)."
      * "To register or log in, click the 'Register' or 'Login' button in the top-right corner of the Home page header."
-     * "For agencies: Sign in to your Agency Dashboard and click 'Assigned Reports' to review and start investigations."
+     * "For agencies: Sign in to your Agency Dashboard and click 'Assigned Reports' to review, investigate, or restart reports."
+     * "For admins: Open 'All Complaints' from the admin dashboard to review complaints and approve resolution evidence, or open 'Recommendations' to allocate citizen proposals."
 """
 
 
@@ -143,8 +146,25 @@ def resolve_action_buttons(question: str, answer: str, sources: list[str]) -> li
     if is_profile_query:
         add_action("Citizen Dashboard / Profile", "/citizen/dashboard", "View and update your personal details, profile, and civic activities")
 
-    # Priority 2: Issue Reporting / Grievance (routes to /map so user selects facility first)
-    is_report_query = any(k in q_lower for k in [
+    # Priority 2: Municipal Admin Console
+    is_admin_query = any(k in q_lower for k in [
+        "admin", "administrator", "municipal admin", "agency management", "all complaints", "all recommendations", "allocate recommendation"
+    ])
+    if is_admin_query:
+        add_action("Admin Dashboard", "/admin/dashboard", "Municipal administrator control panel")
+        add_action("All Complaints", "/admin/complaints", "Global civic complaint registry and verification")
+        add_action("All Recommendations", "/admin/recommendations", "Review and allocate citizen facility proposals")
+
+    # Priority 3: Agency Operations
+    is_agency_query = any(k in q_lower for k in [
+        "agency", "investigate", "assigned reports", "resolution proof", "50% ai", "officer", "restart investigation", "reject report", "reopen report"
+    ])
+    if is_agency_query:
+        add_action("Agency Dashboard", "/agency/dashboard", "Agency officer operations portal")
+        add_action("Assigned Reports", "/agency/reports", "Review, investigate, and manage assigned civic complaints")
+
+    # Priority 4: Issue Reporting / Grievance (routes to /map so user selects facility first)
+    is_report_query = not is_admin_query and not is_agency_query and any(k in q_lower for k in [
         "report an issue", "report issue", "broken tap", "damaged dustbin",
         "overflowing", "lodge complaint", "file report", "file a complaint",
         "broken", "complaint", "grievance", "leakage", "defective", "অভিযোগ"
@@ -153,7 +173,7 @@ def resolve_action_buttons(question: str, answer: str, sources: list[str]) -> li
         add_action("Select Facility on Map to Report", "/map", "Locate facility on the interactive map and click Report Issue")
         add_action("Explore Map & Facilities", "/map", "Discover civic facilities and live operational statuses")
 
-    # Priority 3: Viewing Submitted Reports
+    # Priority 5: Viewing Submitted Reports
     is_my_reports_query = any(k in q_lower for k in [
         "my reports", "track report", "view my reports", "report status", "check status", "investigation status"
     ]) or ("my reports" in text and "view my reports" in text)
@@ -162,8 +182,8 @@ def resolve_action_buttons(question: str, answer: str, sources: list[str]) -> li
         if not is_profile_query:
             add_action("Citizen Dashboard / Profile", "/citizen/dashboard", "Access your citizen overview and reports")
 
-    # Priority 4: Recommending / Proposing New Facilities
-    is_recommend_query = any(k in q_lower for k in [
+    # Priority 6: Recommending / Proposing New Facilities
+    is_recommend_query = not is_admin_query and any(k in q_lower for k in [
         "recommend", "recommendation", "propose", "missing facility", "new facility", "community need", "suggest a facility", "প্রস্তাব"
     ])
     if is_recommend_query:
@@ -174,30 +194,20 @@ def resolve_action_buttons(question: str, answer: str, sources: list[str]) -> li
             add_action("Recommend a Facility", "/citizen/recommendation", "Propose a new civic facility for your area")
             add_action("My Recommendations", "/citizen/my-recommendations", "Track status and agency reviews of your proposals")
 
-    # Priority 5: Interactive Map / Facility Search
+    # Priority 7: Interactive Map / Facility Search
     is_map_query = any(k in q_lower for k in [
         "map", "find nearby", "facilities", "dustbin", "toilet", "drinking water", "parking", "location", "browse facilities", "gis", "ম্যাপ"
     ])
-    if is_map_query and not is_report_query:
+    if is_map_query and not is_report_query and not is_admin_query and not is_agency_query:
         add_action("Explore Map & Facilities", "/map", "Browse GIS map with live operational facilities in Kolkata")
 
-    # Priority 6: Authentication & Password
+    # Priority 8: Authentication & Password
     if any(k in q_lower for k in ["login", "sign in", "log in", "লগইন"]):
         add_action("Sign In to Account", "/login", "Access your citizen or officer account")
     if any(k in q_lower for k in ["register", "sign up", "create account", "new citizen", "registration", "নিবন্ধন"]):
         add_action("Register Account", "/register", "Join Amar Sohor as a citizen")
     if any(k in q_lower for k in ["forgot password", "reset password", "password recovery"]):
         add_action("Reset Password", "/forgot-password", "Request a secure password reset link")
-
-    # Priority 7: Agency Operations
-    if any(k in q_lower for k in ["agency", "investigate", "assigned reports", "resolution proof", "50% ai", "officer"]):
-        add_action("Agency Dashboard", "/agency/dashboard", "Agency officer operations portal")
-        add_action("Assigned Reports", "/agency/reports", "Review and investigate assigned civic complaints")
-
-    # Priority 8: Municipal Admin Console
-    if any(k in q_lower for k in ["admin", "administrator", "municipal admin", "agency management", "allocate recommendation"]):
-        add_action("Admin Dashboard", "/admin/dashboard", "Municipal administrator control panel")
-        add_action("Agency Management", "/admin/agencies", "Manage agency partners and ward assignments")
 
     # Secondary inclusions based on answer content if slots remain
     if len(actions) < 3:

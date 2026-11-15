@@ -17,12 +17,13 @@ A civic grievance follows a standardized administrative lifecycle:
    and an after-repair resolution photo that successfully passed AI scene and
    cleanliness verification.
 4. **`REJECTED`**: The agency officer determined the grievance to be invalid,
-   unfounded, or spam under strict compliance criteria. Once rejected, the case
-   is archived in Previously Solved/Rejected Reports, and a 24-hour reporting
-   cooldown is placed on the facility.
-5. **Reopened**: Agency officers possess administrative authority to reopen a
-   rejected report if citizen feedback or new evidence indicates the issue
-   persists.
+   unfounded, or non-actionable under strict compliance criteria. The case stays
+   accessible in **Assigned Reports** under the `Rejected` filter, and a 24-hour
+   reporting cooldown is placed on the facility.
+5. **Restart / Reopen Investigation**: Agency officers possess authority to reopen
+   a rejected report at any time from its Investigation view by clicking
+   **Restart Investigation**, which returns the ticket to `UNDER_INVESTIGATION`
+   for renewed field action.
 
 ---
 

@@ -9,8 +9,8 @@ Each agency manages civic amenities and grievances within its municipal domain
 Primary navigation sections in the agency portal:
 - **Agency Dashboard**: Overview of assigned complaints, active investigations,
   and completed resolutions.
-- **Assigned Reports**: List of incoming citizen grievances requiring attention.
-- **Previously Solved Reports**: Archive of resolved complaints and rejected cases.
+- **Assigned Reports**: Unified hub of all assigned citizen grievances (Pending,
+  Under Investigation, Resolved, and Rejected).
 - **Facility Management**: Catalog of all physical amenities under agency care.
 - **Add Facility**: Tool to register a newly installed public facility.
 - **Assigned Recommendations**: Citizen proposals allocated by municipal admins for
@@ -43,20 +43,23 @@ Agency members can maintain the physical catalog of facilities under their juris
 
 Agency field officers process assigned reports through a structured on-site workflow:
 
-1. **Starting an investigation**:
+1. **Viewing and navigating assigned reports**:
    - In the agency portal, click **Assigned Reports** from the menu.
-   - Click on the relevant grievance card to open its **Investigation** view.
-   - Review the citizen's complaint photograph alongside the automated **AI defect
-     classification** and confidence score in the investigation notes.
+   - Filter tickets by status (**All**, **Pending**, **Under Investigation**, **Resolved**,
+     or **Rejected**) or search by facility name and address.
+   - Click the **Investigate** button on any report card to open its **Investigation** view.
+2. **Starting an investigation**:
+   - For pending complaints, review the citizen's complaint photograph alongside the automated
+     **AI defect classification** and confidence score in the investigation notes.
    - Click the **Start Investigation** button to move the status from `PENDING` to
      `UNDER_INVESTIGATION`.
-2. **Submitting resolution evidence**:
+3. **Submitting resolution evidence**:
    - Once field repair or cleaning work is completed, click **Go to Resolution** on the
      investigation page.
    - Enter the actual completion date and a detailed description of the repairs.
    - Upload an **After-Repair Resolution Photograph** taken at the site.
    - Click **Submit Resolution**.
-3. **Automated AI resolution checks**:
+4. **Automated AI resolution checks**:
    - The AI engine instantly verifies the evidence:
      - **Anti-duplicate check**: Rejects photos having $\ge 98.5\%$ similarity to the
        initial complaint photo (preventing fraudulent re-upload of the citizen's image).
@@ -64,6 +67,10 @@ Agency field officers process assigned reports through a structured on-site work
        with the complaint photo (requires at least $35\%$ spatial background match).
      - **Cleanliness / validity verification**: Checks that the facility is clean or
        repaired.
+5. **Reviewing resolved reports**:
+   - For reports marked `RESOLVED`, opening the **Investigation** view displays the complete
+     official resolution record, completion date, after-repair evidence photograph, and
+     verification status in the resolution panel.
 
 ---
 
@@ -79,9 +86,10 @@ If a citizen's complaint is unfounded, an agency officer can reject the ticket f
 - **AI-verified defect (>= 50%)**: If the AI model confirmed a defect with $50\%$ or
   greater confidence, the officer **must upload an on-site inspection proof photo**. The
   system validates this proof photo with AI before completing rejection.
-- **Reopening rejected cases**: All rejected cases are documented under **Previously
-  Solved Reports**. If new facts emerge, agency officers can click **Reopen Case** to resume
-  investigation.
+- **Restarting investigation on rejected cases**: All rejected cases remain accessible in
+  **Assigned Reports** under the `Rejected` filter. Agency officers can open the report's
+  **Investigation** view, review the recorded rejection rationale and inspection photo, and click
+  **Restart Investigation** to resume investigation and reset the case to `UNDER_INVESTIGATION`.
 
 ---
 
