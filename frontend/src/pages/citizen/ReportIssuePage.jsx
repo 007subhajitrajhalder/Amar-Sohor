@@ -123,8 +123,8 @@ function ReportIssuePage() {
       return;
     }
 
-    if (!photoPreview) {
-      alert("Please upload a complaint photograph before submitting.");
+    if (!photoPreview && !photoFile) {
+      alert("Please upload a complaint photograph of the facility before submitting.");
       return;
     }
 
@@ -133,8 +133,8 @@ function ReportIssuePage() {
       return;
     }
 
-    if (requiresAiValidation && aiResult?.status === "REJECTED") {
-      alert(aiResult.message || "Cannot submit report: The uploaded photograph was rejected by AI validation.");
+    if (requiresAiValidation && aiResult?.status !== "ACCEPTED") {
+      alert(aiResult?.message || "Cannot submit report: A verified photograph of the facility itself is required.");
       return;
     }
 
@@ -539,23 +539,42 @@ function ReportIssuePage() {
                 </label>
 
                 {photoPreview ? (
-                  <div className="relative overflow-hidden rounded-xl border border-white/15 bg-black/40 p-2.5">
+                  <div className={`relative overflow-hidden rounded-xl border p-2.5 transition duration-200 ${
+                    aiResult?.status === "REJECTED"
+                      ? "border-rose-500/50 bg-rose-950/20 shadow-md shadow-rose-950/30"
+                      : "border-white/15 bg-black/40"
+                  }`}>
                     <img
                       src={photoPreview}
                       alt="Complaint evidence preview"
                       className="max-h-56 w-full rounded-lg object-cover"
                     />
-                    <div className="mt-2.5 flex items-center justify-between px-2 text-xs">
+                    <div className="mt-2.5 flex items-center justify-between px-2 text-xs flex-wrap gap-2">
                       <span className="truncate max-w-xs text-white/60 font-mono">
                         {photoName || "Uploaded photograph"}
                       </span>
-                      <button
-                        type="button"
-                        onClick={handleRemovePhoto}
-                        className="flex items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-300 hover:bg-red-500 hover:text-white transition"
-                      >
-                        <X size={13} /> Remove
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <label
+                          htmlFor="change-complaint-photo"
+                          className="flex items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500 hover:text-white transition cursor-pointer"
+                        >
+                          <Camera size={13} /> Change Photo
+                        </label>
+                        <input
+                          id="change-complaint-photo"
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="flex items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500 hover:text-white transition"
+                        >
+                          <X size={13} /> Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -585,7 +604,7 @@ function ReportIssuePage() {
                     />
                   </label>
                 )}
-                {/* AI Validation Feedback for Dustbin & Toilet Facilities */}
+                {/* AI Validation Feedback for Facilities */}
                 {requiresAiValidation && photoPreview && (
                   <div className="mt-2.5">
                     {aiValidating && (
@@ -596,7 +615,11 @@ function ReportIssuePage() {
                           <p className="text-white/60">
                             {isDustbin
                               ? "Checking for dustbin overflow or structural damage using Model V2"
-                              : "Checking for public toilet sanitation, hygiene, or structural damage using AI Model"}
+                              : isToilet
+                              ? "Checking for public toilet sanitation, hygiene, or structural damage"
+                              : isWater
+                              ? "Checking drinking water facility functionality and infrastructure"
+                              : "Checking parking facility and designated civic spaces"}
                           </p>
                         </div>
                       </div>
@@ -629,14 +652,14 @@ function ReportIssuePage() {
                     )}
 
                     {!aiValidating && aiResult?.status === "REJECTED" && (
-                      <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-300">
+                      <div className="flex items-start gap-3 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-200 shadow-md shadow-rose-950/20">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-300 mt-0.5">
                           <AlertTriangle size={15} />
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-rose-300 uppercase tracking-wide">
-                              AI Validation: Rejected
+                            <span className="font-bold text-rose-300 uppercase tracking-wide text-[11px]">
+                              AI Validation: Photograph Rejected
                             </span>
                             {aiResult.confidence && (
                               <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-mono text-rose-300 font-semibold">
@@ -644,13 +667,19 @@ function ReportIssuePage() {
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 text-rose-100 font-medium">
+                          <p className="font-medium text-rose-100">
                             {aiResult.message}
                           </p>
-                          <p className="mt-1 text-[11px] text-rose-300/80">
+                          <p className="text-[11px] text-rose-300/80">
                             {isDustbin
-                              ? 'Please click "Remove" above and select a clear photograph showing an overflowing dustbin or a damaged bin.'
-                              : 'Please click "Remove" above and select a clear photograph showing a dirty or damaged public toilet/urinal.'}
+                              ? 'The photograph does not appear to show the dustbin facility. Please click "Change Photo" above and upload a photo of the dustbin itself.'
+                              : isToilet
+                              ? 'The photograph does not appear to show the public toilet/urinal. Please click "Change Photo" above and upload a photo of the toilet facility itself.'
+                              : isWater
+                              ? 'The photograph does not appear to show the drinking water facility. Please click "Change Photo" above and upload a photo of the drinking water facility itself.'
+                              : isParking
+                              ? 'The photograph does not appear to show the parking area. Please click "Change Photo" above and upload a photo of the parking facility itself.'
+                              : 'Please click "Change Photo" above and upload a clear photograph showing the municipal facility itself.'}
                           </p>
                         </div>
                       </div>
@@ -662,7 +691,13 @@ function ReportIssuePage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting || isFacilityLocked || aiValidating || (requiresAiValidation && aiResult?.status === "REJECTED")}
+                disabled={
+                  isSubmitting ||
+                  isFacilityLocked ||
+                  aiValidating ||
+                  !photoFile ||
+                  (requiresAiValidation && aiResult?.status !== "ACCEPTED")
+                }
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
                 <span>
@@ -673,7 +708,9 @@ function ReportIssuePage() {
                     : aiValidating
                     ? "AI Validating Photograph..."
                     : requiresAiValidation && aiResult?.status === "REJECTED"
-                    ? "AI Validation Rejected — Provide Valid Photo"
+                    ? "Photograph Rejected — Please Change Photo"
+                    : requiresAiValidation && aiResult?.status !== "ACCEPTED"
+                    ? (!photoFile ? "Upload Facility Photograph" : "Verifying Facility Photo...")
                     : "Submit Grievance Report"}
                 </span>
                 <Send size={16} className={isSubmitting ? "animate-pulse" : ""} />

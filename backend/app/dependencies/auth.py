@@ -126,11 +126,11 @@ require_agent = require_agency
 def require_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """Require an authenticated citizen account for user-only routes."""
-    if current_user.role != "USER":
+    """Require an authenticated user (citizens, agency members, or admins)."""
+    if current_user.role not in ("USER", "AGENT", "AGENCY", "ADMIN"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Citizen access required"
+            detail="Authorized user access required"
         )
     return current_user
 

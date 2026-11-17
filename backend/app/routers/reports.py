@@ -29,7 +29,7 @@ from app.services import report_service, file_service
 from app.services.ai_service import (
     classify_image, classify_dustbin_image, classify_toilet_image,
     classify_drinking_water_image, classify_parking_image,
-    verify_resolution_evidence
+    validate_facility_image, verify_resolution_evidence
 )
 
 logger = logging.getLogger(__name__)
@@ -150,31 +150,29 @@ async def validate_report_image(
         raise HTTPException(400, "Please upload or select an image file to validate.")
 
     try:
-        if is_dustbin:
-            result = classify_dustbin_image(photo_bytes)
-            name_label = "dustbin or waste"
-        elif is_toilet:
-            result = classify_toilet_image(photo_bytes)
-            name_label = "public toilet or urinal"
-        elif is_water:
-            result = classify_drinking_water_image(photo_bytes)
-            name_label = "drinking water"
-        else:
-            result = classify_parking_image(photo_bytes)
-            name_label = "public parking"
-
+        result = validate_facility_image(photo_bytes, facility_type=facility_type)
         pred_class = result["predicted_class"]
         conf = result["confidence"]
+        is_relevant = result.get("is_relevant", True)
+        rejection_reason = result.get("reason")
 
-        if pred_class == "irrelevant_image":
+        name_label = (
+            "public toilet or urinal" if is_toilet
+            else "drinking water" if is_water
+            else "public parking" if is_parking
+            else "dustbin or waste"
+        )
+
+        if not is_relevant or pred_class == "irrelevant_image":
+            reason_msg = rejection_reason or f"The uploaded photograph does not appear to show a {name_label} facility ({conf * 100:.1f}% confidence)."
             return {
                 "is_dustbin": is_dustbin,
                 "is_toilet": is_toilet,
                 "facility_type": facility_type,
                 "status": "REJECTED",
-                "predicted_class": pred_class,
+                "predicted_class": "irrelevant_image",
                 "confidence": conf,
-                "message": f"Validation Rejected: The uploaded photograph does not appear to show a {name_label} facility ({conf * 100:.1f}% confidence). Please attach a clear photo of the facility."
+                "message": f"Validation Rejected: {reason_msg} Please attach a clear photograph of the facility itself."
             }
 
         good_classes = {"normal_bin", "clean_public_toilet", "clean_public_urinal", "functional_drinking_water", "valid_public_parking"}
@@ -300,26 +298,25 @@ async def submit_report(
                 detail=f"A valid photograph is required for {facility_label} grievance validation."
             )
         try:
-            if is_dustbin:
-                res = classify_dustbin_image(photo_bytes)
-                facility_label = "dustbin or waste"
-            elif is_toilet:
-                res = classify_toilet_image(photo_bytes)
-                facility_label = "public toilet or urinal"
-            elif is_water:
-                res = classify_drinking_water_image(photo_bytes)
-                facility_label = "drinking water"
-            else:
-                res = classify_parking_image(photo_bytes)
-                facility_label = "public parking"
+            facility_key = "toilet" if is_toilet else "water" if is_water else "parking" if is_parking else "dustbin"
+            facility_label = (
+                "public toilet or urinal" if is_toilet
+                else "drinking water" if is_water
+                else "public parking" if is_parking
+                else "dustbin or waste"
+            )
 
+            res = validate_facility_image(photo_bytes, facility_type=facility_key)
             pred_class = res["predicted_class"]
             conf = res["confidence"]
+            is_relevant = res.get("is_relevant", True)
+            rejection_reason = res.get("reason")
 
-            if pred_class == "irrelevant_image":
+            if not is_relevant or pred_class == "irrelevant_image":
+                reason_msg = rejection_reason or f"The uploaded photograph does not appear to show a {facility_label} facility ({conf * 100:.1f}% confidence)."
                 raise HTTPException(
                     status_code=400,
-                    detail=f"AI Validation Rejected: The uploaded photograph does not appear to show a {facility_label} facility ({conf * 100:.1f}% confidence). Please upload a genuine photo of the facility."
+                    detail=f"AI Validation Rejected: {reason_msg} The image was discarded. You must upload a genuine photograph of the facility itself."
                 )
             ai_result = {
                 "ai_validated": True,
@@ -332,7 +329,11 @@ async def submit_report(
         except ValueError as val_err:
             raise HTTPException(status_code=400, detail=str(val_err))
         except Exception as e:
-            logger.warning(f"AI validation runtime error: {e}")
+            logger.error(f"AI validation runtime error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unable to validate facility photograph: {str(e)}"
+            )
 
     final_photo_url = ""
 

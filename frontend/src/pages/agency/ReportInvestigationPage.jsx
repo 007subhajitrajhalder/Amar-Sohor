@@ -3,7 +3,7 @@ import ApiState from "../../components/ApiState";
 import { apiRequest, statusLabel, mediaUrl, displayDate } from "../../api/client";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { XCircle, RotateCcw, CheckCircle2, Camera } from "lucide-react";
+import { XCircle, RotateCcw, CheckCircle2, Camera, AlertTriangle, Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -24,6 +24,8 @@ function ReportInvestigationPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectPhoto, setRejectPhoto] = useState(null);
   const [rejectPhotoPreview, setRejectPhotoPreview] = useState(null);
+  const [aiValidating, setAiValidating] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
   const [restarting, setRestarting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -90,6 +92,38 @@ function ReportInvestigationPage() {
     navigate("/agency/reports/" + reportId + "/resolution");
   };
 
+  const handleRejectPhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setRejectPhoto(file);
+    const previewUrl = URL.createObjectURL(file);
+    setRejectPhotoPreview(previewUrl);
+    setError("");
+
+    // Trigger real-time AI checking on the inspection proof photograph
+    if (isHighConfBadFacility) {
+      setAiValidating(true);
+      setAiResult(null);
+      try {
+        const body = new FormData();
+        body.append("photo", file);
+        const res = await apiRequest(`/reports/${reportId}/validate-resolution`, {
+          method: "POST",
+          body,
+        });
+        setAiResult(res);
+      } catch (err) {
+        setAiResult({
+          status: "REJECTED",
+          message: err.message || "Failed to validate inspection photograph with AI.",
+        });
+      } finally {
+        setAiValidating(false);
+      }
+    }
+  };
+
   const handleRejectReport = async () => {
     if (!rejectReason.trim()) {
       setError("Please provide a reason for rejecting this report.");
@@ -97,6 +131,14 @@ function ReportInvestigationPage() {
     }
     if (isHighConfBadFacility && !rejectPhoto) {
       setError("An on-site inspection proof photograph is required to reject a report with an AI-verified defect (AI score >= 50%).");
+      return;
+    }
+    if (isHighConfBadFacility && aiResult?.status === "REJECTED") {
+      setError(aiResult.message || "Cannot reject report: The uploaded inspection proof photograph failed AI validation.");
+      return;
+    }
+    if (aiValidating) {
+      setError("Please wait for AI inspection verification to finish before rejecting.");
       return;
     }
     setSaving(true);
@@ -115,7 +157,7 @@ function ReportInvestigationPage() {
         state: { message: `Report #${reportId} has been rejected.` },
       });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to reject report.");
     } finally {
       setSaving(false);
     }
@@ -581,34 +623,136 @@ function ReportInvestigationPage() {
 
                     {/* Inspection Proof Photo Upload for Verified Defects */}
                     {isHighConfBadFacility && (
-                      <div>
-                        <label className={`block text-xs font-semibold mb-1 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <div className="space-y-2">
+                        <label className={`block text-xs font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                           Inspection Proof Photograph <span className="text-rose-400">*</span>
                         </label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setRejectPhoto(file);
-                              setRejectPhotoPreview(URL.createObjectURL(file));
-                            }
-                          }}
-                          className={`w-full rounded-xl border p-2 text-xs ${
-                            isDark ? "border-white/10 bg-black/40 text-white" : "border-slate-300 bg-white text-slate-900"
-                          }`}
-                        />
-                        {rejectPhotoPreview && (
-                          <div className="mt-2 flex items-center gap-3">
-                            <img src={rejectPhotoPreview} alt="Rejection proof preview" className="max-h-28 rounded-lg border border-white/10" />
+
+                        {rejectPhotoPreview ? (
+                          <div className="relative overflow-hidden rounded-xl border border-rose-500/30 bg-black/40 p-2">
+                            <img
+                              src={rejectPhotoPreview}
+                              alt="Inspection Proof Preview"
+                              className="max-h-56 w-full rounded-lg object-cover"
+                            />
                             <button
                               type="button"
-                              onClick={() => { setRejectPhoto(null); setRejectPhotoPreview(null); }}
-                              className="text-xs text-rose-400 hover:underline"
+                              onClick={() => {
+                                setRejectPhoto(null);
+                                setRejectPhotoPreview(null);
+                                setAiResult(null);
+                              }}
+                              className="absolute right-3 top-3 rounded-lg bg-black/70 px-2.5 py-1 text-xs text-rose-300 backdrop-blur-md hover:bg-rose-500 hover:text-white transition"
                             >
-                              Remove photo
+                              Change Photo
                             </button>
+                          </div>
+                        ) : (
+                          <label
+                            className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center cursor-pointer transition ${
+                              isDark
+                                ? "border-white/10 hover:border-rose-400/40 hover:bg-white/[0.02]"
+                                : "border-slate-300 hover:border-rose-500/40 hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-400 mb-2">
+                              <ImageIcon size={20} />
+                            </div>
+                            <span className="text-xs font-semibold text-rose-300">
+                              Select On-Site Inspection Photograph
+                            </span>
+                            <span className={`text-[11px] mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                              JPG, PNG, WebP up to 10MB
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={handleRejectPhotoChange}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+
+                        {/* Real-time AI Resolution / Rejection Verification Feedback */}
+                        {rejectPhoto && (
+                          <div className="mt-2">
+                            {aiValidating && (
+                              <div className="flex items-center gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs text-cyan-200 animate-pulse">
+                                <Loader2 size={16} className="animate-spin text-cyan-400 shrink-0" />
+                                <div>
+                                  <p className="font-semibold text-cyan-100">
+                                    AI Verification in progress...
+                                  </p>
+                                  <p className="text-[11px] text-cyan-300/80 mt-0.5">
+                                    Evaluating facility condition and comparing deep scene geometry with the citizen complaint photo.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {!aiValidating && aiResult?.status === "ACCEPTED" && (
+                              <div className="flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300 mt-0.5">
+                                  <CheckCircle2 size={14} />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <span className="font-bold text-emerald-300 uppercase tracking-wide text-[11px]">
+                                      AI Inspection Verification: Accepted
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      {aiResult.cleanliness_confidence && (
+                                        <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono text-emerald-300 font-semibold">
+                                          Condition: {(aiResult.cleanliness_confidence * 100).toFixed(1)}%
+                                        </span>
+                                      )}
+                                      {aiResult.scene_similarity != null && (
+                                        <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300 font-semibold">
+                                          Site Match: {(aiResult.scene_similarity * 100).toFixed(1)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="font-medium text-emerald-50 text-[11px]">
+                                    {aiResult.message}
+                                  </p>
+                                  <p className="text-[10px] text-emerald-300/70">
+                                    On-site inspection evidence verified. Facility location confirmed.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {!aiValidating && aiResult?.status === "REJECTED" && (
+                              <div className="flex items-start gap-3 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-100">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-300 mt-0.5">
+                                  <AlertTriangle size={14} />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <span className="font-bold text-rose-300 uppercase tracking-wide text-[11px]">
+                                      AI Inspection Verification: Rejected
+                                    </span>
+                                    {aiResult.is_duplicate && (
+                                      <span className="rounded bg-rose-500/30 px-1.5 py-0.5 text-[10px] font-bold text-rose-200">
+                                        Duplicate Image
+                                      </span>
+                                    )}
+                                    {aiResult.cleanliness_confidence && !aiResult.is_duplicate && (
+                                      <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-mono text-rose-300 font-semibold">
+                                        Confidence: {(aiResult.cleanliness_confidence * 100).toFixed(1)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="font-medium text-rose-50 text-[11px]">
+                                    {aiResult.message}
+                                  </p>
+                                  <p className="text-[10px] text-rose-300/80">
+                                    Please upload genuine on-site photographic proof taken at the actual facility location.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -618,7 +762,11 @@ function ReportInvestigationPage() {
                       rows={3}
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
-                      placeholder="e.g. Facility inspected on-site; equipment found intact and clean. False complaint / duplicate."
+                      placeholder={
+                        isHighConfBadFacility
+                          ? "Document detailed on-site inspection findings explaining why this report is being rejected (e.g., Facility inspected on-site; equipment found intact, functional, and clean. No defect observed)..."
+                          : "e.g. Facility inspected on-site; equipment found intact and clean. False complaint / duplicate."
+                      }
                       className={`w-full rounded-xl border p-2.5 text-xs outline-none focus:ring-2 ${
                         isDark
                           ? "border-white/10 bg-black/40 text-white placeholder-white/30 focus:ring-rose-500/40"
@@ -633,6 +781,8 @@ function ReportInvestigationPage() {
                           setRejectReason("");
                           setRejectPhoto(null);
                           setRejectPhotoPreview(null);
+                          setAiResult(null);
+                          setAiValidating(false);
                         }}
                         className="rounded-lg px-3 py-1.5 text-xs font-semibold border border-white/10 hover:bg-white/10"
                       >
@@ -640,11 +790,11 @@ function ReportInvestigationPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || !rejectReason.trim() || (isHighConfBadFacility && !rejectPhoto)}
+                        disabled={saving || aiValidating || !rejectReason.trim() || (isHighConfBadFacility && (!rejectPhoto || aiResult?.status === "REJECTED"))}
                         onClick={handleRejectReport}
                         className="rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50"
                       >
-                        {saving ? "Rejecting & Validating..." : "Confirm & Reject"}
+                        {saving ? "Rejecting & Validating..." : aiValidating ? "AI Validating..." : "Confirm & Reject"}
                       </button>
                     </div>
                   </div>

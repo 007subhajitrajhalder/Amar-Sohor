@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import torch
 from torch import nn
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageStat, UnidentifiedImageError
 from torchvision.models import (
     mobilenet_v3_large,
     MobileNet_V3_Large_Weights,
@@ -42,6 +42,10 @@ _water_class_names = None
 _parking_model = None
 _parking_transform = None
 _parking_class_names = None
+
+_general_model = None
+_general_transform = None
+_general_categories = None
 
 
 # -----------------------------------------
@@ -198,6 +202,20 @@ def load_model(model_type: str = "dustbin"):
     return load_dustbin_model()
 
 
+def load_general_model() -> Tuple[nn.Module, object, list]:
+    """Load and cache ImageNet-pretrained MobileNetV3 to filter out-of-domain objects (animals, food, etc.)."""
+    global _general_model, _general_transform, _general_categories
+    if _general_model is not None:
+        return _general_model, _general_transform, _general_categories
+
+    weights = MobileNet_V3_Large_Weights.DEFAULT
+    model = mobilenet_v3_large(weights=weights).to(DEVICE).eval()
+    _general_transform = weights.transforms()
+    _general_categories = weights.meta["categories"]
+    _general_model = model
+    return _general_model, _general_transform, _general_categories
+
+
 # -----------------------------------------
 # 3. Classify uploaded images
 # -----------------------------------------
@@ -210,6 +228,17 @@ def classify_dustbin_image(image_bytes: bytes) -> dict:
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Invalid image file") from exc
 
+    # 1. Blank or covered camera check
+    stat = ImageStat.Stat(image)
+    if max(stat.stddev) < 12.0:
+        return {
+            "facility_type": "dustbin",
+            "predicted_class": "irrelevant_image",
+            "confidence": 0.99,
+            "is_relevant": False,
+            "reason": "Image is blank, solid color, or camera lens was obscured.",
+        }
+
     image_tensor = transform(image).unsqueeze(0)
     with torch.inference_mode():
         outputs = model(image_tensor.to(DEVICE))
@@ -217,11 +246,23 @@ def classify_dustbin_image(image_bytes: bytes) -> dict:
         confidence, predicted_index = torch.max(probabilities, dim=0)
 
     predicted_class = class_names[predicted_index.item()]
+    conf_val = round(confidence.item(), 4)
+
+    if predicted_class == "irrelevant_image":
+        return {
+            "facility_type": "dustbin",
+            "predicted_class": "irrelevant_image",
+            "confidence": conf_val,
+            "is_relevant": False,
+            "reason": "Photograph does not appear to show a dustbin or waste facility.",
+        }
+
     return {
         "facility_type": "dustbin",
         "predicted_class": predicted_class,
-        "confidence": round(confidence.item(), 4),
-        "is_relevant": predicted_class != "irrelevant_image",
+        "confidence": conf_val,
+        "is_relevant": True,
+        "reason": None,
     }
 
 
@@ -233,6 +274,17 @@ def classify_toilet_image(image_bytes: bytes) -> dict:
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Invalid image file") from exc
 
+    # 1. Blank or covered camera check
+    stat = ImageStat.Stat(image)
+    if max(stat.stddev) < 12.0:
+        return {
+            "facility_type": "toilet",
+            "predicted_class": "irrelevant_image",
+            "confidence": 0.99,
+            "is_relevant": False,
+            "reason": "Image is blank, solid color, or camera lens was obscured.",
+        }
+
     image_tensor = transform(image).unsqueeze(0)
     with torch.inference_mode():
         outputs = model(image_tensor.to(DEVICE))
@@ -240,11 +292,23 @@ def classify_toilet_image(image_bytes: bytes) -> dict:
         confidence, predicted_index = torch.max(probabilities, dim=0)
 
     predicted_class = class_names[predicted_index.item()]
+    conf_val = round(confidence.item(), 4)
+
+    if predicted_class == "irrelevant_image":
+        return {
+            "facility_type": "toilet",
+            "predicted_class": "irrelevant_image",
+            "confidence": conf_val,
+            "is_relevant": False,
+            "reason": "Photograph does not appear to show a public toilet or urinal facility.",
+        }
+
     return {
         "facility_type": "toilet",
         "predicted_class": predicted_class,
-        "confidence": round(confidence.item(), 4),
-        "is_relevant": predicted_class != "irrelevant_image",
+        "confidence": conf_val,
+        "is_relevant": True,
+        "reason": None,
     }
 
 
@@ -256,6 +320,17 @@ def classify_drinking_water_image(image_bytes: bytes) -> dict:
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Invalid image file") from exc
 
+    # 1. Blank or covered camera check
+    stat = ImageStat.Stat(image)
+    if max(stat.stddev) < 12.0:
+        return {
+            "facility_type": "water",
+            "predicted_class": "irrelevant_image",
+            "confidence": 0.99,
+            "is_relevant": False,
+            "reason": "Image is blank, solid color, or camera lens was obscured.",
+        }
+
     image_tensor = transform(image).unsqueeze(0)
     with torch.inference_mode():
         outputs = model(image_tensor.to(DEVICE))
@@ -263,11 +338,23 @@ def classify_drinking_water_image(image_bytes: bytes) -> dict:
         confidence, predicted_index = torch.max(probabilities, dim=0)
 
     predicted_class = class_names[predicted_index.item()]
+    conf_val = round(confidence.item(), 4)
+
+    if predicted_class == "irrelevant_image":
+        return {
+            "facility_type": "water",
+            "predicted_class": "irrelevant_image",
+            "confidence": conf_val,
+            "is_relevant": False,
+            "reason": "Photograph does not appear to show a drinking water facility.",
+        }
+
     return {
         "facility_type": "water",
         "predicted_class": predicted_class,
-        "confidence": round(confidence.item(), 4),
-        "is_relevant": predicted_class != "irrelevant_image",
+        "confidence": conf_val,
+        "is_relevant": True,
+        "reason": None,
     }
 
 
@@ -279,6 +366,17 @@ def classify_parking_image(image_bytes: bytes) -> dict:
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Invalid image file") from exc
 
+    # 1. Blank or covered camera check
+    stat = ImageStat.Stat(image)
+    if max(stat.stddev) < 12.0:
+        return {
+            "facility_type": "parking",
+            "predicted_class": "irrelevant_image",
+            "confidence": 0.99,
+            "is_relevant": False,
+            "reason": "Image is blank, solid color, or camera lens was obscured.",
+        }
+
     image_tensor = transform(image).unsqueeze(0)
     with torch.inference_mode():
         outputs = model(image_tensor.to(DEVICE))
@@ -286,11 +384,23 @@ def classify_parking_image(image_bytes: bytes) -> dict:
         confidence, predicted_index = torch.max(probabilities, dim=0)
 
     predicted_class = class_names[predicted_index.item()]
+    conf_val = round(confidence.item(), 4)
+
+    if predicted_class == "irrelevant_image":
+        return {
+            "facility_type": "parking",
+            "predicted_class": "irrelevant_image",
+            "confidence": conf_val,
+            "is_relevant": False,
+            "reason": "Photograph does not appear to show a public parking facility.",
+        }
+
     return {
         "facility_type": "parking",
         "predicted_class": predicted_class,
-        "confidence": round(confidence.item(), 4),
-        "is_relevant": predicted_class != "irrelevant_image",
+        "confidence": conf_val,
+        "is_relevant": True,
+        "reason": None,
     }
 
 
@@ -304,6 +414,146 @@ def classify_image(image_bytes: bytes, facility_type: str = "dustbin") -> dict:
     if any(k in ft for k in ["parking", "carpark", "garage"]):
         return classify_parking_image(image_bytes)
     return classify_dustbin_image(image_bytes)
+
+
+def validate_facility_image(image_bytes: bytes, facility_type: str = "dustbin") -> dict:
+    """
+    Comprehensive multi-stage AI validator for civic facility report photographs:
+    1. Image Quality / Obscured Camera Check (rejects blank/solid color/black images).
+    2. General ImageNet Out-of-Domain Filter (rejects animals, food, everyday domestic items).
+    3. Target Facility Classifier with calibrated confidence gating.
+    4. Cross-Facility Mismatch Check (rejects photos of other facilities, e.g. toilets on dustbin reports).
+    Ensures that uploaded images are strictly of the reported facility itself.
+    """
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("Invalid image file format") from exc
+
+    # Step 1: Blank or obscured lens check
+    stat = ImageStat.Stat(image)
+    if max(stat.stddev) < 12.0:
+        return {
+            "facility_type": facility_type,
+            "predicted_class": "irrelevant_image",
+            "confidence": 0.99,
+            "is_relevant": False,
+            "reason": "The uploaded photograph appears blank, completely obscured, or lacks visual detail. Please attach a clear photograph of the facility itself."
+        }
+
+    # Step 2: General ImageNet out-of-domain detection (animals, food/produce)
+    try:
+        gen_model, gen_transform, gen_cats = load_general_model()
+        t_gen = gen_transform(image).unsqueeze(0).to(DEVICE)
+        with torch.inference_mode():
+            logits_gen = gen_model(t_gen)
+            probs_gen = torch.softmax(logits_gen, dim=1)[0]
+            top_prob, top_idx = torch.max(probs_gen, dim=0)
+        top_idx_val = top_idx.item()
+        top_prob_val = top_prob.item()
+
+        # ImageNet 0-397: biological animals
+        if 0 <= top_idx_val <= 397 and top_prob_val >= 0.25:
+            animal_name = gen_cats[top_idx_val].replace("_", " ").title()
+            return {
+                "facility_type": facility_type,
+                "predicted_class": "irrelevant_image",
+                "confidence": round(top_prob_val, 4),
+                "is_relevant": False,
+                "reason": f"Unrelated subject detected ({animal_name}). The photograph must be of the municipal facility itself only."
+            }
+
+        # ImageNet 924-969: food and produce
+        if 924 <= top_idx_val <= 969 and top_prob_val >= 0.25:
+            food_name = gen_cats[top_idx_val].replace("_", " ").title()
+            return {
+                "facility_type": facility_type,
+                "predicted_class": "irrelevant_image",
+                "confidence": round(top_prob_val, 4),
+                "is_relevant": False,
+                "reason": f"Unrelated subject detected ({food_name}). The photograph must be of the municipal facility itself only."
+            }
+
+        # ImageNet vehicles/cars check (if target is not parking)
+        ft_check = facility_type.lower()
+        is_parking_target = any(k in ft_check for k in ["parking", "carpark", "garage"])
+        vehicle_indices = {
+            436, 468, 475, 479, 511, 565, 609, 627, 656, 665, 670, 675,
+            705, 717, 734, 779, 817, 864, 866, 867
+        }
+        if not is_parking_target and top_idx_val in vehicle_indices and top_prob_val >= 0.25:
+            veh_name = gen_cats[top_idx_val].replace("_", " ").title()
+            return {
+                "facility_type": facility_type,
+                "predicted_class": "irrelevant_image",
+                "confidence": round(top_prob_val, 4),
+                "is_relevant": False,
+                "reason": f"Unrelated subject detected ({veh_name}). The photograph must be of the municipal facility itself only, not a vehicle."
+            }
+    except Exception as e:
+        logger.warning("General ImageNet out-of-domain check failed: %s", e)
+
+    # Step 3: Run target facility classifier
+    ft = facility_type.lower()
+    target_key = "toilet" if any(k in ft for k in ["toilet", "washroom", "restroom", "urinal"]) \
+        else "water" if any(k in ft for k in ["water", "drinking", "tap", "dispenser", "fountain"]) \
+        else "parking" if any(k in ft for k in ["parking", "carpark", "garage"]) \
+        else "dustbin"
+
+    target_res = classify_image(image_bytes, target_key)
+    pred_class = target_res["predicted_class"]
+    conf = target_res["confidence"]
+    is_relevant = target_res.get("is_relevant", True)
+
+    if not is_relevant or pred_class == "irrelevant_image":
+        readable_target = "public toilet" if target_key == "toilet" else "drinking water" if target_key == "water" else "public parking" if target_key == "parking" else "dustbin/waste"
+        return {
+            "facility_type": target_key,
+            "predicted_class": "irrelevant_image",
+            "confidence": conf,
+            "is_relevant": False,
+            "reason": target_res.get("reason") or f"The uploaded photograph does not appear to show a {readable_target} facility ({conf*100:.1f}% confidence)."
+        }
+
+    # Step 4: Cross-facility mismatch check (ensure toilet image is not uploaded for dustbin, etc.)
+    loaders = {
+        "dustbin": (load_dustbin_model, "dustbin"),
+        "toilet": (load_toilet_model, "public toilet"),
+        "water": (load_water_model, "drinking water"),
+        "parking": (load_parking_model, "public parking"),
+    }
+
+    for other_key, (other_loader, other_label) in loaders.items():
+        if other_key == target_key:
+            continue
+        try:
+            m_oth, t_oth, c_oth = other_loader()
+            t_other_tensor = t_oth(image).unsqueeze(0).to(DEVICE)
+            with torch.inference_mode():
+                p_oth = torch.softmax(m_oth(t_other_tensor), dim=1)[0]
+                c_conf, c_idx = torch.max(p_oth, dim=0)
+            other_class = c_oth[c_idx.item()]
+            other_conf_val = c_conf.item()
+
+            if other_class != "irrelevant_image" and other_conf_val >= 0.50 and other_conf_val > conf:
+                formatted_other = other_class.replace("_", " ").title()
+                return {
+                    "facility_type": target_key,
+                    "predicted_class": "irrelevant_image",
+                    "confidence": round(other_conf_val, 4),
+                    "is_relevant": False,
+                    "reason": f"Facility mismatch: The uploaded photograph appears to show a {other_label} facility ({formatted_other}), not a {target_key}."
+                }
+        except Exception as e:
+            logger.warning("Cross-facility check failed for %s: %s", other_key, e)
+
+    return {
+        "facility_type": target_key,
+        "predicted_class": pred_class,
+        "confidence": conf,
+        "is_relevant": True,
+        "reason": None
+    }
 
 
 # -----------------------------------------
