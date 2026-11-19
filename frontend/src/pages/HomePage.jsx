@@ -17,8 +17,13 @@ import {
   ArrowRight,
   LayoutDashboard,
   LogOut,
+  Building2,
+  Layers,
+  Users,
+  Landmark,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useApi } from "../api/useApi";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -45,7 +50,7 @@ const ABOUT_SLIDES = [
 function HomePage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
-
+  const stats = useApi("/public/stats");
   const getDashboardPath = () => {
     return "/citizen/dashboard";
   };
@@ -596,6 +601,35 @@ function HomePage() {
                 </div>
               </div>
             </div>
+{/* HOMEPAGE STATISTICS */}
+<section className="mx-auto mt-8 max-w-5xl px-1">
+  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    {[
+      { label: "Total Facilities", value: stats.data?.total_facilities, icon: Building2 },
+      { label: "Total Categories", value: stats.data?.total_categories, icon: Layers },
+      { label: "Registered Citizens", value: stats.data?.registered_users, icon: Users },
+      { label: "Agency Members", value: stats.data?.total_agency_members, icon: Landmark },
+    ].map((item) => {
+      const Icon = item.icon;
+      return (
+        <div
+          key={item.label}
+          className="group relative overflow-hidden rounded-2xl border border-lime-300/15 bg-black/40 p-5 text-center shadow-xl backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/50 hover:bg-lime-300/[0.06] md:p-6"
+        >
+          <div className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-lime-300/20 bg-lime-300/10 text-lime-300">
+            <Icon size={21} />
+          </div>
+          <h3 className="relative mt-4 text-3xl font-bold text-lime-300 md:text-4xl">
+            {item.value ?? "—"}
+          </h3>
+          <p className="relative mt-2 text-xs font-medium tracking-wide text-white/60 md:text-sm">
+            {item.label}
+          </p>
+        </div>
+      );
+    })}
+  </div>
+</section>
             {/* RETROFITTED ABOUT SECTION WITH SLIDESHOW */}
         <section id="about" className="mx-auto mt-6 max-w-5xl scroll-mt-28">
           <div className="overflow-hidden rounded-3xl border border-white/15 bg-black/40 shadow-2xl backdrop-blur-2xl md:grid md:grid-cols-[1.1fr_0.9fr]">
