@@ -19,6 +19,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useApi } from "../api/useApi";
+import { categoryKey } from "../api/client";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -45,6 +47,7 @@ const ABOUT_SLIDES = [
 function HomePage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const categoryResource = useApi("/facilities/categories", { poll: 0 });
 
   const getDashboardPath = () => {
     return "/citizen/dashboard";
@@ -93,27 +96,20 @@ function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const facilities = [
-    {
-      name: "Nearest Dustbin",
-      icon: Trash2,
-    },
-    {
-      name: "Nearest Toilet",
-      icon: DoorOpen,
-    },
-    {
-      name: "Nearest Parking",
-      icon: Car,
-    },
-    {
-      name: "Nearest Drinking Water",
-      icon: Droplets,
-    },
-  ];
+  // Facility categories now come from the database through GET /facilities/categories.
+  const facilities = (categoryResource.data || []).map((category) => {
+    const key = categoryKey(category.category_name);
+    const icons = { dustbin: Trash2, toilet: DoorOpen, parking: Car, water: Droplets };
+    return {
+      id: category.category_id,
+      name: `Nearest ${category.display_name}`,
+      category: key,
+      icon: icons[key] || MapPin,
+    };
+  });
 
   const handleFacilitySelect = (facility) => {
-    setSelectedFacility(facility.name);
+    setSelectedFacility(facility);
     setShowFacilityMenu(false);
   };
 
@@ -136,16 +132,7 @@ function HomePage() {
     );
   };
 
-  const getCategoryQuery = (facilityName) => {
-    const map = {
-      "Nearest Dustbin": "dustbin",
-      "Nearest Toilet": "toilet",
-      "Nearest Parking": "parking",
-      "Nearest Drinking Water": "water",
-    };
-
-    return map[facilityName] || "";
-  };
+  const getCategoryQuery = (facility) => facility?.category || "";
 
   const handleFindNearby = () => {
     if (!location.trim()) {
@@ -401,7 +388,7 @@ function HomePage() {
                           </p>
 
                           <p className="truncate text-sm md:text-base">
-                            {selectedFacility || "Select Facility"}
+                            {selectedFacility?.name || "Select Facility"}
                           </p>
                         </div>
 
@@ -417,7 +404,7 @@ function HomePage() {
                         <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-[200] origin-top animate-[fadeIn_.2s_ease-out] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-left shadow-2xl backdrop-blur-2xl">
                           {facilities.map((facility) => {
                             const Icon = facility.icon;
-                            const isSelected = selectedFacility === facility.name;
+                            const isSelected = selectedFacility?.id === facility.id;
 
                             return (
                               <button
