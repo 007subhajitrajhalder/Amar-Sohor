@@ -4,10 +4,7 @@ import { apiRequest, facilityView, displayDate } from "../../api/client";
 import { useState } from "react";
 import {
   ArrowLeft,
-  Clock,
-  Mail,
   MapPin,
-  Phone,
   Send,
   Star,
 } from "lucide-react";
@@ -103,33 +100,27 @@ function FacilityDetailsPage() {
             <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-xl backdrop-blur-2xl">
               <iframe
                 title={`${name} map`}
-                src={`https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`}
+                src={`https://www.google.com/maps?q=${facility.latitude},${facility.longitude}&output=embed`}
                 className="h-64 w-full border-0 opacity-80"
                 loading="lazy"
               />
               <div className="p-5 md:p-6">
-                <div className="flex flex-wrap justify-between gap-3">
-                  <span className="rounded-full bg-lime-300/10 px-3.5 py-1.5 text-xs font-semibold text-lime-300">
-                    ● Open now
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${facility.rawStatus === "OPEN" ? "bg-lime-300/10 text-lime-300" : "bg-amber-300/10 text-amber-200"}`}>
+                    ● {facility.status}
                   </span>
-                  <span className="flex items-center gap-2 text-sm text-white/40">
-                    <Clock size={16} />
-                    6:00 AM – 10:00 PM
-                  </span>
+                  <span className="text-sm text-white/50">{facility.agency || "Agency not listed"}</span>
                 </div>
-                <h2 className="mt-5 text-xl font-bold">
-                  Facility information
-                </h2>
+                {facility.imageUrl && <img src={facility.imageUrl} alt={name} className="mt-5 max-h-80 w-full rounded-xl object-cover" />}
+                <h2 className="mt-5 text-xl font-bold">Facility information</h2>
                 <p className="mt-2 text-sm leading-6 text-white/50">
-                  A registered public facility managed by the relevant Kolkata
-                  municipal department and maintained for daily community use.
+                  {facility.additional_notes || "No additional information has been provided for this facility."}
                 </p>
                 <div className="mt-5 grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs text-white/30">Category</p>
-                    <p className="mt-1 font-semibold">{category}</p>
-                  </div>
-                  
+                  <div><p className="text-xs text-white/30">Category</p><p className="mt-1 font-semibold">{category}</p></div>
+                  <div><p className="text-xs text-white/30">Managed by</p><p className="mt-1 font-semibold">{facility.agency || "Not available"}</p></div>
+                  <div><p className="text-xs text-white/30">Latitude</p><p className="mt-1 font-semibold">{facility.latitude}</p></div>
+                  <div><p className="text-xs text-white/30">Longitude</p><p className="mt-1 font-semibold">{facility.longitude}</p></div>
                 </div>
                 <Link
                   to={`/citizen/report-issue/${facilityId}`}
