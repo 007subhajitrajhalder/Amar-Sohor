@@ -46,6 +46,7 @@ class FacilityOut(BaseModel):
     status: str
     agency_name: Optional[str] = None
     photo_url: Optional[str] = None
+    additional_notes: Optional[str] = None
     has_active_report: bool = False
     active_report_id: Optional[int] = None
     active_report_title: Optional[str] = None
@@ -78,7 +79,8 @@ def list_facilities(
             "address": f.address,
             "status": f.status,
             "agency_name": agency.agency_name if agency else "KMC Department",
-            "photo_url": f.photo_url
+            "photo_url": f.photo_url,
+            "additional_notes": f.additional_notes
         })
     return result
 
@@ -153,6 +155,7 @@ def get_public_facility(facility_id: int, db: Session = Depends(get_db)):
         "status": f.status,
         "agency_name": agency.agency_name if agency else "KMC Department",
         "photo_url": f.photo_url,
+        "additional_notes": f.additional_notes,
         "has_active_report": target_report is not None,
         "active_report_id": target_report.report_id if target_report else None,
         "active_report_title": target_report.title if target_report else None,
