@@ -53,7 +53,7 @@ function HomePage() {
     return "/citizen/dashboard";
   };
   const [showFacilityMenu, setShowFacilityMenu] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState("");
+  const [selectedFacility, setSelectedFacility] = useState(null);
   const [location, setLocation] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
@@ -459,7 +459,7 @@ function HomePage() {
             <div className="mx-auto mt-6 grid max-w-5xl grid-cols-2 gap-6 md:grid-cols-4">
               {facilities.map((facility) => {
                 const Icon = facility.icon;
-                const category = getCategoryQuery(facility.name);
+                const category = getCategoryQuery(facility);
 
                 return (
                   <Link
