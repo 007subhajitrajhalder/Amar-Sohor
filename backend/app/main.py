@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from app.chatbot.router import router as chatbot_router
+from app.routers import public_stats
 from app.routers import (
     admin,
     agencies,
@@ -100,3 +101,4 @@ app.include_router(facilities.router)
 app.include_router(reports.router)
 app.include_router(recommendations.router)
 app.include_router(chatbot_router)
+app.include_router(public_stats.router)
