@@ -47,6 +47,9 @@ _general_model = None
 _general_transform = None
 _general_categories = None
 
+_detector_model = None
+_detector_categories = None
+
 
 # -----------------------------------------
 # 2. Model Loaders
@@ -214,6 +217,24 @@ def load_general_model() -> Tuple[nn.Module, object, list]:
     _general_categories = weights.meta["categories"]
     _general_model = model
     return _general_model, _general_transform, _general_categories
+
+
+def load_detector_model() -> Tuple[object, list]:
+    """Load and cache COCO-pretrained SSDLite detector to detect people/selfies and other non-facility subjects."""
+    global _detector_model, _detector_categories
+    if _detector_model is not None:
+        return _detector_model, _detector_categories
+
+    try:
+        import torchvision.models.detection as detection
+        weights = detection.SSDLite320_MobileNet_V3_Large_Weights.DEFAULT
+        model = detection.ssdlite320_mobilenet_v3_large(weights=weights).to(DEVICE).eval()
+        _detector_categories = weights.meta["categories"]
+        _detector_model = model
+        return _detector_model, _detector_categories
+    except Exception as e:
+        logger.warning("Failed to load SSDLite detector model: %s", e)
+        return None, []
 
 
 # -----------------------------------------
@@ -440,6 +461,50 @@ def validate_facility_image(image_bytes: bytes, facility_type: str = "dustbin") 
             "is_relevant": False,
             "reason": "The uploaded photograph appears blank, completely obscured, or lacks visual detail. Please attach a clear photograph of the facility itself."
         }
+
+    # Step 1b: Person / Selfie / Portrait detection
+    # Discard images where a person/selfie dominates the frame (not a municipal facility photograph)
+    try:
+        det_model, det_cats = load_detector_model()
+        if det_model is not None and det_cats:
+            import torchvision.transforms.functional as TF
+            img_tensor = TF.to_tensor(image).to(DEVICE)
+            with torch.inference_mode():
+                det_res = det_model([img_tensor])[0]
+            w_img, h_img = image.size
+            img_area = float(w_img * h_img)
+            scores = det_res.get("scores", [])
+            labels = det_res.get("labels", [])
+            boxes = det_res.get("boxes", [])
+
+            total_person_area = 0.0
+            max_person_score = 0.0
+            person_count = 0
+
+            for score_t, label_t, box_t in zip(scores, labels, boxes):
+                score_val = score_t.item()
+                if score_val >= 0.40:
+                    cat_name = det_cats[label_t.item()]
+                    if cat_name == "person":
+                        b = box_t.tolist()
+                        box_area = max(0.0, (b[2] - b[0])) * max(0.0, (b[3] - b[1]))
+                        total_person_area += box_area
+                        person_count += 1
+                        if score_val > max_person_score:
+                            max_person_score = score_val
+
+            person_ratio = total_person_area / img_area if img_area > 0 else 0.0
+            # If a person/selfie covers >= 15% of the photograph or multiple people are prominent
+            if max_person_score >= 0.50 and (person_ratio >= 0.15 or person_count >= 2):
+                return {
+                    "facility_type": facility_type,
+                    "predicted_class": "irrelevant_image",
+                    "confidence": round(max_person_score, 4),
+                    "is_relevant": False,
+                    "reason": "Unrelated photograph detected: The uploaded image appears to be a portrait or selfie of people, not the municipal facility. Please upload a clear photograph of the facility itself."
+                }
+    except Exception as e:
+        logger.warning("Person/selfie detection check failed: %s", e)
 
     # Step 2: General ImageNet out-of-domain detection (animals, food/produce)
     try:

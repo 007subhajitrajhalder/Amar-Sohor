@@ -1,7 +1,7 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { facilityView } from "../../api/client";
-import { useState } from "react";
+import { facilityView, suggestLocationsApi } from "../../api/client";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -41,15 +41,98 @@ function facilityIcon(category, props) {
   return <Icon {...props} />;
 }
 
+function parseCoords(text) {
+  if (!text) return null;
+  const match = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (match) {
+    const lat = parseFloat(match[1]);
+    const lng = parseFloat(match[2]);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { lat, lng };
+    }
+  }
+  return null;
+}
+
 function MapViewPage() {
-  const resource = useApi("/facilities");
-  const facilityList = (resource.data || []).map(facilityView);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedCategory = searchParams.get("category") || "all";
+  const urlLocation = searchParams.get("location") || "";
+  const urlLat = searchParams.get("lat");
+  const urlLng = searchParams.get("lng");
 
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(urlLocation);
+  const [coords, setCoords] = useState(() => {
+    if (urlLat && urlLng && !isNaN(parseFloat(urlLat)) && !isNaN(parseFloat(urlLng))) {
+      return { lat: parseFloat(urlLat), lng: parseFloat(urlLng) };
+    }
+    return parseCoords(urlLocation);
+  });
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const searchBoxRef = useRef(null);
+
+  // Sync state if URL search parameters change externally
+  useEffect(() => {
+    if (urlLocation !== location) {
+      setLocation(urlLocation);
+    }
+    if (urlLat && urlLng && !isNaN(parseFloat(urlLat)) && !isNaN(parseFloat(urlLng))) {
+      setCoords({ lat: parseFloat(urlLat), lng: parseFloat(urlLng) });
+    } else {
+      setCoords(parseCoords(urlLocation));
+    }
+  }, [urlLocation, urlLat, urlLng]);
+
+  // Click outside listener for suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch suggestions when typing or opening dropdown
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoadingSuggestions(true);
+        const data = await suggestLocationsApi(location);
+        setSuggestions(data || []);
+      } catch (err) {
+        console.error("Failed to load suggestions:", err);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [location, showSuggestions]);
+
+  // Construct API endpoint: Haversine SQL query triggered when coords are present
+  const apiPath = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== "all") {
+      params.set("category", selectedCategory);
+    }
+    if (coords && coords.lat != null && coords.lng != null) {
+      params.set("latitude", coords.lat);
+      params.set("longitude", coords.lng);
+      params.set("radius_km", "1.0");
+    }
+    const qs = params.toString();
+    return "/facilities" + (qs ? "?" + qs : "");
+  }, [selectedCategory, coords]);
+
+  const resource = useApi(apiPath);
+  const facilityList = (resource.data || []).map(facilityView);
 
   const categoryLabel = {
     all: "All Categories",
@@ -62,23 +145,37 @@ function MapViewPage() {
   const currentCategoryLabel =
     categoryLabel[selectedCategory] || "Facilities";
 
-  const filteredFacilities = facilityList.filter(f => (selectedCategory === "all" || f.category === selectedCategory) &&
-    (!location.trim() || (f.name + " " + f.address).toLowerCase().includes(location.toLowerCase()) || /^-?[0-9.]+,/.test(location)));
-
-  const mapQuery =
-    selectedCategory === "all"
-      ? "public facilities Kolkata India"
-      : `${currentCategoryLabel} Kolkata India`;
+  const mapQuery = coords
+    ? `${coords.lat},${coords.lng}`
+    : selectedCategory === "all"
+    ? "public facilities Kolkata India"
+    : `${currentCategoryLabel} Kolkata India`;
 
   // CATEGORY DROPDOWN
   const handleCategoryChange = (event) => {
     const newCategory = event.target.value;
+    const nextParams = {};
+    if (newCategory !== "all") nextParams.category = newCategory;
+    if (location) nextParams.location = location;
+    if (coords) {
+      nextParams.lat = String(coords.lat);
+      nextParams.lng = String(coords.lng);
+    }
+    setSearchParams(nextParams);
+  };
 
-    setSearchParams(
-      newCategory === "all"
-        ? {}
-        : { category: newCategory }
-    );
+  // SELECT SUGGESTION
+  const handleSelectSuggestion = (suggestion) => {
+    const newCoords = { lat: suggestion.latitude, lng: suggestion.longitude };
+    setLocation(suggestion.label);
+    setCoords(newCoords);
+    setShowSuggestions(false);
+    const nextParams = {};
+    if (selectedCategory !== "all") nextParams.category = selectedCategory;
+    nextParams.location = suggestion.label;
+    nextParams.lat = String(suggestion.latitude);
+    nextParams.lng = String(suggestion.longitude);
+    setSearchParams(nextParams);
   };
 
   // CURRENT LOCATION
@@ -90,10 +187,19 @@ function MapViewPage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const latitude = position.coords.latitude.toFixed(5);
-        const longitude = position.coords.longitude.toFixed(5);
+        const latitude = Number(position.coords.latitude.toFixed(5));
+        const longitude = Number(position.coords.longitude.toFixed(5));
+        const locStr = `${latitude}, ${longitude}`;
 
-        setLocation(`${latitude}, ${longitude}`);
+        setLocation(locStr);
+        setCoords({ lat: latitude, lng: longitude });
+        setShowSuggestions(false);
+        const nextParams = {};
+        if (selectedCategory !== "all") nextParams.category = selectedCategory;
+        nextParams.location = locStr;
+        nextParams.lat = String(latitude);
+        nextParams.lng = String(longitude);
+        setSearchParams(nextParams);
       },
       () => {
         alert("Unable to access your current location.");
@@ -101,10 +207,55 @@ function MapViewPage() {
     );
   };
 
+  // SEARCH SUBMIT
+  const handleSearchSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setShowSuggestions(false);
+    const trimmed = location.trim();
+    if (!trimmed) {
+      setCoords(null);
+      setSearchParams(selectedCategory !== "all" ? { category: selectedCategory } : {});
+      return;
+    }
+
+    const parsed = parseCoords(trimmed);
+    if (parsed) {
+      setCoords(parsed);
+      const nextParams = {};
+      if (selectedCategory !== "all") nextParams.category = selectedCategory;
+      nextParams.location = trimmed;
+      nextParams.lat = String(parsed.lat);
+      nextParams.lng = String(parsed.lng);
+      setSearchParams(nextParams);
+      return;
+    }
+
+    const match = suggestions.find(s => s.label.toLowerCase() === trimmed.toLowerCase()) || suggestions[0];
+    if (match) {
+      handleSelectSuggestion(match);
+    } else {
+      try {
+        const fetched = await suggestLocationsApi(trimmed);
+        if (fetched && fetched.length > 0) {
+          handleSelectSuggestion(fetched[0]);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  // CLEAR LOCATION
+  const handleClearLocation = () => {
+    setLocation("");
+    setCoords(null);
+    setSearchParams(selectedCategory !== "all" ? { category: selectedCategory } : {});
+  };
+
   // REPORT ISSUE
   const handleReportIssue = (facility) => {
-  navigate(`/citizen/report-issue/${facility.id}`);
-};
+    navigate(`/citizen/report-issue/${facility.id}`);
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
@@ -169,7 +320,7 @@ function MapViewPage() {
             SEARCH / HERO
         ====================================================== */}
 
-        <section className="relative overflow-hidden px-4 py-6 md:px-8 md:py-8">
+        <section className="relative z-40 overflow-visible px-4 py-6 md:px-8 md:py-8">
           <div className="mx-auto max-w-7xl">
 
             {/* Breadcrumb */}
@@ -210,25 +361,25 @@ function MapViewPage() {
               </h2>
 
               <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/50">
-                Locate registered public facilities around your current
-                location and find the nearest available service point
-                within 1 km.
+                {coords
+                  ? "Locate registered public facilities around your current location. Showing nearest facilities within 1 km, arranged in order of proximity."
+                  : "Locate registered public facilities around Kolkata. Enter or choose your location to view facilities within 1 km, or explore all available facilities below."}
               </p>
             </div>
 
             {/* SEARCH BOX */}
 
-            <div className="relative z-20 mt-6 max-w-6xl rounded-2xl border border-white/10 bg-white/[0.055] p-2 shadow-xl shadow-black/30 backdrop-blur-2xl">
-              <div className="flex flex-col gap-2 md:flex-row">
+            <div className="relative z-50 mt-6 max-w-6xl rounded-2xl border border-white/10 bg-white/[0.055] p-2 shadow-xl shadow-black/30 backdrop-blur-2xl">
+              <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 md:flex-row">
 
-                {/* LOCATION */}
+                {/* LOCATION INPUT WITH AUTOCOMPLETE SUGGESTIONS */}
 
-                <div className="flex min-h-[52px] flex-1 items-center gap-3 rounded-xl bg-white/[0.045] px-4">
+                <div ref={searchBoxRef} className="relative flex min-h-[52px] flex-1 items-center gap-3 rounded-xl bg-white/[0.045] px-4">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-300/10 text-lime-300">
                     <MapPin size={18} />
                   </div>
 
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[10px] uppercase tracking-wider text-white/35">
                       Your Location
                     </p>
@@ -236,11 +387,68 @@ function MapViewPage() {
                     <input
                       type="text"
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Enter your current location"
+                      onFocus={() => setShowSuggestions(true)}
+                      onChange={(e) => {
+                        setLocation(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setShowSuggestions(false);
+                      }}
+                      placeholder="Enter location (e.g. Park Street, Esplanade)"
                       className="mt-0.5 w-full bg-transparent text-xs text-white outline-none placeholder:text-white/25 sm:text-sm"
                     />
                   </div>
+
+                  {location && (
+                    <button
+                      type="button"
+                      onClick={handleClearLocation}
+                      className="text-xs text-white/40 hover:text-white"
+                      title="Clear location"
+                    >
+                      ✕
+                    </button>
+                  )}
+
+                  {/* AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+                  {showSuggestions && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1000] max-h-72 overflow-y-auto rounded-2xl border border-white/15 bg-[#07101f] p-2 shadow-2xl backdrop-blur-2xl">
+                      {isLoadingSuggestions && suggestions.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-white/40">
+                          Finding locations...
+                        </div>
+                      ) : suggestions.length > 0 ? (
+                        suggestions.map((item, idx) => (
+                          <button
+                            key={item.label + idx}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(item)}
+                            className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-white/10"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-lime-300/15 text-lime-300">
+                              <MapPin size={16} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-semibold text-white sm:text-sm">
+                                {item.label}
+                              </p>
+                              <p className="truncate text-[10px] text-white/45 sm:text-xs">
+                                {item.address}
+                              </p>
+                            </div>
+                            <span className="shrink-0 text-[10px] font-medium text-lime-300/80">
+                              Select
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-xs text-white/40">
+                          No locations found matching &quot;{location}&quot;
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* CURRENT LOCATION */}
@@ -254,7 +462,7 @@ function MapViewPage() {
                   Use Current Location
                 </button>
 
-                {/* CATEGORY SELECT (between Use Current Location and Search) */}
+                {/* CATEGORY SELECT */}
                 <div className="w-full md:w-[220px]">
                   <div className="relative">
                     <select
@@ -280,13 +488,13 @@ function MapViewPage() {
                 {/* SEARCH */}
 
                 <button
-                  type="button"
+                  type="submit"
                   className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-6 text-xs sm:text-sm font-bold text-black shadow-md shadow-lime-300/10 transition duration-300 hover:bg-lime-200"
                 >
                   <Search size={16} />
                   Search
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </section>
@@ -295,7 +503,7 @@ function MapViewPage() {
             MAP — SECOND SECTION
         ====================================================== */}
 
-        <section id="map" className="px-4 py-6 md:px-8">
+        <section id="map" className="relative z-10 px-4 py-6 md:px-8">
           <div className="mx-auto max-w-7xl">
 
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -308,17 +516,17 @@ function MapViewPage() {
                 <h2 className="mt-1.5 text-xl font-bold md:text-2xl">
                   {currentCategoryLabel}{" "}
                   <span className="text-white/45">
-                    near Kolkata
+                    {coords ? "near your location" : "near Kolkata"}
                   </span>
                 </h2>
 
                 <p className="mt-1 text-xs text-white/40">
-                  Explore nearby{" "}
-                  {currentCategoryLabel.toLowerCase()} locations.
+                  {coords
+                    ? `Centered on ${location || "selected location"} within 1 km radius.`
+                    : `Explore nearby ${currentCategoryLabel.toLowerCase()} locations across Kolkata.`}
                 </p>
               </div>
 
-              
             </div>
 
             {/* MAP GLASS BOX */}
@@ -328,9 +536,11 @@ function MapViewPage() {
 
                 <iframe
                   title={`${currentCategoryLabel} locations in Kolkata`}
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(
-                    mapQuery
-                  )}&output=embed`}
+                  src={
+                    coords
+                      ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`
+                      : `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`
+                  }
                   className="h-full w-full border-0"
                   loading="lazy"
                   allowFullScreen
@@ -353,7 +563,7 @@ function MapViewPage() {
                       </p>
 
                       <p className="mt-0.5 text-[10px] text-white/40">
-                        Kolkata
+                        {coords ? (location || "Within 1 km") : "Kolkata"}
                       </p>
                     </div>
 
@@ -378,27 +588,58 @@ function MapViewPage() {
 
               <div>
                 <p className="text-[11px] font-bold tracking-[3px] text-lime-300">
-                  NEARBY FACILITIES
+                  {coords ? "NEAREST FACILITIES (WITHIN 1 KM)" : "ALL REGISTERED FACILITIES"}
                 </p>
 
                 <h2 className="mt-1.5 text-xl font-bold md:text-2xl">
-                  {currentCategoryLabel} around you
+                  {currentCategoryLabel} {coords ? "near you" : "in Kolkata"}
                 </h2>
 
                 <p className="mt-1 text-xs text-white/40">
-                  Showing registered facilities within 1 km.
+                  {coords
+                    ? `Showing ${facilityList.length} facilities within 1 km radius sorted by nearest distance.`
+                    : "Showing all available facilities in the project. Enter your location to view nearest within 1 km."}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-1.5 text-xs text-white/50 backdrop-blur-xl">
-                {filteredFacilities.length} facilities found
+              <div className="flex items-center gap-2">
+                {coords && (
+                  <button
+                    type="button"
+                    onClick={handleClearLocation}
+                    className="rounded-xl border border-lime-300/30 bg-lime-300/10 px-3 py-1.5 text-xs font-semibold text-lime-300 transition hover:bg-lime-300 hover:text-black"
+                  >
+                    View All Facilities
+                  </button>
+                )}
+                <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-1.5 text-xs text-white/50 backdrop-blur-xl">
+                  {facilityList.length} facilities found
+                </div>
               </div>
             </div>
+
+            {/* EMPTY STATE IF WITHIN 1KM AND NO FACILITIES */}
+            {facilityList.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center backdrop-blur-xl">
+                <MapPin size={36} className="mx-auto text-lime-300/50" />
+                <h3 className="mt-3 text-lg font-bold">No facilities found within 1 km</h3>
+                <p className="mx-auto mt-1 max-w-md text-xs sm:text-sm text-white/45">
+                  We could not find any {currentCategoryLabel.toLowerCase()} within a 1 km radius of this location.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleClearLocation}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-lime-300 px-5 py-2.5 text-xs font-bold text-black transition hover:bg-lime-200"
+                >
+                  Show All Available Facilities
+                </button>
+              </div>
+            )}
 
             {/* FACILITY CARDS */}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredFacilities.map((facility) => {
+              {facilityList.map((facility) => {
                 const CardIcon = getFacilityIcon(facility.category);
 
                 return (
@@ -414,15 +655,22 @@ function MapViewPage() {
                         <CardIcon size={20} />
                       </div>
 
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                          facility.status === "Available"
-                            ? "bg-lime-300/10 text-lime-300"
-                            : "bg-orange-400/10 text-orange-300"
-                        }`}
-                      >
-                        ● {facility.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {facility.distance && (
+                          <span className="rounded-full bg-lime-300/15 border border-lime-300/30 px-2 py-0.5 text-[10px] font-bold text-lime-300">
+                            {facility.distance}
+                          </span>
+                        )}
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                            facility.status === "Available"
+                              ? "bg-lime-300/10 text-lime-300"
+                              : "bg-orange-400/10 text-orange-300"
+                          }`}
+                        >
+                          ● {facility.status}
+                        </span>
+                      </div>
                     </div>
 
                     {/* NAME */}
@@ -451,7 +699,9 @@ function MapViewPage() {
                           size={13}
                           className="text-lime-300"
                         />
-                        {facility.distance || ""}
+                        <span className={facility.distance ? "font-semibold text-lime-300" : ""}>
+                          {facility.distance || "Kolkata"}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 text-white/50">
@@ -489,10 +739,10 @@ function MapViewPage() {
                       <Flag size={15} />
                       Report Issue
                     </button>
+
                   </div>
                 );
               })}
-
             </div>
 
             <div className="mt-6 flex ">

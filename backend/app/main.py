@@ -18,6 +18,7 @@ from app.routers import (
     agencies,
     auth,
     facilities,
+    ratings,
     recommendations,
     reports,
     users
@@ -98,6 +99,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(agencies.router)
 app.include_router(facilities.router)
+app.include_router(ratings.router)
 app.include_router(reports.router)
 app.include_router(recommendations.router)
 app.include_router(chatbot_router)

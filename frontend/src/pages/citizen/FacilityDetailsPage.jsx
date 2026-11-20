@@ -14,6 +14,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
+const CATEGORY_DEFAULT_IMAGES = {
+  dustbin: "https://5.imimg.com/data5/SELLER/Default/2025/2/486095262/LF/DS/JX/5315025/public-litter-bins.jpeg",
+  water: "https://static.vecteezy.com/system/resources/thumbnails/070/255/438/small/smiling-woman-in-business-attire-fills-plastic-bottle-with-water-from-modern-water-cooler-in-bright-office-space-with-large-windows-and-green-plants-creating-refreshing-moment-free-photo.jpeg",
+  toilet: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0jNlEfRWHdLN7SKkh0mVNP1f1ALiCHGg2fC-YMwKtPVO9gYq62JKVi8nZ&s=10",
+  parking: "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80",
+};
+
 const Stars = ({ value }) => (
   <span className="flex gap-0.5">
     {[1, 2, 3, 4, 5].map((n) => (
@@ -35,13 +42,20 @@ function FacilityDetailsPage() {
   const name = facility?.name, address = facility?.address, category = facility?.categoryLabel;
   const reviews = (ratings.data || []).map(item => ({ ...item, date: displayDate(item.date) }));
   const rating = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : "Not rated";
+  const currentUser = getStoredUser();
+  const existingUserReview = reviews.find(
+    item => currentUser?.user_id !== undefined && String(item.user_id) === String(currentUser.user_id)
+  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [review, setReview] = useState("");
   const [userRating, setUserRating] = useState(0);
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
-  const currentUser = getStoredUser();
+
+  const [imgLoadError, setImgLoadError] = useState(false);
+  const fallbackPhoto = CATEGORY_DEFAULT_IMAGES[facility?.category] || CATEGORY_DEFAULT_IMAGES.dustbin;
+  const displayPhotoUrl = (!imgLoadError && facility?.imageUrl) ? facility.imageUrl : fallbackPhoto;
 
   const resetReviewForm = () => {
     setReview("");
@@ -175,32 +189,44 @@ function FacilityDetailsPage() {
           <div className="mt-6 grid gap-5 lg:grid-cols-1">
             <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-xl backdrop-blur-2xl">
 
-              {/* Facility Photo */}
-              {facility.imageUrl && (
-                <img
-                  src={facility.imageUrl}
-                  alt={name}
-                  className="h-72 w-full object-cover"
-                />
-              )}
+              {/* Top Split Visual Media: Map on Left, Facility Photo on Right */}
+              <div className="grid grid-cols-1 border-b border-white/10 md:grid-cols-2">
+                {/* Google Map (First Half) */}
+                <div className="relative h-72 md:h-80 w-full border-b border-white/10 md:border-b-0 md:border-r">
+                  <iframe
+                    title={`${name} map`}
+                    src={`https://www.google.com/maps?q=${facility.latitude},${facility.longitude}&output=embed`}
+                    className="h-full w-full border-0"
+                    loading="lazy"
+                    allowFullScreen
+                  />
+                  <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-white/20 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
+                    Location Map
+                  </div>
+                </div>
 
-              {/* Google Map */}
-              <iframe
-                title={`${name} map`}
-                src={`https://www.google.com/maps?q=${facility.latitude},${facility.longitude}&output=embed`}
-                className="h-64 w-full border-0"
-                loading="lazy"
-                allowFullScreen
-              />
+                {/* Facility Photo (Second Half) */}
+                <div className="relative h-72 md:h-80 w-full overflow-hidden bg-black/30">
+                  <img
+                    src={displayPhotoUrl}
+                    alt={name}
+                    onError={() => setImgLoadError(true)}
+                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
+                  <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-white/20 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
+                    {imgLoadError || !facility?.imageUrl ? "Category Reference Photo" : "Facility Photo"}
+                  </div>
+                </div>
+              </div>
 
               <div className="p-5 md:p-6">
 
-              {/* Status */}
-                <span className="rounded-full bg-lime-300/10 px-3.5 py-1.5 text-xs font-semibold text-lime-300">
+                {/* Status Badge & Header */}
+                <span className="inline-block rounded-full bg-lime-300/10 px-3.5 py-1.5 text-xs font-semibold text-lime-300">
                   {facility.status}
                 </span>
 
-                <h2 className="mt-5 text-xl font-bold">
+                <h2 className="mt-4 text-xl font-bold md:text-2xl">
                   Facility Information
                 </h2>
 
@@ -223,11 +249,17 @@ function FacilityDetailsPage() {
                     <p className="mt-1 font-semibold">{address}</p>
                   </div>
 
-                  <div>
-                    <p className="text-xs text-white/40">Coordinates</p>
-                    <p className="mt-1 font-semibold">
-                      {facility.latitude}, {facility.longitude}
-                    </p>
+                  {/* Get Directions Button in place of Coordinates */}
+                  <div className="flex flex-col justify-end">
+                    <p className="text-xs text-white/40">Navigation</p>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex w-fit items-center gap-2 rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black shadow-md shadow-lime-300/15 transition hover:bg-lime-200"
+                    >
+                      <span>Get Directions</span> ↗
+                    </a>
                   </div>
 
                 </div>
@@ -241,21 +273,15 @@ function FacilityDetailsPage() {
                   </div>
                 )}
 
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-5 inline-flex rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-black hover:bg-lime-200"
-                >
-                  Get Directions ↗
-                </a>
-
-                <Link
-                  to={`/citizen/report-issue/${facilityId}`}
-                  className="mt-5 ml-3 inline-flex items-center gap-2 rounded-xl border border-lime-300/30 px-5 py-2.5 text-sm font-bold text-lime-300 hover:bg-lime-300 hover:text-black"
-                >
-                  Report an Issue <Send size={16} />
-                </Link>
+                {/* Report an Issue Button in its Original Position */}
+                <div className="mt-5 border-t border-white/10 pt-4">
+                  <Link
+                    to={`/citizen/report-issue/${facilityId}`}
+                    className="inline-flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/[0.05] px-5 py-2.5 text-sm font-bold text-lime-300 transition hover:bg-lime-300 hover:text-black"
+                  >
+                    Report an Issue <Send size={16} />
+                  </Link>
+                </div>
 
               </div>
             </section>
@@ -265,64 +291,111 @@ function FacilityDetailsPage() {
               </p>
               <h2 className="mt-1.5 text-xl font-bold">User reviews</h2>
               <ApiState {...ratings} /><ApiState error={error} />
-              <form
-                onSubmit={submitReview}
-                className="mt-4 border-b border-white/10 pb-4"
-              >
-                <div className="flex gap-1">
-  {[1, 2, 3, 4, 5].map((star) => (
-    <button
-      key={star}
-      type="button"
-      onClick={() => setUserRating(star)}
-      className="transition-transform hover:scale-110"
-    >
-      <Star
-        size={20}
-        className={
-          star <= userRating
-            ? "fill-lime-300 text-lime-300"
-            : "text-white/20"
-        }
-      />
-    </button>
-  ))}
-</div>
-                <textarea maxLength={200} required
-                  value={review}
-                  onChange={(e) => setReview(e.target.value)}
-                  placeholder="Share your experience..."
-                  className="mt-2.5 min-h-20 w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] p-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-lime-300/40"
-                />
-                <div className="mt-2.5 flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 rounded-xl border border-lime-300/30 py-2.5 text-sm font-bold text-lime-300 transition hover:bg-lime-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {submitting
-                      ? (editingReviewId !== null ? "Updating..." : "Submitting...")
-                      : (editingReviewId !== null ? "Update Review" : "Submit Review")}
-                  </button>
 
-                  {editingReviewId !== null && (
-                    <button
-                      type="button"
-                      onClick={resetReviewForm}
-                      disabled={submitting}
-                      className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  )}
+              {existingUserReview && editingReviewId === null ? (
+                <div className="mt-4 rounded-xl border border-lime-300/30 bg-lime-300/[0.06] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-lime-300">
+                      Your Review
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEditingReview(existingUserReview)}
+                        disabled={deletingReviewId !== null || submitting}
+                        className="rounded-md border border-lime-300/40 bg-lime-300/10 px-2.5 py-1 text-xs font-semibold text-lime-300 transition hover:bg-lime-300 hover:text-black disabled:opacity-40"
+                      >
+                        Edit Review
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteReview(existingUserReview.id)}
+                        disabled={deletingReviewId !== null}
+                        className="rounded-md border border-white/20 px-2.5 py-1 text-xs font-semibold text-white/70 transition hover:border-red-400/40 hover:bg-red-400/10 hover:text-red-300 disabled:opacity-40"
+                      >
+                        {deletingReviewId === existingUserReview.id ? "Deleting..." : "Delete Review"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Stars value={existingUserReview.rating} />
+                    <span className="text-xs text-white/40">{existingUserReview.date}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-white/80">{existingUserReview.text}</p>
+                  <p className="mt-3 text-[11px] text-white/40 border-t border-white/10 pt-2">
+                    You have already reviewed this facility. You can edit or delete your review above.
+                  </p>
                 </div>
-              </form>
+              ) : (
+                <form
+                  onSubmit={submitReview}
+                  className="mt-4 border-b border-white/10 pb-4"
+                >
+                  {editingReviewId !== null && (
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-lime-300">
+                        Editing Your Review
+                      </span>
+                      <button
+                        type="button"
+                        onClick={resetReviewForm}
+                        className="text-xs text-white/50 hover:underline"
+                      >
+                        Cancel Edit
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setUserRating(star)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          size={20}
+                          className={
+                            star <= userRating
+                              ? "fill-lime-300 text-lime-300"
+                              : "text-white/20"
+                          }
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea maxLength={200} required
+                    value={review}
+                    onChange={(e) => setReview(e.target.value)}
+                    placeholder={editingReviewId !== null ? "Update your experience..." : "Share your experience..."}
+                    className="mt-2.5 min-h-20 w-full resize-none rounded-xl border border-white/10 bg-white/[0.05] p-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-lime-300/40"
+                  />
+                  <div className="mt-2.5 flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex-1 rounded-xl border border-lime-300/30 py-2.5 text-sm font-bold text-lime-300 transition hover:bg-lime-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {submitting
+                        ? (editingReviewId !== null ? "Updating..." : "Submitting...")
+                        : (editingReviewId !== null ? "Update Review" : "Submit Review")}
+                    </button>
+
+                    {editingReviewId !== null && (
+                      <button
+                        type="button"
+                        onClick={resetReviewForm}
+                        disabled={submitting}
+                        className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              )}
               <div className="mt-4 grid gap-3">
                 {reviews.map((item) => {
-                  const isOwnReview =
-                    currentUser?.user_id !== undefined &&
-                    String(item.user_id) === String(currentUser.user_id);
-
                   return (
                     <article
                       key={item.id}
@@ -342,27 +415,7 @@ function FacilityDetailsPage() {
                         {item.text}
                       </p>
 
-                      {isOwnReview && (
-                        <div className="mt-3 flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditingReview(item)}
-                            disabled={deletingReviewId !== null || submitting}
-                            className="rounded-md border border-lime-300/30 px-2.5 py-1 text-[11px] font-semibold text-lime-300 transition hover:bg-lime-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => deleteReview(item.id)}
-                            disabled={deletingReviewId === item.id || deletingReviewId !== null}
-                            className="rounded-md border border-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition hover:border-red-400/40 hover:bg-red-400/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            {deletingReviewId === item.id ? "Deleting..." : "Delete"}
-                          </button>
-                        </div>
-                      )}
+                      
                     </article>
                   );
                 })}

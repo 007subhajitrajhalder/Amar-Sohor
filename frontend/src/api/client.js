@@ -154,7 +154,22 @@ export async function submitRecommendationApi(values) {
   return apiRequest("/recommendations", { method: "POST", body });
 }
 
-export const fetchFacilitiesApi = categoryId => apiRequest("/facilities" + (categoryId ? "?category_id=" + encodeURIComponent(categoryId) : ""), { auth: false });
+export const fetchFacilitiesApi = (params = {}) => {
+  if (typeof params === "number" || typeof params === "string") {
+    return apiRequest("/facilities" + (params ? "?category_id=" + encodeURIComponent(params) : ""), { auth: false });
+  }
+  const q = new URLSearchParams();
+  if (params.categoryId) q.set("category_id", params.categoryId);
+  if (params.category && params.category !== "all") q.set("category", params.category);
+  if (params.latitude != null) q.set("latitude", params.latitude);
+  if (params.longitude != null) q.set("longitude", params.longitude);
+  if (params.radiusKm != null) q.set("radius_km", params.radiusKm);
+  const queryStr = q.toString();
+  return apiRequest("/facilities" + (queryStr ? "?" + queryStr : ""), { auth: false });
+};
+
+export const suggestLocationsApi = query =>
+  apiRequest("/facilities/locations/suggest" + (query ? "?q=" + encodeURIComponent(query) : ""), { auth: false });
 export const fetchReportsApi = userId => apiRequest(userId ? "/reports?user_id=" + encodeURIComponent(userId) : "/reports");
 export const fetchRecommendationsApi = userId => apiRequest(userId ? "/recommendations?user_id=" + encodeURIComponent(userId) : "/recommendations");
 export const allocateRecommendationApi = (id, { agentId, agentEmail, notes }) =>
@@ -192,7 +207,9 @@ export const facilityView = f => ({ ...f, id: f.facility_id, name: f.facility_na
   activeReportId: f.active_report_id,
   activeReportTitle: f.active_report_title,
   activeReportStatus: f.active_report_status,
-  imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id });
+  imageUrl: mediaUrl(f.photo_url), sourceRecommendationId: f.source_recommendation_id,
+  distance_km: f.distance_km,
+  distance: f.distance_label ? f.distance_label + " away" : (f.distance_km != null ? (f.distance_km < 1 ? Math.round(f.distance_km * 1000) + " m away" : f.distance_km.toFixed(2) + " km away") : "") });
 
 export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_name,
   facilityAddress: r.facility_address, facilityCategory: categoryKey(r.facility_category),

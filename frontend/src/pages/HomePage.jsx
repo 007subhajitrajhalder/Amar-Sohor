@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -24,9 +24,69 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useApi } from "../api/useApi";
+import { suggestLocationsApi } from "../api/client";
 
 const logo = new URL("../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
+
+function AnimatedCounter({ value, duration = 1600 }) {
+  const [displayCount, setDisplayCount] = useState(0);
+  const elementRef = useRef(null);
+  const hasAnimatedRef = useRef(false);
+
+  useEffect(() => {
+    const target = Number(value);
+    if (isNaN(target) || value === null || value === undefined) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          // Restart animation when scrolled into view
+          let startTimestamp = null;
+          const startValue = 0;
+
+          const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            // Ease-out cubic: 1 - (1 - t)^3
+            const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+            const current = Math.floor(startValue + (target - startValue) * easeOutProgress);
+            setDisplayCount(current);
+
+            if (progress < 1) {
+              window.requestAnimationFrame(step);
+            } else {
+              setDisplayCount(target);
+            }
+          };
+
+          window.requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    const currentElem = elementRef.current;
+    if (currentElem) {
+      observer.observe(currentElem);
+    }
+
+    return () => {
+      if (currentElem) {
+        observer.unobserve(currentElem);
+      }
+    };
+  }, [value, duration]);
+
+  if (value === null || value === undefined) {
+    return <span>—</span>;
+  }
+
+  return <span ref={elementRef}>{displayCount}</span>;
+}
 
 const ABOUT_SLIDES = [
   {
@@ -47,6 +107,19 @@ const ABOUT_SLIDES = [
   },
 ];
 
+function parseCoords(text) {
+  if (!text) return null;
+  const match = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (match) {
+    const lat = parseFloat(match[1]);
+    const lng = parseFloat(match[2]);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { lat, lng };
+    }
+  }
+  return null;
+}
+
 function HomePage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -57,10 +130,43 @@ function HomePage() {
   const [showFacilityMenu, setShowFacilityMenu] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState("");
   const [location, setLocation] = useState("");
+  const [selectedCoords, setSelectedCoords] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const locationBoxRef = useRef(null);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Click outside listener for suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (locationBoxRef.current && !locationBoxRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch suggestions when user types
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoadingSuggestions(true);
+        const data = await suggestLocationsApi(location);
+        setSuggestions(data || []);
+      } catch (err) {
+        console.error("Failed to load suggestions:", err);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [location, showSuggestions]);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -122,6 +228,12 @@ function HomePage() {
     setShowFacilityMenu(false);
   };
 
+  const handleSelectSuggestion = (suggestion) => {
+    setLocation(suggestion.label);
+    setSelectedCoords({ lat: suggestion.latitude, lng: suggestion.longitude });
+    setShowSuggestions(false);
+  };
+
   const handleCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -130,10 +242,13 @@ function HomePage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const latitude = position.coords.latitude.toFixed(5);
-        const longitude = position.coords.longitude.toFixed(5);
+        const latitude = Number(position.coords.latitude.toFixed(5));
+        const longitude = Number(position.coords.longitude.toFixed(5));
+        const locStr = `${latitude}, ${longitude}`;
 
-        setLocation(`${latitude}, ${longitude}`);
+        setLocation(locStr);
+        setSelectedCoords({ lat: latitude, lng: longitude });
+        setShowSuggestions(false);
       },
       () => {
         alert("Unable to access your current location.");
@@ -152,7 +267,7 @@ function HomePage() {
     return map[facilityName] || "";
   };
 
-  const handleFindNearby = () => {
+  const handleFindNearby = async () => {
     if (!location.trim()) {
       alert("Please enter your current location.");
       return;
@@ -170,7 +285,43 @@ function HomePage() {
       return;
     }
 
-    navigate(`/map?category=${category}&location=${encodeURIComponent(location)}`);
+    let lat = selectedCoords?.lat;
+    let lng = selectedCoords?.lng;
+
+    if (lat == null || lng == null) {
+      const parsed = parseCoords(location);
+      if (parsed) {
+        lat = parsed.lat;
+        lng = parsed.lng;
+      } else {
+        const match = suggestions.find(s => s.label.toLowerCase() === location.trim().toLowerCase()) || suggestions[0];
+        if (match) {
+          lat = match.latitude;
+          lng = match.longitude;
+        } else {
+          try {
+            const fetched = await suggestLocationsApi(location.trim());
+            if (fetched && fetched.length > 0) {
+              lat = fetched[0].latitude;
+              lng = fetched[0].longitude;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    }
+
+    const qs = new URLSearchParams({
+      category,
+      location: location.trim(),
+    });
+    if (lat != null && lng != null) {
+      qs.set("lat", String(lat));
+      qs.set("lng", String(lng));
+    }
+
+    navigate(`/map?${qs.toString()}`);
   };
 
   return (
@@ -368,7 +519,7 @@ function HomePage() {
               <div className="relative z-[300] mx-auto mt-10 max-w-4xl">
                 <div className="rounded-3xl border border-white/20 bg-white/10 p-2 shadow-2xl shadow-black/30 backdrop-blur-2xl">
                   <div className="flex flex-col lg:flex-row">
-                    <div className="flex min-h-[64px] flex-1 items-center gap-3 px-4">
+                    <div ref={locationBoxRef} className="relative flex min-h-[64px] flex-1 items-center gap-3 px-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-300/15 text-lime-300">
                         <MapPin size={21} />
                       </div>
@@ -381,11 +532,73 @@ function HomePage() {
                         <input
                           type="text"
                           value={location}
-                          onChange={(e) => setLocation(e.target.value)}
+                          onFocus={() => setShowSuggestions(true)}
+                          onChange={(e) => {
+                            setLocation(e.target.value);
+                            setSelectedCoords(null);
+                            setShowSuggestions(true);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setShowSuggestions(false);
+                            if (e.key === "Enter") handleFindNearby();
+                          }}
                           placeholder="Enter your current location"
                           className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40 md:text-base"
                         />
                       </div>
+
+                      {location && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLocation("");
+                            setSelectedCoords(null);
+                          }}
+                          className="text-xs text-white/40 hover:text-white"
+                          title="Clear location"
+                        >
+                          ✕
+                        </button>
+                      )}
+
+                      {/* AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+                      {showSuggestions && (
+                        <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-[500] max-h-72 overflow-y-auto rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-left shadow-2xl backdrop-blur-2xl">
+                          {isLoadingSuggestions && suggestions.length === 0 ? (
+                            <div className="p-3 text-center text-xs text-white/40">
+                              Finding locations...
+                            </div>
+                          ) : suggestions.length > 0 ? (
+                            suggestions.map((item, idx) => (
+                              <button
+                                key={item.label + idx}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(item)}
+                                className="flex w-full items-center gap-3 rounded-xl p-2.5 transition hover:bg-white/10"
+                              >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-lime-300/15 text-lime-300">
+                                  <MapPin size={18} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold text-white">
+                                    {item.label}
+                                  </p>
+                                  <p className="truncate text-xs text-white/45">
+                                    {item.address}
+                                  </p>
+                                </div>
+                                <span className="shrink-0 text-xs font-medium text-lime-300/80">
+                                  Select
+                                </span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="p-3 text-center text-xs text-white/40">
+                              No locations found matching &quot;{location}&quot;
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mx-4 h-px bg-white/10 lg:my-3 lg:h-auto lg:w-px" />
@@ -620,7 +833,7 @@ function HomePage() {
             <Icon size={21} />
           </div>
           <h3 className="relative mt-4 text-3xl font-bold text-lime-300 md:text-4xl">
-            {item.value ?? "—"}
+            <AnimatedCounter value={item.value} />
           </h3>
           <p className="relative mt-2 text-xs font-medium tracking-wide text-white/60 md:text-sm">
             {item.label}
