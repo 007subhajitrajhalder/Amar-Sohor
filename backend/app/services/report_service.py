@@ -42,6 +42,8 @@ def report_response(report, ai_result=None):
         "report_id": report.report_id, "facility_id": report.facility_id,
         "facility_name": facility.facility_name, "facility_address": facility.address,
         "facility_category": facility.category.category_name,
+        "facility_latitude": float(facility.latitude) if facility and facility.latitude else None,
+        "facility_longitude": float(facility.longitude) if facility and facility.longitude else None,
         "user_id": report.user_id,
         "citizen_name": report.user.full_name if report.user else "Not recorded",
         "citizen_email": report.user.email if report.user else None,

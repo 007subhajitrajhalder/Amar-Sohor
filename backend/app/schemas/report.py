@@ -25,6 +25,8 @@ class ReportResponse(BaseModel):
     facility_name: Optional[str] = None
     facility_address: Optional[str] = None
     facility_category: Optional[str] = None
+    facility_latitude: Optional[float] = None
+    facility_longitude: Optional[float] = None
     user_id: int
     title: str
     description: str

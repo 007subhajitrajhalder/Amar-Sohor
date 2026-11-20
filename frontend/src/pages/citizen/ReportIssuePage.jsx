@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,11 +9,13 @@ import {
   Mail,
   Map,
   MapPin,
+  Navigation,
   Phone,
   Send,
   Sparkles,
   Upload,
   X,
+  Loader2,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/useApi";
@@ -23,6 +25,20 @@ import { submitReportApi, validateReportImageApi, API_BASE_URL } from "../../api
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
+
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 function ReportIssuePage() {
   const { facilityId } = useParams();
@@ -56,6 +72,97 @@ function ReportIssuePage() {
 
   const [aiValidating, setAiValidating] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+
+  // Proximity Verification (must be physically within 100m of facility)
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("IDLE"); // 'IDLE' | 'CHECKING' | 'VERIFIED' | 'FAR' | 'DENIED' | 'UNSUPPORTED'
+  const [distanceMeters, setDistanceMeters] = useState(null);
+  const [locationError, setLocationError] = useState("");
+
+  const checkProximity = (overrideCoords = null) => {
+    if (!facility?.latitude || !facility?.longitude) {
+      setLocationStatus("VERIFIED");
+      return;
+    }
+
+    if (overrideCoords) {
+      const dist = getDistanceFromLatLonInMeters(
+        overrideCoords.latitude,
+        overrideCoords.longitude,
+        facility.latitude,
+        facility.longitude
+      );
+      setUserLocation(overrideCoords);
+      const rounded = Math.round(dist);
+      setDistanceMeters(rounded);
+      if (dist <= 100) {
+        setLocationStatus("VERIFIED");
+        setLocationError("");
+      } else {
+        setLocationStatus("FAR");
+        setLocationError(`You are ~${rounded}m away from this facility. You must be within 100m to submit a report.`);
+      }
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setLocationStatus("UNSUPPORTED");
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setLocationStatus("CHECKING");
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+        setUserLocation(coords);
+        const dist = getDistanceFromLatLonInMeters(
+          coords.latitude,
+          coords.longitude,
+          facility.latitude,
+          facility.longitude
+        );
+        const rounded = Math.round(dist);
+        setDistanceMeters(rounded);
+
+        if (dist <= 100) {
+          setLocationStatus("VERIFIED");
+          setLocationError("");
+        } else {
+          setLocationStatus("FAR");
+          setLocationError(`You are ~${rounded}m away from this facility. You must be within 100m of the facility to report an issue.`);
+        }
+      },
+      (err) => {
+        setLocationStatus("DENIED");
+        setLocationError(
+          err.code === 1
+            ? "Location access denied. Please enable GPS location permission to verify your presence at this facility."
+            : "Could not acquire GPS position. Please check your location services or device GPS."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    if (facility?.latitude && facility?.longitude) {
+      checkProximity();
+    }
+  }, [facility?.id, facility?.latitude, facility?.longitude]);
+
+  const handleSimulateOnSite = () => {
+    if (!facility?.latitude || !facility?.longitude) return;
+    checkProximity({
+      latitude: facility.latitude + 0.00008,
+      longitude: facility.longitude + 0.00008,
+    });
+  };
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -143,19 +250,31 @@ function ReportIssuePage() {
       return;
     }
 
+    if (facility?.latitude && facility?.longitude) {
+      if (locationStatus !== "VERIFIED" || (distanceMeters !== null && distanceMeters > 100)) {
+        alert(
+          locationError ||
+          "Physical proximity check failed: You must be physically within 100m of this facility to submit a report."
+        );
+        return;
+      }
+    }
+
     if (isSubmitting) return;
     setError("");
     setIsSubmitting(true);
     let newReport;
 
     try {
-      // Send grievance report to FastAPI backend
+      // Send grievance report to FastAPI backend with device proximity coordinates
       const backendData = await submitReportApi({
         facilityId: facility.id,
         title: title.trim(),
         description: description.trim(),
         photoFile: photoFile,
         photoUrl: photoPreview,
+        userLatitude: userLocation?.latitude,
+        userLongitude: userLocation?.longitude,
       });
 
       const photoUrlResolved = backendData.photo_url?.startsWith("/uploads")
@@ -422,6 +541,71 @@ function ReportIssuePage() {
                     {facility.categoryLabel || "Public Facility"}
                   </span>
                 </div>
+
+                {/* On-Site Proximity Verification (100m Rule) */}
+                {facility?.latitude && facility?.longitude && (
+                  <div
+                    className={`mt-2.5 rounded-xl border p-3.5 transition-all ${
+                      locationStatus === "VERIFIED"
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                        : locationStatus === "FAR"
+                        ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                        : locationStatus === "CHECKING"
+                        ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-200"
+                        : "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        {locationStatus === "VERIFIED" ? (
+                          <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+                        ) : locationStatus === "CHECKING" ? (
+                          <Loader2 size={18} className="text-cyan-400 shrink-0 mt-0.5 animate-spin" />
+                        ) : (
+                          <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider">
+                            {locationStatus === "VERIFIED"
+                              ? "Physical Presence Verified (On-Site)"
+                              : locationStatus === "CHECKING"
+                              ? "Verifying Device Proximity..."
+                              : locationStatus === "FAR"
+                              ? "Proximity Alert: Outside 100m Range"
+                              : "GPS Location Access Required"}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/85 leading-relaxed">
+                            {locationStatus === "VERIFIED"
+                              ? `You are verified on-site (~${distanceMeters ?? 0}m away). Grievance submission is unlocked.`
+                              : locationStatus === "CHECKING"
+                              ? "Acquiring your device GPS coordinates to verify you are within 100m of this facility..."
+                              : locationStatus === "FAR"
+                              ? `You are currently ~${distanceMeters}m away. Municipal regulations require you to be within 100m of the facility to report.`
+                              : (locationError || "Please allow GPS location permission to verify you are present at the facility.")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => checkProximity()}
+                          className="flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition"
+                        >
+                          <Navigation size={12} /> Re-check GPS
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSimulateOnSite}
+                          title="Simulate being physically on-site (<100m) for developer desktop testing"
+                          className="flex items-center gap-1 rounded-lg border border-lime-400/40 bg-lime-400/10 px-2.5 py-1.5 text-xs font-semibold text-lime-300 hover:bg-lime-400/20 transition"
+                        >
+                          Simulate On-Site (Dev)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Facility Lock / Active Report Warning Banners */}
                 {facility.hasActiveReport && facility.activeReportStatus === "REJECTED" && (
@@ -696,7 +880,8 @@ function ReportIssuePage() {
                   isFacilityLocked ||
                   aiValidating ||
                   !photoFile ||
-                  (requiresAiValidation && aiResult?.status !== "ACCEPTED")
+                  (requiresAiValidation && aiResult?.status !== "ACCEPTED") ||
+                  (facility?.latitude && facility?.longitude && (locationStatus === "CHECKING" || locationStatus === "FAR" || locationStatus === "DENIED"))
                 }
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-lime-300 p-3 text-sm font-bold text-black shadow-lg shadow-lime-300/10 transition duration-200 hover:bg-lime-200 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
@@ -705,6 +890,12 @@ function ReportIssuePage() {
                     ? "Routing to Municipal Agency..."
                     : isFacilityLocked
                     ? "Submissions Locked for this Facility"
+                    : facility?.latitude && facility?.longitude && locationStatus === "CHECKING"
+                    ? "Verifying Location Proximity..."
+                    : facility?.latitude && facility?.longitude && locationStatus === "FAR"
+                    ? `Too Far from Facility (~${distanceMeters}m > 100m)`
+                    : facility?.latitude && facility?.longitude && locationStatus === "DENIED"
+                    ? "GPS Location Required (<100m)"
                     : aiValidating
                     ? "AI Validating Photograph..."
                     : requiresAiValidation && aiResult?.status === "REJECTED"

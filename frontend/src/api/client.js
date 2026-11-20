@@ -123,7 +123,7 @@ export async function updateProfileApi(data) {
 export const roleHome = role => role === "ADMIN" ? "/admin/dashboard"
   : ["AGENT", "AGENCY"].includes(role) ? "/agency/dashboard" : "/citizen/dashboard";
 
-export async function submitReportApi({ facilityId, title, description, photoFile, photoUrl, userId }) {
+export async function submitReportApi({ facilityId, title, description, photoFile, photoUrl, userId, userLatitude, userLongitude }) {
   const body = new FormData();
   body.append("facility_id", facilityId);
   body.append("title", title);
@@ -131,6 +131,8 @@ export async function submitReportApi({ facilityId, title, description, photoFil
   if (photoFile instanceof File) body.append("photo", photoFile);
   else if (photoUrl) body.append("photo_url", photoUrl);
   if (userId) body.append("user_id", userId);
+  if (userLatitude != null) body.append("user_latitude", userLatitude);
+  if (userLongitude != null) body.append("user_longitude", userLongitude);
   return apiRequest("/reports", { method: "POST", body });
 }
 
@@ -214,6 +216,8 @@ export const facilityView = f => ({ ...f, id: f.facility_id, name: f.facility_na
 export const reportView = r => ({ ...r, id: r.report_id, facility: r.facility_name,
   facilityAddress: r.facility_address, facilityCategory: categoryKey(r.facility_category),
   facilityCategoryLabel: r.facility_category,
+  facilityLatitude: r.facility_latitude,
+  facilityLongitude: r.facility_longitude,
   citizen: {
     name: r.citizen_name || "Not recorded",
     email: r.citizen_email || "Not recorded",

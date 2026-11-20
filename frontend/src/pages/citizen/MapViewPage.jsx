@@ -102,18 +102,22 @@ function MapViewPage() {
   // Fetch suggestions when typing or opening dropdown
   useEffect(() => {
     if (!showSuggestions) return;
+    let active = true;
     const timer = setTimeout(async () => {
       try {
         setIsLoadingSuggestions(true);
         const data = await suggestLocationsApi(location);
-        setSuggestions(data || []);
+        if (active) setSuggestions(data || []);
       } catch (err) {
-        console.error("Failed to load suggestions:", err);
+        if (active) console.error("Failed to load suggestions:", err);
       } finally {
-        setIsLoadingSuggestions(false);
+        if (active) setIsLoadingSuggestions(false);
       }
     }, 200);
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [location, showSuggestions]);
 
   // Construct API endpoint: Haversine SQL query triggered when coords are present
@@ -230,18 +234,12 @@ function MapViewPage() {
       return;
     }
 
-    const match = suggestions.find(s => s.label.toLowerCase() === trimmed.toLowerCase()) || suggestions[0];
-    if (match) {
-      handleSelectSuggestion(match);
-    } else {
-      try {
-        const fetched = await suggestLocationsApi(trimmed);
-        if (fetched && fetched.length > 0) {
-          handleSelectSuggestion(fetched[0]);
-        }
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      const fetched = await suggestLocationsApi(trimmed);
+      const match = fetched.find(s => s.label.toLowerCase() === trimmed.toLowerCase()) || fetched[0];
+      if (match) handleSelectSuggestion(match);
+    } catch (err) {
+      console.error(err);
     }
   };
 

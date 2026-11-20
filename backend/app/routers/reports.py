@@ -2,6 +2,7 @@
 
 import base64
 import logging
+import math
 import re
 from typing import List, Optional
 from datetime import date, datetime, timezone, timedelta
@@ -198,6 +199,20 @@ async def validate_report_image(
         raise HTTPException(400, f"Unable to validate image: {str(exc)}")
 
 
+def calculate_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate the great-circle distance between two geographic coordinates in meters."""
+    R = 6371000.0  # Earth radius in meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = math.sin(delta_phi / 2.0) ** 2 + \
+        math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return R * c
+
+
 @router.post("/reports", response_model=ReportResponse, status_code=201)
 @router.post("/reports/", response_model=ReportResponse, status_code=201)
 async def submit_report(
@@ -207,6 +222,8 @@ async def submit_report(
     photo: Optional[UploadFile] = File(None),
     photo_url: Optional[str] = Form(None),
     user_id: Optional[int] = Form(None),
+    user_latitude: Optional[float] = Form(None),
+    user_longitude: Optional[float] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
 ):
@@ -214,10 +231,32 @@ async def submit_report(
     Submit an authenticated citizen grievance/report for a specific facility.
     The report routes directly to the agency member who registered this facility.
     AI validation validates image relevance and attaches validation scores in investigation notes.
+    Enforces a strict 100-meter proximity verification to the facility coordinates.
     """
     facility = db.get(Facility, facility_id)
     if facility is None:
         raise HTTPException(404, "Facility not found")
+
+    # Proximity Verification: Citizen must be physically within 100 meters of the facility coordinates
+    if facility.latitude is not None and facility.longitude is not None:
+        if user_latitude is not None and user_longitude is not None:
+            dist_m = calculate_distance_meters(
+                float(user_latitude), float(user_longitude),
+                float(facility.latitude), float(facility.longitude)
+            )
+            if dist_m > 100.0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Proximity Verification Failed: You must be physically within 100 meters of the facility to submit a report. "
+                        f"Your current location is {int(round(dist_m))} meters away."
+                    )
+                )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Proximity Verification Required: Current device coordinates are required to verify you are within 100 meters of this facility."
+            )
 
     # 1. Citizen Rate Limiting (Cooldown): Max 5 report submissions per citizen per hour
     one_hour_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1)
@@ -548,6 +587,8 @@ async def validate_report_resolution(
 async def submit_resolution(
     report_id: int, description: str = Form(..., min_length=1, max_length=5000),
     completion_date: date = Form(...), photo: UploadFile = File(...),
+    user_latitude: Optional[float] = Form(None),
+    user_longitude: Optional[float] = Form(None),
     member: AgencyMember = Depends(get_current_agent_member), db: Session = Depends(get_db)
 ):
     """Submit agency resolution details and evidence for a report; called by UploadResolutionPage."""
@@ -558,6 +599,28 @@ async def submit_resolution(
         raise HTTPException(409, "Start an investigation before submitting resolution evidence")
     if completion_date > datetime.now(timezone.utc).date() or not description.strip():
         raise HTTPException(422, "Provide a description and a completion date that is not in the future")
+
+    # Proximity Verification: Officer must be physically within 100 meters of the facility to upload resolution
+    fac = report.facility
+    if fac and fac.latitude is not None and fac.longitude is not None:
+        if user_latitude is not None and user_longitude is not None:
+            dist_m = calculate_distance_meters(
+                float(user_latitude), float(user_longitude),
+                float(fac.latitude), float(fac.longitude)
+            )
+            if dist_m > 100.0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"On-Site Verification Failed: Resolution proof can only be uploaded when you are physically within 100 meters of the facility. "
+                        f"Your current location is {int(round(dist_m))} meters away."
+                    )
+                )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="On-Site Verification Required: Device coordinates are required to verify you are on-site within 100 meters of this facility."
+            )
 
     # AI Resolution Validation
     category_name = report.facility.category.category_name if report.facility and report.facility.category else ""

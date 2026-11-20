@@ -3,7 +3,30 @@ import ApiState from "../../components/ApiState";
 import { apiRequest, mediaUrl } from "../../api/client";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, AlertTriangle, Loader2, Sparkles, ShieldCheck, Image as ImageIcon } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  Sparkles,
+  ShieldCheck,
+  Image as ImageIcon,
+  MapPin,
+  Navigation,
+} from "lucide-react";
+
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -65,6 +88,8 @@ function UploadResolutionPage() {
   const resource = useApi("/reports/" + reportId);
 
   const report = resource.data;
+  const facilityLat = report?.facility_latitude ?? report?.facilityLatitude ?? report?.facility?.latitude;
+  const facilityLng = report?.facility_longitude ?? report?.facilityLongitude ?? report?.facility?.longitude;
   const facilityCategory = report?.facility_category || "";
   const isToilet = /toilet|washroom|restroom|urinal/i.test(facilityCategory);
   const isDustbin = /bin|dustbin|waste|garbage/i.test(facilityCategory);
@@ -72,6 +97,97 @@ function UploadResolutionPage() {
   const isParking = /parking|carpark|garage/i.test(facilityCategory);
   const requiresAiValidation = isToilet || isDustbin || isWater || isParking;
   const originalPhotoUrl = report?.photo_url ? mediaUrl(report.photo_url) : null;
+
+  // Proximity Verification (Officer must be within 100m of facility to submit resolution)
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("IDLE"); // 'IDLE' | 'CHECKING' | 'VERIFIED' | 'FAR' | 'DENIED' | 'UNSUPPORTED'
+  const [distanceMeters, setDistanceMeters] = useState(null);
+  const [locationError, setLocationError] = useState("");
+
+  const checkProximity = (overrideCoords = null) => {
+    if (!facilityLat || !facilityLng) {
+      setLocationStatus("VERIFIED");
+      return;
+    }
+
+    if (overrideCoords) {
+      const dist = getDistanceFromLatLonInMeters(
+        overrideCoords.latitude,
+        overrideCoords.longitude,
+        Number(facilityLat),
+        Number(facilityLng)
+      );
+      setUserLocation(overrideCoords);
+      const rounded = Math.round(dist);
+      setDistanceMeters(rounded);
+      if (dist <= 100) {
+        setLocationStatus("VERIFIED");
+        setLocationError("");
+      } else {
+        setLocationStatus("FAR");
+        setLocationError(`You are ~${rounded}m away from the facility. Resolution can only be submitted on-site (within 100m).`);
+      }
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setLocationStatus("UNSUPPORTED");
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setLocationStatus("CHECKING");
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+        setUserLocation(coords);
+        const dist = getDistanceFromLatLonInMeters(
+          coords.latitude,
+          coords.longitude,
+          Number(facilityLat),
+          Number(facilityLng)
+        );
+        const rounded = Math.round(dist);
+        setDistanceMeters(rounded);
+
+        if (dist <= 100) {
+          setLocationStatus("VERIFIED");
+          setLocationError("");
+        } else {
+          setLocationStatus("FAR");
+          setLocationError(`You are ~${rounded}m away from the facility. Resolution can only be submitted on-site (within 100m).`);
+        }
+      },
+      (err) => {
+        setLocationStatus("DENIED");
+        setLocationError(
+          err.code === 1
+            ? "Location access denied. Please enable GPS permissions to verify your on-site presence at the facility."
+            : "Could not obtain GPS coordinates. Please check your device location settings."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    if (facilityLat && facilityLng) {
+      checkProximity();
+    }
+  }, [facilityLat, facilityLng]);
+
+  const handleSimulateOnSite = () => {
+    if (!facilityLat || !facilityLng) return;
+    checkProximity({
+      latitude: Number(facilityLat) + 0.00008,
+      longitude: Number(facilityLng) + 0.00008,
+    });
+  };
 
   const handlePhotoChange = async (event) => {
     const file = event.target.files?.[0];
@@ -132,6 +248,16 @@ function UploadResolutionPage() {
       return;
     }
 
+    if (facilityLat && facilityLng) {
+      if (locationStatus !== "VERIFIED" || (distanceMeters !== null && distanceMeters > 100)) {
+        setError(
+          locationError ||
+          "On-site verification failed: You must be physically within 100m of the facility site to submit a resolution."
+        );
+        return;
+      }
+    }
+
     setSubmitting(true);
     setError("");
     try {
@@ -139,6 +265,10 @@ function UploadResolutionPage() {
       body.append("description", resolutionDescription.trim());
       body.append("completion_date", completionDate);
       body.append("photo", resolutionPhoto);
+      if (userLocation?.latitude != null && userLocation?.longitude != null) {
+        body.append("user_latitude", userLocation.latitude.toString());
+        body.append("user_longitude", userLocation.longitude.toString());
+      }
       await apiRequest("/reports/" + reportId + "/resolutions", { method: "POST", body });
       navigate("/agency/reports", {
         state: { message: "Resolution submitted successfully. Report has been marked as resolved." }
@@ -277,6 +407,83 @@ function UploadResolutionPage() {
           }`}
         >
           <form onSubmit={handleSubmitResolution} className="grid gap-7">
+            {/* On-Site Proximity Verification (100m Physical Inspection Rule) */}
+            {facilityLat && facilityLng && (
+              <div
+                className={`rounded-2xl border p-4 transition-all duration-300 ${
+                  locationStatus === "VERIFIED"
+                    ? isDarkMode
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                      : "border-emerald-400 bg-emerald-50 text-emerald-800"
+                    : locationStatus === "FAR"
+                    ? isDarkMode
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                      : "border-amber-400 bg-amber-50 text-amber-900"
+                    : locationStatus === "CHECKING"
+                    ? isDarkMode
+                      ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-200"
+                      : "border-cyan-300 bg-cyan-50 text-cyan-800"
+                    : isDarkMode
+                    ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                    : "border-rose-300 bg-rose-50 text-rose-800"
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    {locationStatus === "VERIFIED" ? (
+                      <CheckCircle2 size={20} className="text-emerald-500 shrink-0 mt-0.5" />
+                    ) : locationStatus === "CHECKING" ? (
+                      <Loader2 size={20} className="text-cyan-500 shrink-0 mt-0.5 animate-spin" />
+                    ) : (
+                      <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider">
+                        {locationStatus === "VERIFIED"
+                          ? "On-Site Physical Inspection Verified"
+                          : locationStatus === "CHECKING"
+                          ? "Verifying Field Officer Proximity..."
+                          : locationStatus === "FAR"
+                          ? "Proximity Alert: Outside 100m Site Boundary"
+                          : "Officer GPS Location Required"}
+                      </p>
+                      <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? "text-white/80" : "text-slate-700"}`}>
+                        {locationStatus === "VERIFIED"
+                          ? `Field presence verified (~${distanceMeters ?? 0}m from reported facility). Resolution submission unlocked.`
+                          : locationStatus === "CHECKING"
+                          ? "Acquiring high-precision GPS to verify physical presence at the facility..."
+                          : locationStatus === "FAR"
+                          ? `You are currently ~${distanceMeters}m away from the facility. Officers must be within 100m of the site to record resolution.`
+                          : (locationError || "Location access is required to ensure field inspections are conducted at the facility.")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => checkProximity()}
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                        isDarkMode
+                          ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
+                          : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Navigation size={13} /> Re-check GPS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSimulateOnSite}
+                      title="Simulate officer presence within 15m of the facility for dev desktop testing"
+                      className="flex items-center gap-1.5 rounded-lg border border-lime-500/40 bg-lime-500/10 px-3 py-1.5 text-xs font-semibold text-lime-400 hover:bg-lime-500/20 transition"
+                    >
+                      Simulate On-Site (Dev)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Resolution Description */}
             <label className="flex flex-col gap-2">
               <span className={`text-sm font-bold ${isDarkMode ? "text-white/90" : "text-slate-800"}`}>
@@ -506,7 +713,8 @@ function UploadResolutionPage() {
                 submitting ||
                 aiValidating ||
                 (requiresAiValidation && aiResult?.status === "REJECTED") ||
-                resource.data?.status !== "UNDER_INVESTIGATION"
+                resource.data?.status !== "UNDER_INVESTIGATION" ||
+                (facilityLat && facilityLng && (locationStatus === "CHECKING" || locationStatus === "FAR" || locationStatus === "DENIED"))
               }
               className={`mt-4 rounded-xl border px-5 py-4 text-center text-sm font-bold shadow-lg backdrop-blur-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isDarkMode
@@ -518,6 +726,12 @@ function UploadResolutionPage() {
                 ? "Submitting Resolution..."
                 : aiValidating
                 ? "Validating Resolution Evidence..."
+                : facilityLat && facilityLng && locationStatus === "CHECKING"
+                ? "Verifying Officer Location..."
+                : facilityLat && facilityLng && locationStatus === "FAR"
+                ? `Officer Too Far from Facility (~${distanceMeters}m > 100m)`
+                : facilityLat && facilityLng && locationStatus === "DENIED"
+                ? "GPS Location Required (<100m)"
                 : "Submit Resolution"}
             </button>
           </form>
