@@ -680,33 +680,28 @@ def verify_resolution_evidence(
         clf_result = classify_toilet_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-        clean_classes = {"clean_public_toilet", "clean_public_urinal"}
         issue_labels = {
             "dirty_public_toilet": "Dirty Public Toilet",
             "dirty_public_urinal": "Dirty Public Urinal",
             "broken_public_toilet": "Broken Public Toilet",
             "broken_public_urinal": "Broken Public Urinal",
         }
-        is_clean = pred_class in clean_classes
     elif is_water:
         norm_type = "water"
         clf_result = classify_drinking_water_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-        clean_classes = {"functional_drinking_water"}
         issue_labels = {
             "dirty_drinking_water_facility": "Dirty Drinking Water Facility",
             "broken_drinking_water_facility": "Broken Drinking Water Facility",
             "water_leakage": "Water Leakage / Wastage",
             "damaged_water_infrastructure": "Damaged Water Infrastructure",
         }
-        is_clean = pred_class in clean_classes
     elif is_parking:
         norm_type = "parking"
         clf_result = classify_parking_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-        clean_classes = {"valid_public_parking"}
         issue_labels = {
             "illegal_parking": "Illegal Parking",
             "blocked_parking_space": "Blocked Parking Space",
@@ -714,23 +709,18 @@ def verify_resolution_evidence(
             "poor_parking_management": "Poor Parking Management",
             "parking_facility_hazard": "Parking Facility Hazard",
         }
-        is_clean = pred_class in clean_classes
     else:
         norm_type = "dustbin"
         clf_result = classify_dustbin_image(after_bytes)
         pred_class = clf_result["predicted_class"]
         conf = clf_result["confidence"]
-        clean_classes = {"normal_bin"}
         issue_labels = {
             "overflowing_dustbin": "Overflowing Dustbin",
             "broken_bin": "Broken / Damaged Bin",
         }
-        is_clean = pred_class in clean_classes
 
     # Step 2: Compare with before-repair complaint photo if provided
     similarity: Optional[float] = None
-    is_duplicate = False
-    scene_matched = True
     audit_note = ""
 
     if before_bytes:
@@ -741,7 +731,6 @@ def verify_resolution_evidence(
 
             # Check 1: Anti-duplication (Exact or near-exact duplicate of citizen photo)
             if similarity >= 0.985:
-                is_duplicate = True
                 return {
                     "status": "REJECTED",
                     "facility_type": norm_type,
@@ -762,7 +751,6 @@ def verify_resolution_evidence(
             # Calibrated deep cosine threshold: structural gradients and tile/bin geometry
             # Rejects if the image background/location does not match the complaint photograph.
             if similarity < 0.35:
-                scene_matched = False
                 return {
                     "status": "REJECTED",
                     "facility_type": norm_type,

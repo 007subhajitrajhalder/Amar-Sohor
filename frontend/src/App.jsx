@@ -2,6 +2,7 @@ import AuthGate from "./components/AuthGate";
 import ChatbotWidget from "./components/ChatbotWidget";
 import { Route, Routes, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Authentication pages (Public)
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -183,6 +184,7 @@ function App() {
         path="/admin/recommendations/:recommendationId/progress"
         element={<AuthGate role="ADMIN"><AdminRecommendationProgressPage /></AuthGate>}
       />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
     <ChatbotWidget />
     </>

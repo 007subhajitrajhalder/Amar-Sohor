@@ -15,12 +15,12 @@ import {
   ChevronRight,
   Star,
   Clock,
-  Phone,
-  Mail,
   Flag,
 } from "lucide-react";
+import Select from "../../components/Select";
+import SiteHeader from "../../components/layout/SiteHeader";
+import SiteFooter from "../../components/layout/SiteFooter";
 
-const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
 
 
@@ -263,7 +263,7 @@ function MapViewPage() {
       ====================================================== */}
 
       <div
-        className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        className="page-bg pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${kolkataBg})` }}
       />
       <div className="pointer-events-none fixed inset-0 z-10 bg-black/60" />
@@ -273,28 +273,8 @@ function MapViewPage() {
           HEADER
       ====================================================== */}
 
-      <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#07101f]/75 px-4 py-4 backdrop-blur-2xl md:px-8">
-        <div className="flex items-center justify-between px-2 py-1">
-
-          {/* LOGO */}
-
-          <Link to="/" className="group flex shrink-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-lime-300/20 bg-white/[0.06] shadow-lg shadow-lime-300/10 transition duration-300 group-hover:scale-105">
-              <img
-                src={logo}
-                alt="Amar Sohor Logo"
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            <div className="flex flex-col justify-center">
-              <h1 className="m-0 text-xl font-bold leading-none tracking-wide md:text-2xl">
-                Amar <span className="text-lime-300">Sohor</span>
-              </h1>
-            </div>
-          </Link>
-
-          <button
+      <SiteHeader>
+        <button
             type="button"
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:border-lime-300/30 hover:bg-lime-300 hover:text-black"
@@ -304,8 +284,7 @@ function MapViewPage() {
               Back to Previous Page
             </span>
           </button>
-        </div>
-      </header>
+      </SiteHeader>
 
       {/* =====================================================
           MAIN
@@ -350,9 +329,9 @@ function MapViewPage() {
               </div>
 
               <h2 className="font-serif text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-                Find a{" "}
+                Find{" "}
                 <span className="text-lime-300">
-                  {currentCategoryLabel}
+                  {selectedCategory === "all" ? "Facilities" : currentCategoryLabel}
                 </span>
                 <br />
                 Near You.
@@ -462,25 +441,19 @@ function MapViewPage() {
 
                 {/* CATEGORY SELECT */}
                 <div className="w-full md:w-[220px]">
-                  <div className="relative">
-                    <select
-                      id="facility-category"
-                      value={selectedCategory}
-                      onChange={handleCategoryChange}
-                      className="w-full appearance-none rounded-xl border border-lime-300/20 bg-[#07101f]/60 text-white px-3.5 py-2.5 pr-9 min-h-[52px] text-xs sm:text-sm font-medium outline-none backdrop-blur-sm transition duration-300 hover:border-lime-300/40 focus:border-lime-300/50"
-                    >
-                      <option value="all" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>All Categories</option>
-                      <option value="toilet" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Public Toilet</option>
-                      <option value="dustbin" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Dustbin</option>
-                      <option value="water" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Drinking Water</option>
-                      <option value="parking" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Parking</option>
-                    </select>
-
-                    <ChevronRight
-                      size={15}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
-                    />
-                  </div>
+                  <Select
+                    id="facility-category"
+                    aria-label="Facility category"
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    options={[
+                      { value: "all", label: "All Categories" },
+                      { value: "toilet", label: "Public Toilet" },
+                      { value: "dustbin", label: "Dustbin" },
+                      { value: "water", label: "Drinking Water" },
+                      { value: "parking", label: "Parking" },
+                    ]}
+                  />
                 </div>
 
                 {/* SEARCH */}
@@ -661,9 +634,11 @@ function MapViewPage() {
                         )}
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                            facility.status === "Available"
+                            facility.rawStatus === "OPEN"
                               ? "bg-lime-300/10 text-lime-300"
-                              : "bg-orange-400/10 text-orange-300"
+                              : facility.rawStatus === "UNDER_REPAIR"
+                                ? "bg-amber-400/10 text-amber-300"
+                                : "bg-rose-400/10 text-rose-300"
                           }`}
                         >
                           ● {facility.status}
@@ -760,149 +735,7 @@ function MapViewPage() {
           FOOTER
       ====================================================== */}
 
-      <footer
-        id="contact"
-        className="relative z-30 overflow-hidden border-t border-white/15 bg-white/[0.08] px-5 py-4 text-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl md:px-10"
-      >
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-40 -top-32 h-80 w-80 rounded-full bg-lime-300/10 blur-[120px]" />
-          <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[130px]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-lime-300/[0.02]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="md:col-span-1">
-              <Link to="/" className="group inline-flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-lime-300/30 bg-white/[0.08] shadow-lg shadow-lime-300/10 backdrop-blur-md transition duration-300 group-hover:scale-105">
-                  <img
-                    src={logo}
-                    alt="Amar Sohor Logo"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-bold tracking-wide text-white">
-                    Amar <span className="text-lime-300">Sohor</span>
-                  </h3>
-                  <p className="mt-1 text-[11px] tracking-wide text-white/40">
-                    My City. My Responsibility.
-                  </p>
-                </div>
-              </Link>
-
-              <p className="mt-3 max-w-sm text-sm leading-6 text-white/50">
-                A citizen-centric smart city platform designed to help people discover public facilities and stay connected with their city.
-              </p>
-
-              <div className="mt-3 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                <span className="h-px w-12 bg-lime-300/40" />
-                <span className="text-[10px] font-semibold uppercase tracking-[2px] text-lime-300/70">
-                  Smart City Platform
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Contact Us
-              </h4>
-
-              <div className="mt-4 flex flex-col gap-4">
-                <a href="mailto:amarsohor@gmail.com" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Mail size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Email</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      amarsohor@gmail.com
-                    </p>
-                  </div>
-                </a>
-
-                <a href="tel:+919876543210" className="group flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-lime-300 backdrop-blur-md transition duration-300 group-hover:border-lime-300/30 group-hover:bg-lime-300 group-hover:text-[#081b2e]">
-                    <Phone size={17} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/30">Phone</p>
-                    <p className="mt-1 text-sm text-white/70 transition group-hover:text-lime-300">
-                      +91 98765 43210
-                    </p>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-[3px] text-lime-300">
-                Follow Us
-              </h4>
-
-              <p className="mt-4 max-w-xs text-sm leading-6 text-white/45">
-                Stay connected with Amar Sohor and follow our latest updates across social platforms.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Facebook"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">f</span>
-                </a>
-
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Instagram"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-lg font-bold">◎</span>
-                </a>
-
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="YouTube"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-xs font-bold">▶</span>
-                </a>
-
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="X / Twitter"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.07] text-white/65 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:border-lime-300/40 hover:bg-lime-300 hover:text-[#081b2e] hover:shadow-lg hover:shadow-lime-300/10"
-                >
-                  <span className="text-sm font-bold">𝕏</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="my-5 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          <div className="flex flex-col items-center justify-between gap-3 text-center md:flex-row md:text-left">
-            <p className="text-xs text-white/35">
-              © 2026 Amar Sohor. All rights reserved.
-            </p>
-
-            <p className="text-xs text-white/35">
-              Making cities smarter, cleaner and more connected.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

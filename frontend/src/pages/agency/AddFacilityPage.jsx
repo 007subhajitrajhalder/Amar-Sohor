@@ -17,8 +17,9 @@ import {
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
 import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
+import Select from "../../components/Select";
+import AgencyHeader from "../../components/layout/AgencyHeader";
 
-const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
 const locationErrors = {
   1: "Location access was denied. Allow location access in your browser settings and try again, or enter coordinates manually.",
@@ -259,56 +260,7 @@ function AddFacilityPage() {
       )}
 
       {/* Sticky Header */}
-      <header
-        className={`sticky top-0 z-50 border-b px-5 py-4 backdrop-blur-2xl md:px-10 ${
-          isDarkMode
-            ? "border-white/10 bg-[#100e0b]/80"
-            : "border-slate-300 bg-white/80"
-        }`}
-      >
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02]">
-            <img
-              src={logo}
-              alt="Amar Sohor Logo"
-              className={`h-11 w-11 rounded-full border object-cover ${
-                isDarkMode ? "border-lime-300/20 bg-transparent" : "border-slate-300 bg-white"
-              }`}
-            />
-            <h1 className="text-xl font-bold md:text-2xl">
-              <span className={isDarkMode ? "text-white" : "text-slate-900"}>Amar </span>
-              <span className="text-lime-300">Sohor</span>
-            </h1>
-          </Link>
-          
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-              className={`group inline-flex items-center gap-3 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
-                isDarkMode
-                  ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <span className="text-base">{isDarkMode ? "☀️" : "🌙"}</span>
-              <span className="hidden sm:inline">{isDarkMode ? "Light mode" : "Dark mode"}</span>
-              <span
-                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
-                  isDarkMode ? "bg-cyan-500/70" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                    isDarkMode ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <AgencyHeader isDark={isDarkMode} onToggleTheme={toggleTheme} />
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 md:px-10 md:py-12">
         {/* Navigation Bar */}
@@ -415,20 +367,16 @@ function AddFacilityPage() {
               <label htmlFor="facilityCategory" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Facility Category *
               </label>
-              <select
+              <Select
                 id="facilityCategory"
                 required
+                accent="cyan"
+                light={!isDarkMode}
+                placeholder="Select a category"
                 value={facilityCategory}
                 onChange={(e) => setFacilityCategory(e.target.value)}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                <option value="">Select a category</option>
-                {(categories.data || []).map(category => <option key={category.category_id} value={category.category_id}>{category.category_name}</option>)}
-              </select>
+                options={(categories.data || []).map((category) => ({ value: category.category_id, label: category.category_name }))}
+              />
             </div>
 
             {/* Facility Address */}
@@ -648,20 +596,18 @@ function AddFacilityPage() {
               <label htmlFor="statusSelect" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Operational Status
               </label>
-              <select
+              <Select
                 id="statusSelect"
+                accent="cyan"
+                light={!isDarkMode}
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                <option value="Open">Open (Active for Public Usage)</option>
-                <option value="Under Repair">Under Repair</option>
-                <option value="Suspended">Suspended</option>
-              </select>
+                options={[
+                  { value: "Open", label: "Open (Active for Public Usage)" },
+                  { value: "Under Repair", label: "Under Repair" },
+                  { value: "Suspended", label: "Suspended" },
+                ]}
+              />
             </div>
 
             {/* Additional Notes */}

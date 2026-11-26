@@ -24,12 +24,10 @@ from app.models.agency import Agency
 from app.models.report import Report
 from app.schemas.report import (
     ReportResponse, ResolvedReportDetail, ResolvedReportListResponse,
-    ReportImageValidationResponse, ResolutionValidationResponse, ReportRejectRequest
+    ReportImageValidationResponse, ResolutionValidationResponse
 )
 from app.services import report_service, file_service
 from app.services.ai_service import (
-    classify_image, classify_dustbin_image, classify_toilet_image,
-    classify_drinking_water_image, classify_parking_image,
     validate_facility_image, verify_resolution_evidence
 )
 

@@ -10,13 +10,11 @@ from pydantic import BaseModel, ConfigDict
 from app.database.connection import get_db
 from app.dependencies.agency import get_current_agency
 from app.dependencies.auth import get_current_agent_member
-from app.dependencies.auth import require_user
 from app.dependencies.facility import get_agency_facility
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
 from app.models.facility import Facility
 from app.models.facility_category import FacilityCategory
-from app.models.rating import Rating
 from app.models.report import Report
 from app.schemas.facility import (
     FacilityCategoryResponse, FacilityCreate, FacilityUpdate, FacilityResponse,
