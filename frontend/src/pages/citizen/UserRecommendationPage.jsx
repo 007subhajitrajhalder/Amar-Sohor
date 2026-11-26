@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
-  ChevronDown,
   Compass,
   Car,
   DoorOpen,
@@ -23,6 +22,7 @@ import {
 import { Link } from "react-router-dom";
 import { submitRecommendationApi, API_BASE_URL } from "../../api/client";
 import { useApi } from "../../api/useApi";
+import Select from "../../components/Select";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -547,28 +547,17 @@ function UserRecommendationPage() {
                   <span className="text-xs text-white/40">Choose from categories</span>
                 </div>
 
-                <div className="relative">
-                  <select
-                    id="facility-type"
-                    value={facilityType}
-                    onChange={(e) => setFacilityType(e.target.value)}
-                    required
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#0c1427] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-lime-300/50 focus:ring-1 focus:ring-lime-300/30"
-                  >
-                    {facilityOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id} className="bg-[#0c1427] text-white py-2">
-                        {opt.label} {opt.agencyName ? `— (${opt.agencyName})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lime-300">
-                    <FacilityIcon size={18} />
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
-                  />
-                </div>
+                <Select
+                  id="facility-type"
+                  required
+                  icon={FacilityIcon}
+                  value={facilityType}
+                  onChange={(e) => setFacilityType(e.target.value)}
+                  options={facilityOptions.map((opt) => ({
+                    value: opt.id,
+                    label: opt.agencyName ? `${opt.label} — ${opt.agencyName}` : opt.label,
+                  }))}
+                />
                 <p className="text-xs text-white/40">{selectedFacilityMeta.description}</p>
               </div>
 

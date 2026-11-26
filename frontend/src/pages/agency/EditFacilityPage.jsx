@@ -87,6 +87,7 @@ function CurrentLocationButton({ onCoordinates, isDarkMode, disabled = false }) 
   );
 }
 import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
+import Select from "../../components/Select";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -422,20 +423,17 @@ function FacilityEditor({ facilityId }) {
               <label htmlFor="category" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Facility Category *
               </label>
-              <select
+              <Select
                 id="category"
-                required disabled={initialFacility.source_recommendation_id !== null}
                 name="category"
+                required
+                accent="cyan"
+                light={!isDarkMode}
+                disabled={initialFacility.source_recommendation_id !== null}
                 value={formData.category}
                 onChange={handleChange}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                {(categories.data || []).map(category => <option key={category.category_id} value={category.category_id}>{category.category_name}</option>)}
-              </select>
+                options={(categories.data || []).map((category) => ({ value: category.category_id, label: category.category_name }))}
+              />
             </div>
 
             {/* Address */}
@@ -641,21 +639,19 @@ function FacilityEditor({ facilityId }) {
               <label htmlFor="status" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Operational Status *
               </label>
-              <select
+              <Select
                 id="status"
                 name="status"
+                accent="cyan"
+                light={!isDarkMode}
                 value={formData.status}
                 onChange={handleChange}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                <option value="OPEN">Open (Active for Public Usage)</option>
-                <option value="UNDER_REPAIR">Under Repair</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
+                options={[
+                  { value: "OPEN", label: "Open (Active for Public Usage)" },
+                  { value: "UNDER_REPAIR", label: "Under Repair" },
+                  { value: "SUSPENDED", label: "Suspended" },
+                ]}
+              />
             </div>
 
             <label className="grid gap-2">Additional notes

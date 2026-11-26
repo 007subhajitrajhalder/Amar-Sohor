@@ -11,7 +11,6 @@ import {
   Calendar,
   Car,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   DoorOpen,
   Droplets,
@@ -30,6 +29,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
+import Select from "../../components/Select";
 
 const auraLayers = [
   {
@@ -733,29 +733,16 @@ function AllRecommendationsPage() {
           </div>
 
           <div className="grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative">
-              <Building2
-                size={15}
-                className={`pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 ${isLightMode ? "text-teal-700" : "text-cyan-200/70"}`}
-                aria-hidden="true"
-              />
-              <select
-                value={selectedAgency}
-                onChange={(event) => setSelectedAgency(event.target.value)}
-                aria-label="Filter by agency"
-                className={`admin-agency-select w-full appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pl-9 pr-9 text-xs outline-none transition focus:border-cyan-300 ${isLightMode ? "text-slate-700" : "text-cyan-100"}`}
-              >
-                <option value="ALL">All agencies</option>
-                {agencyOptions.map((agency) => (
-                  <option key={agency} value={agency}>{agency}</option>
-                ))}
-              </select>
-              <ChevronDown
-                size={15}
-                className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${isLightMode ? "text-slate-500" : "text-white/50"}`}
-                aria-hidden="true"
-              />
-            </div>
+            <Select
+              size="sm"
+              accent="cyan"
+              light={isLightMode}
+              icon={Building2}
+              aria-label="Filter by agency"
+              value={selectedAgency}
+              onChange={(event) => setSelectedAgency(event.target.value)}
+              options={[{ value: "ALL", label: "All agencies" }, ...agencyOptions.map((agency) => ({ value: agency, label: agency }))]}
+            />
 
             <input
               type="text"

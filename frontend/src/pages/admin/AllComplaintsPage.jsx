@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAdminTheme } from "./useAdminTheme";
 import AdminHeader from "./AdminHeader";
+import Select from "../../components/Select";
 
 const auraLayers = [
   {
@@ -442,18 +443,16 @@ function AllComplaintsPage() {
 
             {/* Sort Dropdown & Asc/Desc Toggle */}
             <div className="flex items-center gap-2">
-              <select
+              <Select
+                size="sm"
+                accent="cyan"
+                light={isLightMode}
+                aria-label="Sort complaints by"
+                className="min-w-[160px]"
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
-                aria-label="Sort complaints by"
-                className="rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white outline-none backdrop-blur-xl transition hover:border-white/40 focus:border-cyan-200"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                options={SORT_OPTIONS}
+              />
 
               <button
                 type="button"

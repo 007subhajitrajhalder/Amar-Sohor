@@ -19,6 +19,7 @@ import {
   Mail,
   Flag,
 } from "lucide-react";
+import Select from "../../components/Select";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -350,9 +351,9 @@ function MapViewPage() {
               </div>
 
               <h2 className="font-serif text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-                Find a{" "}
+                Find{" "}
                 <span className="text-lime-300">
-                  {currentCategoryLabel}
+                  {selectedCategory === "all" ? "Facilities" : currentCategoryLabel}
                 </span>
                 <br />
                 Near You.
@@ -462,25 +463,19 @@ function MapViewPage() {
 
                 {/* CATEGORY SELECT */}
                 <div className="w-full md:w-[220px]">
-                  <div className="relative">
-                    <select
-                      id="facility-category"
-                      value={selectedCategory}
-                      onChange={handleCategoryChange}
-                      className="w-full appearance-none rounded-xl border border-lime-300/20 bg-[#07101f]/60 text-white px-3.5 py-2.5 pr-9 min-h-[52px] text-xs sm:text-sm font-medium outline-none backdrop-blur-sm transition duration-300 hover:border-lime-300/40 focus:border-lime-300/50"
-                    >
-                      <option value="all" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>All Categories</option>
-                      <option value="toilet" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Public Toilet</option>
-                      <option value="dustbin" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Dustbin</option>
-                      <option value="water" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Drinking Water</option>
-                      <option value="parking" style={{backgroundColor: '#07101f', color: '#d6ffd6'}}>Parking</option>
-                    </select>
-
-                    <ChevronRight
-                      size={15}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-lime-300"
-                    />
-                  </div>
+                  <Select
+                    id="facility-category"
+                    aria-label="Facility category"
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    options={[
+                      { value: "all", label: "All Categories" },
+                      { value: "toilet", label: "Public Toilet" },
+                      { value: "dustbin", label: "Dustbin" },
+                      { value: "water", label: "Drinking Water" },
+                      { value: "parking", label: "Parking" },
+                    ]}
+                  />
                 </div>
 
                 {/* SEARCH */}
@@ -661,9 +656,11 @@ function MapViewPage() {
                         )}
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                            facility.status === "Available"
+                            facility.rawStatus === "OPEN"
                               ? "bg-lime-300/10 text-lime-300"
-                              : "bg-orange-400/10 text-orange-300"
+                              : facility.rawStatus === "UNDER_REPAIR"
+                                ? "bg-amber-400/10 text-amber-300"
+                                : "bg-rose-400/10 text-rose-300"
                           }`}
                         >
                           ● {facility.status}

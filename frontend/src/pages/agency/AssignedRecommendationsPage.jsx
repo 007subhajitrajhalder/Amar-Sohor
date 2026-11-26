@@ -22,6 +22,7 @@ import {
   X,
   PlusCircle
 } from "lucide-react";
+import Select from "../../components/Select";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -521,22 +522,19 @@ function AssignedRecommendationsPage() {
                 <span className={`text-xs font-semibold ${isDarkMode ? "text-white/60" : "text-slate-500"}`}>
                   Officer:
                 </span>
-                <select
+                <Select
+                  size="sm"
+                  accent="cyan"
+                  light={!isDarkMode}
+                  aria-label="Filter by officer"
+                  className="min-w-[180px]"
                   value={selectedOfficer}
                   onChange={(e) => setSelectedOfficer(e.target.value)}
-                  className={`rounded-xl border px-3 py-1.5 text-xs outline-none transition ${
-                    isDarkMode
-                      ? "border-white/20 bg-white/10 text-white"
-                      : "border-slate-300 bg-slate-50 text-slate-800"
-                  }`}
-                >
-                  <option value="ALL">All Officers ({officers.length})</option>
-                  {officers.map((off) => (
-                    <option key={off.id} value={off.id} className={isDarkMode ? "bg-[#16130f] text-white" : "bg-white text-slate-900"}>
-                      {off.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "ALL", label: `All Officers (${officers.length})` },
+                    ...officers.map((off) => ({ value: off.id, label: off.name })),
+                  ]}
+                />
               </div>
             )}
 

@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Building2,
-  ChevronDown,
   UserPlus,
   MapPin,
   Navigation,
@@ -18,6 +17,7 @@ import {
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AdminHeader from "./AdminHeader";
 import { useAdminTheme } from "./useAdminTheme";
+import Select from "../../components/Select";
 
 const emptyForm = {
   fullName: "",
@@ -247,7 +247,7 @@ function AddAgencyMemberPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-7 grid gap-5">
+          <form onSubmit={handleSubmit} autoComplete="off" className="mt-7 grid gap-5">
             {/* Full Name */}
             <label>
               <span className="admin-field-label font-bold text-white text-sm">
@@ -274,6 +274,7 @@ function AddAgencyMemberPage() {
               </div>
               <input
                 type="email"
+                autoComplete="off"
                 name="email"
                 required
                 value={formData.email}
@@ -310,6 +311,7 @@ function AddAgencyMemberPage() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   name="password"
                   required
                   value={formData.password}
@@ -334,36 +336,21 @@ function AddAgencyMemberPage() {
               <span className="admin-field-label font-bold text-white text-sm">
                 Designated Municipal Agency <span className="text-rose-400">*</span>
               </span>
-              <div className="relative mt-2">
-                <Building2
-                  size={17}
-                  className={`pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 ${
-                    isLightMode ? "text-teal-700" : "text-cyan-200/70"
-                  }`}
-                  aria-hidden="true"
-                />
-                <select
-                  name="agencyId"
-                  required
-                  value={formData.agencyId}
-                  onChange={handleChange}
-                  className="admin-agency-select w-full appearance-none rounded-xl border border-white/20 bg-white/10 p-3 pl-10 pr-10 text-white outline-none placeholder:text-white/45 focus:border-cyan-200/70 focus:ring-2 focus:ring-cyan-300/20"
-                >
-                  <option value="">Select an agency</option>
-                  {agencies.map((agency) => (
-                    <option key={agency.id} value={agency.id}>
-                      {agency.name} {agency.department ? `(${agency.department})` : ""}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={17}
-                  className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${
-                    isLightMode ? "text-slate-500" : "text-white/50"
-                  }`}
-                  aria-hidden="true"
-                />
-              </div>
+              <Select
+                className="mt-2"
+                accent="cyan"
+                light={isLightMode}
+                icon={Building2}
+                name="agencyId"
+                required
+                placeholder="Select an agency"
+                value={formData.agencyId}
+                onChange={handleChange}
+                options={agencies.map((agency) => ({
+                  value: agency.id,
+                  label: agency.department ? `${agency.name} (${agency.department})` : agency.name,
+                }))}
+              />
             </label>
 
             {/* Location Coordinates Section */}

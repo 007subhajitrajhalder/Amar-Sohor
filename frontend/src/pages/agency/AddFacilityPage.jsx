@@ -17,6 +17,7 @@ import {
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
 import { apiRequest, uploadFacilityPhoto, facilityPayload, mediaUrl } from "../../api/client";
+import Select from "../../components/Select";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 
@@ -415,20 +416,16 @@ function AddFacilityPage() {
               <label htmlFor="facilityCategory" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Facility Category *
               </label>
-              <select
+              <Select
                 id="facilityCategory"
                 required
+                accent="cyan"
+                light={!isDarkMode}
+                placeholder="Select a category"
                 value={facilityCategory}
                 onChange={(e) => setFacilityCategory(e.target.value)}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                <option value="">Select a category</option>
-                {(categories.data || []).map(category => <option key={category.category_id} value={category.category_id}>{category.category_name}</option>)}
-              </select>
+                options={(categories.data || []).map((category) => ({ value: category.category_id, label: category.category_name }))}
+              />
             </div>
 
             {/* Facility Address */}
@@ -648,20 +645,18 @@ function AddFacilityPage() {
               <label htmlFor="statusSelect" className="block font-bold uppercase tracking-wider opacity-70 mb-1">
                 Operational Status
               </label>
-              <select
+              <Select
                 id="statusSelect"
+                accent="cyan"
+                light={!isDarkMode}
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className={`w-full rounded-xl border p-3 text-xs outline-none transition focus:ring-2 ${
-                  isDarkMode
-                    ? "border-white/15 bg-[#16130f] text-white focus:border-cyan-300"
-                    : "border-slate-300 bg-slate-50 text-slate-900 focus:border-cyan-700"
-                }`}
-              >
-                <option value="Open">Open (Active for Public Usage)</option>
-                <option value="Under Repair">Under Repair</option>
-                <option value="Suspended">Suspended</option>
-              </select>
+                options={[
+                  { value: "Open", label: "Open (Active for Public Usage)" },
+                  { value: "Under Repair", label: "Under Repair" },
+                  { value: "Suspended", label: "Suspended" },
+                ]}
+              />
             </div>
 
             {/* Additional Notes */}
