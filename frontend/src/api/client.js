@@ -105,6 +105,12 @@ export async function registerApi(arg1, arg2, arg3, arg4) {
   });
 }
 
+export const verifyEmailApi = (email, otp) =>
+  apiRequest("/auth/verify-email", { method: "POST", auth: false, body: { email: email.trim().toLowerCase(), otp } });
+
+export const resendOtpApi = email =>
+  apiRequest("/auth/resend-otp", { method: "POST", auth: false, body: { email: email.trim().toLowerCase() } });
+
 export async function getMeApi() {
   return apiRequest("/users/me");
 }

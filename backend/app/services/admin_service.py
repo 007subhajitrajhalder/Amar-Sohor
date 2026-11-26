@@ -42,7 +42,8 @@ def create_agency_member(
         email=clean_email,
         phone=clean_phone,
         password_hash=hash_password(user_data.password),
-        role="AGENT"
+        role="AGENT",
+        email_verified=True,
     )
 
     try:

@@ -1,6 +1,6 @@
 """ORM entity for accounts used across authentication and application workflows."""
 
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Enum
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, TIMESTAMP, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -27,6 +27,11 @@ class User(Base):
         nullable=False,
         default="USER"
     )
+    email_verified = Column(Boolean, nullable=False, default=False)
+    email_otp_hash = Column(String(255), nullable=True)
+    email_otp_expires_at = Column(DateTime, nullable=True)
+    email_otp_attempts = Column(Integer, nullable=False, default=0)
+    email_otp_sent_at = Column(DateTime, nullable=True)
 
     # Relationships
     agency_member = relationship("AgencyMember", back_populates="user", uselist=False)

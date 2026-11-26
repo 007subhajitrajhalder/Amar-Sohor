@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
+import { LockKeyhole, Mail, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { resendOtpApi, verifyEmailApi } from "../../api/client";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 const kolkataBg = new URL("../../assets/kolkata-bg.jpg", import.meta.url).href;
@@ -27,7 +28,8 @@ const ABOUT_SLIDES = [
 
 function LoginPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const [email, setEmail] = useState(location.state?.verifyEmail || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +37,61 @@ function LoginPage() {
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+
+  // Email OTP verification step (after registration, or when login reports an unverified email)
+  const [verifyEmail, setVerifyEmail] = useState(location.state?.verifyEmail || "");
+  const [otp, setOtp] = useState("");
+  const [notice, setNotice] = useState("");
+  const [isResending, setIsResending] = useState(false);
+
+  const goAfterLogin = () => {
+    const from = location.state?.from;
+    if (from && from !== "/login" && from !== "/register") {
+      navigate(from, { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError("");
+    setNotice("");
+    if (!/^\d{6}$/.test(otp)) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await verifyEmailApi(verifyEmail, otp);
+      if (password && email.trim().toLowerCase() === verifyEmail) {
+        await login(email.trim(), password);
+        goAfterLogin();
+        return;
+      }
+      setVerifyEmail("");
+      setOtp("");
+      setNotice("Email verified. Sign in to continue.");
+    } catch (err) {
+      setError(err.message || "Verification failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setNotice("");
+    setIsResending(true);
+    try {
+      await resendOtpApi(verifyEmail);
+      setNotice("A new code has been sent to your email.");
+    } catch (err) {
+      setError(err.message || "Could not resend the code.");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   // If already logged in, redirect to HomePage immediately
   useEffect(() => {
@@ -63,13 +119,13 @@ function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      const from = location.state?.from;
-      if (from && from !== "/login" && from !== "/register") {
-        navigate(from, { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
+      goAfterLogin();
     } catch (err) {
+      if (err.status === 403 && err.message === "EMAIL_NOT_VERIFIED") {
+        setVerifyEmail(email.trim().toLowerCase());
+        setNotice("Your email is not verified yet. Enter the code we emailed you, or request a new one.");
+        return;
+      }
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -151,7 +207,14 @@ function LoginPage() {
           <h1 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Sign in to your account</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">Access your reports, saved facilities, and civic activity in one place.</p>
 
-          {location.state?.message && !error && (
+          {notice && !error && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/15 p-3 text-xs text-lime-300 animate-fadeIn" role="status">
+              <CheckCircle2 size={16} className="shrink-0 text-lime-400" />
+              <span>{notice}</span>
+            </div>
+          )}
+
+          {location.state?.message && !error && !notice && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/15 p-3 text-xs text-lime-300 animate-fadeIn">
               <CheckCircle2 size={16} className="shrink-0 text-lime-400" />
               <span>{location.state.message}</span>
@@ -165,6 +228,46 @@ function LoginPage() {
             </div>
           )}
 
+          {verifyEmail ? (
+          <form onSubmit={handleVerify} className="mt-5 grid gap-3.5">
+            <p className="text-xs text-white/60 sm:text-sm">
+              Enter the 6-digit code sent to <span className="font-semibold text-white">{verifyEmail}</span>.
+            </p>
+            <label htmlFor="otp" className="grid gap-1.5 text-xs font-medium text-white/75">Verification code
+              <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
+                <ShieldCheck size={17} className="text-lime-300 shrink-0" />
+                <input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  required
+                  className="w-full bg-transparent text-sm tracking-[0.4em] text-white outline-none placeholder:tracking-normal placeholder:text-white/30"
+                />
+              </span>
+            </label>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-lime-300 px-5 text-sm font-bold text-black shadow-md shadow-lime-300/10 transition hover:bg-lime-200 disabled:opacity-50"
+            >
+              {isSubmitting ? (<><Loader2 size={16} className="animate-spin" /><span>Verifying...</span></>) : "Verify email"}
+            </button>
+            <div className="flex items-center justify-between text-xs">
+              <button type="button" onClick={handleResend} disabled={isResending} className="font-medium text-lime-300 hover:text-lime-200 disabled:opacity-50">
+                {isResending ? "Sending..." : "Resend code"}
+              </button>
+              <button type="button" onClick={() => { setVerifyEmail(""); setOtp(""); setError(""); setNotice(""); }} className="text-white/50 hover:text-white/80">
+                Back to sign in
+              </button>
+            </div>
+          </form>
+          ) : (
           <form onSubmit={handleSubmit} className="mt-5 grid gap-3.5">
             <label htmlFor="email" className="grid gap-1.5 text-xs font-medium text-white/75">Email address
               <span className="flex min-h-[48px] items-center gap-3 rounded-xl border border-white/15 bg-white/[0.07] px-3.5 transition focus-within:border-lime-300/60 focus-within:bg-white/10">
@@ -227,6 +330,7 @@ function LoginPage() {
               )}
             </button>
           </form>
+          )}
           <p className="mt-4 text-center text-xs text-white/45">
             New to Amar Sohor?{" "}
             <Link to="/register" className="font-bold text-lime-300 hover:text-lime-200">

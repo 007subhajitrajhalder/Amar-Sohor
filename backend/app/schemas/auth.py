@@ -29,6 +29,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class VerifyEmailRequest(BaseModel):
+    """Validate the registration OTP submitted from the sign-in page."""
+
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr
+    otp: str = Field(pattern=r"^\d{6}$")
+
+
 class CheckEmailRequest(BaseModel):
     """Validate the email lookup payload used by account-check routes."""
 

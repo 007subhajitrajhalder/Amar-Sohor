@@ -113,7 +113,10 @@ function RegisterPage() {
       });
 
       navigate("/login", {
-        state: { message: "Account created. Sign in to continue." },
+        state: {
+          message: "Account created. We sent a 6-digit verification code to your email.",
+          verifyEmail: email.toLowerCase(),
+        },
         replace: true,
       });
     } catch (err) {

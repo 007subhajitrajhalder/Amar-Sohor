@@ -9,6 +9,7 @@ from app.schemas.auth import (
     LoginRequest,
     CheckEmailRequest,
     ResetPasswordRequest,
+    VerifyEmailRequest,
     TokenResponse,
     AuthUser
 )
@@ -75,6 +76,12 @@ def login(
             detail="Invalid email or password"
         )
 
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="EMAIL_NOT_VERIFIED"
+        )
+
     access_token = create_access_token(
         user_id=user.user_id,
         role=user.role
@@ -103,6 +110,32 @@ def login(
             "agent_id": agent_id
         }
     }
+
+
+@router.post("/verify-email", status_code=200)
+def verify_email(payload: VerifyEmailRequest, db: Session = Depends(get_db)):
+    """Confirm the registration OTP entered on the sign-in page."""
+    result = auth_service.verify_email_otp(db, payload.email, payload.otp)
+    if result == "VERIFIED":
+        return {"verified": True, "message": "Email verified."}
+    messages = {
+        "INVALID": (400, "Incorrect verification code."),
+        "EXPIRED": (400, "This code has expired. Request a new one."),
+        "TOO_MANY_ATTEMPTS": (429, "Too many incorrect attempts. Request a new code."),
+    }
+    status, detail = messages[result]
+    raise HTTPException(status_code=status, detail=detail)
+
+
+@router.post("/resend-otp", status_code=200)
+def resend_otp(payload: CheckEmailRequest, db: Session = Depends(get_db)):
+    """Send a new registration OTP; the response does not reveal whether the account exists."""
+    result = auth_service.resend_email_otp(db, payload.email)
+    if result == "COOLDOWN":
+        raise HTTPException(status_code=429, detail="Please wait a minute before requesting another code.")
+    if result == "SEND_FAILED":
+        raise HTTPException(status_code=502, detail="Could not send the verification email. Try again later.")
+    return {"message": "If this account needs verification, a new code has been sent."}
 
 
 @router.post(
