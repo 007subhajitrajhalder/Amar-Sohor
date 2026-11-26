@@ -1,8 +1,8 @@
 import { useApi } from "../../api/useApi";
 import ApiState from "../../components/ApiState";
-import { reportView, getStoredUser, apiRequest } from "../../api/client";
+import { reportView, getStoredUser } from "../../api/client";
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -128,7 +128,6 @@ function getStatusBadge(status, isDarkMode) {
 }
 
 function AssignedReportsPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [isDarkMode, setIsDarkMode] = useState(
@@ -172,7 +171,6 @@ function AssignedReportsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOfficer, setSelectedOfficer] = useState("ALL");
-  const [pageMessage, setPageMessage] = useState("");
 
   const officers = useMemo(() => {
     const map = new Map();
@@ -326,12 +324,6 @@ function AssignedReportsPage() {
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12">
         <ApiState {...resource} />
-
-        {pageMessage && (
-          <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
-            {pageMessage}
-          </div>
-        )}
 
         {/* Navigation & Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -576,9 +568,6 @@ function AssignedReportsPage() {
             const facilityBadge = getFacilityBadge(report.facilityCategory, isDarkMode);
             const statusBadge = getStatusBadge(report.rawStatus || report.status, isDarkMode);
             const StatusIcon = statusBadge.icon;
-            const isResolvedOrRejected = ["RESOLVED", "REJECTED"].includes(
-              (report.rawStatus || report.status || "").toUpperCase()
-            );
 
             return (
               <article

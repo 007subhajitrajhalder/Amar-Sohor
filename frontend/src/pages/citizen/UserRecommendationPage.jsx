@@ -20,7 +20,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { submitRecommendationApi, API_BASE_URL } from "../../api/client";
 import { useApi } from "../../api/useApi";
 
@@ -105,7 +105,6 @@ const FALLBACK_FACILITY_OPTIONS = [
 ];
 
 function UserRecommendationPage() {
-  const navigate = useNavigate();
 
   const categoriesQuery = useApi("/facilities/categories", { poll: 0 });
 

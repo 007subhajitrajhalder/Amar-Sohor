@@ -3,7 +3,7 @@ import ApiState from "../../components/ApiState";
 import { apiRequest, statusLabel, mediaUrl, displayDate } from "../../api/client";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { XCircle, RotateCcw, CheckCircle2, Camera, AlertTriangle, Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { XCircle, RotateCcw, CheckCircle2, Camera, AlertTriangle, Loader2, Image as ImageIcon } from "lucide-react";
 
 const logo = new URL("../../assets/logo.png", import.meta.url).href;
 

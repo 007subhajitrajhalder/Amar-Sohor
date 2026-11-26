@@ -10,7 +10,6 @@ import {
   Sparkles,
   ShieldCheck,
   Image as ImageIcon,
-  MapPin,
   Navigation,
 } from "lucide-react";
 

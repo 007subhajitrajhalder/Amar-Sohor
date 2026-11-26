@@ -15,7 +15,6 @@ import {
   Phone,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   TrendingUp,
   X

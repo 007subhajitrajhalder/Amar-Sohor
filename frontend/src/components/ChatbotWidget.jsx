@@ -1,8 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  MessageSquare,
-  X,
   Send,
   Sparkles,
   Bot,
@@ -11,72 +9,12 @@ import {
   ChevronDown,
   Loader2,
   FileText,
-  AlertCircle,
   ArrowUpRight,
   Compass,
   RefreshCw,
   ExternalLink,
-  Layers,
 } from "lucide-react";
 import { apiRequest, getStoredToken } from "../api/client";
-
-// Actionable mapping from static knowledge documents to actual clickable website routes
-const SOURCE_SHORTCUTS = {
-  "citizen_guide.md": {
-    label: "Explore Map & Facilities",
-    path: "/map",
-    badge: "Map & Status",
-    hint: "View all public facilities and live operational statuses",
-  },
-  "ai_validation_guide.md": {
-    label: "Select Facility on Map to Report",
-    path: "/map",
-    badge: "AI Image Engine",
-    hint: "Pick a facility on the interactive map to start an AI-verified report",
-  },
-  "complaint_workflow.md": {
-    label: "Report Issue / Track Grievances",
-    path: "/citizen/my-reports",
-    badge: "Grievances",
-    hint: "Lodge complaints, monitor investigations, and see repairs",
-  },
-  "recommendation_workflow.md": {
-    label: "Propose a New Facility",
-    path: "/citizen/recommendation",
-    badge: "Recommendations",
-    hint: "Advocate for missing facilities in your neighborhood",
-  },
-  "agency_guide.md": {
-    label: "Assigned Reports",
-    path: "/agency/reports",
-    badge: "Agency Ops",
-    hint: "Manage assigned facilities, field investigations, and resolutions",
-  },
-  "admin_guide.md": {
-    label: "Admin Complaints & Governance",
-    path: "/admin/complaints",
-    badge: "Admin Console",
-    hint: "Global grievance registry, recommendations, and platform governance",
-  },
-  "user_account_guide.md": {
-    label: "Account & Security",
-    path: "/login",
-    badge: "Auth & Roles",
-    hint: "Sign in, registration, and role-based permissions",
-  },
-  "project_overview.md": {
-    label: "Smart City Platform Map",
-    path: "/map",
-    badge: "Overview",
-    hint: "GIS infrastructure and public amenities across Kolkata",
-  },
-  live_facility_counts: {
-    label: "Live Facility Counts",
-    path: "/map",
-    badge: "Facility Data",
-    hint: "Browse public facilities by category",
-  },
-};
 
 const SUGGESTIONS = [
   "How many facilities are in the database?",
@@ -415,7 +353,7 @@ export default function ChatbotWidget() {
   // Convert raw text into rich formatted elements with interactive in-app route pills
   const renderFormattedText = (text) => {
     const ROUTE_REGEX =
-      /(\/(?:citizen|agency|admin|facilities|map|login|register|forgot-password|reset-password)[a-zA-Z0-9_\-\/{}]*)/g;
+      /(\/(?:citizen|agency|admin|facilities|map|login|register|forgot-password|reset-password)[a-zA-Z0-9_\-/{}]*)/g;
     const MARKDOWN_LINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/g;
 
     return text.split("\n").map((line, lineIdx) => {
@@ -525,7 +463,7 @@ export default function ChatbotWidget() {
   // Helper to detect plain route mentions inside prose and wrap them with clickable badges
   const renderRouteBadges = (str, keyPrefix = 0) => {
     const ROUTE_REGEX =
-      /(\/(?:citizen|agency|admin|facilities|map|login|register|forgot-password|reset-password)[a-zA-Z0-9_\-\/{}]*)/g;
+      /(\/(?:citizen|agency|admin|facilities|map|login|register|forgot-password|reset-password)[a-zA-Z0-9_\-/{}]*)/g;
     const parts = str.split(ROUTE_REGEX);
 
     return parts.map((chunk, idx) => {

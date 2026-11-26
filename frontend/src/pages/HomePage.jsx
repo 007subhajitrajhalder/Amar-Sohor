@@ -32,7 +32,6 @@ const kolkataBg = new URL("../assets/kolkata-bg.jpg", import.meta.url).href;
 function AnimatedCounter({ value, duration = 1600 }) {
   const [displayCount, setDisplayCount] = useState(0);
   const elementRef = useRef(null);
-  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
     const target = Number(value);

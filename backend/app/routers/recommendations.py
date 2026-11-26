@@ -6,7 +6,6 @@ from app.dependencies.auth import get_current_user, require_user, require_admin
 from app.dependencies.access import scoped_query, visible_record
 from app.models.user import User
 from app.models.recommendation import Recommendation
-from app.models.recommendation_investigation import RecommendationInvestigation
 from app.schemas.recommendation import RecommendationWorkflowUpdate
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query
 from sqlalchemy.orm import Session

@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   ArrowUpRight,
   Building2,
-  Calendar,
   CheckCircle2,
   ClipboardList,
   Clock3,
@@ -16,7 +15,6 @@ import {
   Search,
   UserRound,
   X,
-  ShieldCheck,
   TrendingUp,
   XCircle
 } from "lucide-react";
@@ -146,7 +144,7 @@ function AllComplaintsPage() {
   // Sort complaints dynamically
   const sortedComplaints = useMemo(() => {
     return [...filteredComplaints].sort((a, b) => {
-      let comparison = 0;
+      let comparison;
 
       if (sortKey === "facility") {
         comparison = (a.facility || "").localeCompare(b.facility || "");
@@ -473,7 +471,7 @@ function AllComplaintsPage() {
 
         {/* Complaints Grid List */}
         <div className="mt-6 grid gap-4 pb-12">
-          {sortedComplaints.map((complaint, index) => {
+          {sortedComplaints.map((complaint) => {
             const statusInfo = getStatusInfo(complaint.status);
             const StatusIcon = statusInfo.icon;
 

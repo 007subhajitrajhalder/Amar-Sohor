@@ -1,7 +1,6 @@
 """Pydantic schemas and API contracts for facility ratings and citizen reviews."""
 
 from datetime import datetime
-from typing import Optional
 from pydantic import BaseModel, Field
 
 

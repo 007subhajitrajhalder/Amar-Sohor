@@ -17,7 +17,6 @@ from app.models.facility import Facility
 from app.models.facility_category import FacilityCategory
 from app.models.report import Report
 from app.models.report_resolution_submission import ReportResolutionSubmission
-from app.models.user import User
 from app.schemas.agency import (
     AgencyDashboardResponse,
     AgencyDashboardStatistics,
