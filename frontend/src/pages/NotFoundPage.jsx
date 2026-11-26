@@ -11,7 +11,7 @@ export default function NotFoundPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 text-white">
-      <div className="pointer-events-none fixed inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kolkataBg})` }} />
+      <div className="page-bg pointer-events-none fixed inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kolkataBg})` }} />
       <div className="pointer-events-none fixed inset-0 bg-black/75" />
       <main className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-black/40 p-8 text-center shadow-2xl backdrop-blur-2xl">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-lime-300/30 bg-lime-300/10 text-lime-300">
